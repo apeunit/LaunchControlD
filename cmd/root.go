@@ -52,7 +52,6 @@ var debug bool
 
 func init() {
 	cobra.OnInitialize(initConfig)
-
 	// config file
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.evtvzd.yaml)")
 	// verbose logging
@@ -73,8 +72,8 @@ func initConfig() {
 	fmt.Printf(`
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ v%s\n
-  `, rootCmd.Version)
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v%s`, rootCmd.Version)
+	fmt.Println()
 
 	if cfgFile != "" {
 		// Use config file from the flag.
