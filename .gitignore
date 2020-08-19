@@ -1,3 +1,5 @@
 dist
 *.log
 *.out
+workspace
+config.json

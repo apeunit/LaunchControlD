@@ -18,7 +18,10 @@ package cmd
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/apeunit/evtvzd/pkg/evtvzd"
+	"github.com/apeunit/evtvzd/pkg/model"
 	"github.com/spf13/cobra"
 )
 
@@ -33,39 +36,37 @@ var setupEventCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(setupEventCmd)
 	// token symbol
-	setupEventCmd.Flags().StringVarP(&tokenSymbol, "token", "t", "EVZ", "The token symbol for the Event")
+	setupEventCmd.Flags().StringVarP(&event.TokenSymbol, "token", "t", "", "The token symbol for the Event")
 	setupEventCmd.MarkFlagRequired("token")
+	// event owner
+	setupEventCmd.Flags().StringVarP(&event.Owner, "owner", "o", "", "Set the owner address")
+	setupEventCmd.MarkFlagRequired("owner")
 	// validators emails
-	setupEventCmd.Flags().StringSliceVarP(&validatorEmails, "email", "m", []string{}, "Set the validator addresses")
+	setupEventCmd.Flags().StringSliceVarP(&event.Validators, "email", "m", []string{}, "Set the validator addresses")
 	setupEventCmd.MarkFlagRequired("email")
 	// staking variables
-	setupEventCmd.Flags().Uint64VarP(&coinbase, "coinbase", "b", 1000000000, "Amount of tokens to be available on the chain and distributed among the validators")
-	setupEventCmd.Flags().Uint64VarP(&stake, "stake", "s", 1000000, "Amount of tokens at stake")
+	setupEventCmd.Flags().Uint64VarP(&event.Coinbase, "coinbase", "b", model.DefaultCoinbase, "Amount of tokens to be available on the chain and distributed among the validators")
+	setupEventCmd.Flags().Uint64VarP(&event.Stake, "stake", "s", model.DefaultStake, "Amount of tokens at stake")
 	// provisioning
-	setupEventCmd.Flags().StringSliceVar(&providers, "providers", []string{"hetzner"}, "Providers for provisioning the insfrastructure")
+	setupEventCmd.Flags().StringVar(&event.Provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
 	// TODO add more parameters like: startDate, endDate,
 }
 
-var (
-	tokenSymbol     string
-	coinbase        uint64
-	stake           uint64
-	validatorEmails []string
-	providers       []string
-)
+var event model.EvtvzE
 
 func setupEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("Preparing the environment")
+	start := time.Now()
 
-	vc := len(validatorEmails)
-	tpv := coinbase / uint64(vc)
+	vc := event.ValidatorsCount()
+	tpv := event.Coinbase / uint64(vc)
 
 	fmt.Println("Summary:")
 	fmt.Printf("there are %v validators\n", vc)
-	fmt.Printf("each with %v stake\n", stake)
-	fmt.Printf("and a total coinbase of %v%s\n", coinbase, tokenSymbol)
-	fmt.Printf("that will be distributed over the %v validators (~ %v%s each).\n", vc, tpv, tokenSymbol)
-	fmt.Printf("Finally will be deploying %v servers+nodes (1 for each validators) on %s\n", vc, strings.Join(providers, ", "))
+	fmt.Printf("each with %v stake\n", event.Stake)
+	fmt.Printf("and a total coinbase of %s\n", event.FormatAmount(event.Coinbase))
+	fmt.Printf("that will be distributed over the %v validators (~ %s each).\n", vc, event.FormatAmount(tpv))
+	fmt.Printf("Finally will be deploying %v servers+nodes (1 for each validators) on %s\n", vc, event.Provider)
 	fmt.Print("Shall we proceed? [Y/n]:")
 	proceed := "Y"
 	fmt.Scanln(&proceed)
@@ -74,4 +75,9 @@ func setupEvent(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println("Here we go!!")
+	err := evtvzd.DeployEvent(settings, event)
+	if err != nil {
+		fmt.Println("There was an error, run the command with --debug for more info:", err)
+	}
+	fmt.Println("Operation completed in", time.Since(start))
 }
