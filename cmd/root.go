@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/apeunit/evtvzd/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
@@ -49,6 +49,7 @@ func Execute(version string) {
 }
 
 var debug bool
+var settings config.Schema
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -79,22 +80,20 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
 		// Search config in home directory with name ".evtvzd" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".evtvzd")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("/etc/evtvzd")
+		viper.SetConfigName("config")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("Error loading config file:", viper.ConfigFileUsed(), ":", err)
+	} else {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		viper.Unmarshal(&settings)
+		// log.Debug("Settings: ", settings)
 	}
 }
