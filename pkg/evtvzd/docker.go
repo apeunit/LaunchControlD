@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func evtEnvVars(settings config.Schema, evt model.EvtvzE) (env []string, err error) {
+func dockerEnv(settings config.Schema, evt model.EvtvzE) (env []string, err error) {
 	// set the path to find the executable
 	envPath := fmt.Sprintf("PATH=%s", bin(settings, ""))
 	// set the home path for the command
@@ -24,10 +24,33 @@ func evtEnvVars(settings config.Schema, evt model.EvtvzE) (env []string, err err
 	return
 }
 
+func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+	path, err := evts(settings, evt.ID())
+	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
+	if err != nil {
+		log.Error("Inspect failed:", err)
+		return
+	}
+	dmBin := dmBin(settings)
+	// set the path to find the executable
+	evnVars, err := dockerEnv(settings, evt)
+	for i := range evt.Validators {
+		host := evt.NodeID(i)
+		out, err := runCommand(dmBin, []string{"status", host}, evnVars)
+		if err != nil {
+			break
+		}
+		fmt.Println(host, "status:", out)
+		out, err = runCommand(dmBin, []string{"ip", host}, evnVars)
+		fmt.Println(host, "IP:", out)
+	}
+	return
+}
+
 // DestroyEvent destroy an existing event
 func DestroyEvent(settings config.Schema, evtID string) (err error) {
 	path, err := evts(settings, evtID)
-	log.Debug("DestroyEvent event home:", path)
+	log.Debugln("DestroyEvent event", evtID, "home:", path)
 	if err != nil {
 		log.Error("DestroyEvent failed:", err)
 		return
@@ -50,36 +73,23 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 		return
 	}
 	// run the rm command for each validator
-	// Outputter
-	var out []byte
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	evnVars, err := evtEnvVars(settings, evt)
+	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
 		return
 	}
 	for i, v := range evt.Validators {
 		host := evt.NodeID(i)
 		//driver := settings.DockerMachine.Drivers[evt.Provider]
-
 		log.Infof("Node ID for %s is %s", v, host)
 		// create the parameters
-		p := []string{"rm"}
-		//p = append(p, driver.Params...)
-		p = append(p, host)
-		log.Debug("DestroyEvent cmd: ", dmBin, host)
-		/// prepare the command
-		cmd := exec.Command(dmBin, p...)
-		// add the binary folder to the exec path
-		cmd.Env = evnVars
-		log.Debug("DestroyEvent env vars set to ", cmd.Env)
-		// execute the command
-		out, err = cmd.CombinedOutput()
+		out, err := runCommand(dmBin, []string{"rm", host}, envVars)
 		if err != nil {
-			log.Errorf("cmd.Run() failed with %s, %s\n", err, out)
-			break
+			fmt.Println(err)
 		}
-		log.Debug("DestroyEvent cmd ouput: ", string(out), err)
+		fmt.Println(host, "rm:", out)
+
 	}
 	if err != nil {
 		return
@@ -94,7 +104,7 @@ func DeployEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	var out []byte
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	evnVars, err := evtEnvVars(settings, evt)
+	evnVars, err := dockerEnv(settings, evt)
 	if err != nil {
 		return
 	}

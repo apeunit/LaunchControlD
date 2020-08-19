@@ -25,16 +25,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// setupEventCmd represents the setupEvent command
-var setupEventCmd = &cobra.Command{
-	Use:   "setup-event",
-	Short: "Setup a new event",
+// eventsCmd represents the events command
+var eventsCmd = &cobra.Command{
+	Use:   "events",
+	Short: "Manage events",
 	Long:  ``,
-	Run:   setupEvent,
+	// Run: func(cmd *cobra.Command, args []string) {
+	// 	fmt.Println("events called")
+	// },
 }
 
 func init() {
-	rootCmd.AddCommand(setupEventCmd)
+	rootCmd.AddCommand(eventsCmd)
+	// ******************
+	// SETUP
+	// ******************
+	eventsCmd.AddCommand(setupEventCmd)
 	// token symbol
 	setupEventCmd.Flags().StringVarP(&event.TokenSymbol, "token", "t", "", "The token symbol for the Event")
 	setupEventCmd.MarkFlagRequired("token")
@@ -50,9 +56,30 @@ func init() {
 	// provisioning
 	setupEventCmd.Flags().StringVar(&event.Provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
 	// TODO add more parameters like: startDate, endDate,
+
+	// ******************
+	// TEARDOWN
+	// ******************
+	eventsCmd.AddCommand(tearDownEventCmd)
+
+	// ******************
+	// LIST
+	// ******************
+	eventsCmd.AddCommand(listEventCmd)
+	listEventCmd.Flags().BoolVar(&verbose, "verbose", false, "Print more details")
+
 }
 
 var event model.EvtvzE
+var verbose bool
+
+// setupEventCmd represents the setupEvent command
+var setupEventCmd = &cobra.Command{
+	Use:   "new",
+	Short: "Setup a new event",
+	Long:  ``,
+	Run:   setupEvent,
+}
 
 func setupEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("Preparing the environment")
@@ -78,6 +105,50 @@ func setupEvent(cmd *cobra.Command, args []string) {
 	err := evtvzd.DeployEvent(settings, event)
 	if err != nil {
 		fmt.Println("There was an error, run the command with --debug for more info:", err)
+	}
+	fmt.Println("Operation completed in", time.Since(start))
+}
+
+// tearDownEventCmd represents the tearDownEvent command
+var tearDownEventCmd = &cobra.Command{
+	Use:   "teardown",
+	Short: "Destroy the resources associated to an event",
+	Long:  ``,
+	Args:  cobra.ExactArgs(1),
+	Run:   tearDownEvent,
+}
+
+func tearDownEvent(cmd *cobra.Command, args []string) {
+	fmt.Println("Teardown Event")
+	fmt.Println("Event ID is", args[0])
+	start := time.Now()
+	err := evtvzd.DestroyEvent(settings, args[0])
+	if err != nil {
+		fmt.Println("There was an error shutting down the event: ", err)
+	}
+	fmt.Println("Operation completed in", time.Since(start))
+}
+
+// listEventCmd represents the tearDownEvent command
+var listEventCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list available events",
+	Long:  ``,
+	Run:   listEvent,
+}
+
+func listEvent(cmd *cobra.Command, args []string) {
+	fmt.Println("List events")
+	start := time.Now()
+	events, err := evtvzd.ListEvents(settings)
+	if err != nil {
+		fmt.Println("There was an error shutting down the event: ", err)
+	}
+	for _, evt := range events {
+		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
+		if verbose {
+			evtvzd.InspectEvent(settings, evt)
+		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))
 }

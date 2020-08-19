@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/apeunit/evtvzd/pkg/config"
+	"github.com/apeunit/evtvzd/pkg/model"
 	"github.com/apeunit/evtvzd/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -119,5 +120,33 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 			return
 		}
 	}
+	return
+}
+
+// ListEvents list available events
+func ListEvents(settings config.Schema) (events []model.EvtvzE, err error) {
+	evtsBase, err := evts(settings, "")
+	if err != nil {
+		log.Error("ListEvents failed:", err)
+		return
+	}
+	filepath.Walk(evtsBase, func(subPath string, info os.FileInfo, err error) error {
+		if info.Name() == dockerHome {
+			log.Debugln("Folder", info.Name(), "skipped")
+			// skip docker folder
+			return filepath.SkipDir
+		}
+		if info.Name() == evtDescriptorFile {
+			log.Debugln("Event found", info.Name())
+			evt := model.EvtvzE{}
+			err := utils.LoadJSON(subPath, &evt)
+			if err != nil {
+				log.Error("ListEvents failed:", err)
+				return err
+			}
+			events = append(events, evt)
+		}
+		return nil
+	})
 	return
 }
