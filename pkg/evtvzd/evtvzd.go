@@ -72,7 +72,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 		log.Debug("InstallDockerMachine: downloaded file ", dwnFilePath, " has content-type ", ct)
 		switch ct {
 		case "application/octet-stream":
-			log.Debug("file is binary, moving to the destination path")
+			log.Debugln("InstallDockerMachine: downloaded file is binary, moving to the destination path")
 			err = os.Rename(dwnFilePath, targetPath)
 			if err != nil {
 				log.Error("InstallDockerMachine: ", err)
@@ -113,7 +113,11 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 		return
 	}
 	for dName, driver := range settings.DockerMachine.Drivers {
-		log.Debug("InstallDockerMachine: processing driver ", dName)
+		log.Debugln("InstallDockerMachine: processing driver", dName)
+		if len(driver.BinaryURL) == 0 {
+			log.Debugln("InstallDockerMachine: driver", dName, "does not require installation (download url not provided)")
+			continue
+		}
 		err = dine(driver.Binary, driver.BinaryURL)
 		if err != nil {
 			log.Error("InstallDockerMachine: ", err)
