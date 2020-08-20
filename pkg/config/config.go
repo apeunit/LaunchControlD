@@ -20,4 +20,5 @@ type DockerMachineDriver struct {
 	BinaryURL string   `mapstructure:"binary_url,omitempty"`
 	Binary    string   `mapstructure:"binary,omitempty"`
 	Params    []string `mapstructure:"params,omitempty"`
+	Env       []string `mapstructure:"env,omitempty"`
 }

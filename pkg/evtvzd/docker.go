@@ -20,10 +20,13 @@ func dockerEnv(settings config.Schema, evt model.EvtvzE) (env []string, err erro
 		return
 	}
 	envHome := fmt.Sprintf("HOME=%s", home)
-	env = []string{envHome, envPath}
+	// get the env var from the driver
+	env = settings.DockerMachine.Drivers[evt.Provider].Env
+	env = append(env, envHome, envPath)
 	return
 }
 
+// InspectEvent inspect status of the infrastructure for an event
 func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
