@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/apeunit/evtvzd/pkg/config"
 	"github.com/apeunit/evtvzd/pkg/model"
@@ -12,8 +13,9 @@ import (
 )
 
 func dockerEnv(settings config.Schema, evt model.EvtvzE) (env []string, err error) {
-	// set the path to find the executable
-	envPath := fmt.Sprintf("PATH=%s", bin(settings, ""))
+	// set the path to find executable
+	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
+	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
 	// set the home path for the command
 	home, err := evts(settings, evt.ID()) // this gives you the relative path to the event home
 	if err != nil {

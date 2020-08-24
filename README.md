@@ -2,9 +2,9 @@
 
 The command & control server for the Eventivize project
 
-## Configuration 
+## Configuration
 
-The evtvzd project requires a configuration file to run properly, here is an example:
+The evtvzd project **requires** a configuration file to run properly, here is an example `config.yaml` file:
 
 ```yaml
 ---
@@ -12,6 +12,10 @@ The evtvzd project requires a configuration file to run properly, here is an exa
 workspace: "/tmp/workspace"
 # this section is docker-machine configuration
 docker_machine:
+  # add additional folders to the search path while executing the docker-machine command
+  search_path:
+  - "/usr/local/bin"
+  - "/usr/bin"
   # version of the docker-machine release (only for reference)
   version: "0.16.2"
   binary_url: https://github.com/docker/machine/releases/download/v0.16.2/docker-machine-Linux-x86_64
@@ -48,11 +52,12 @@ Other drivers can be added in the configuration file (a list of available driver
 
 ## Usage
 
-The first step is to setup the environment unsing the command
+The first step is to setup the environment using the command
 
 ```sh
 > evtvzd setup [--config config.yaml]
 ```
+
 
 > 💡: the default location for the config file is `/etc/evtvzd/config.yaml`
 
@@ -93,6 +98,21 @@ to list the available events and the status of their nodes run:
 ```
 > evtvzd events list --verbose
 ```
+
+# Troubleshooting
+
+Here are some common errors that you may encounter in while running the `evtvzd` and also how to fix them.
+
+### Config file not found:
+
+```txt
+Error loading config file:  : Config File "config" Not Found in "[/home/andrea/Documents/workspaces/blockchain/eventivize/evtvzd/dist /etc/evtvzd]"
+```
+
+**Cause**: no valid configuration file was found
+
+**Soultion**: create a config file, using the [template above](#configuration)
+
 
 # References
 1. [Create a docker image programmatically](https://docs.docker.com/engine/api/sdk/examples/)
