@@ -1,5 +1,8 @@
 # LaunchControlD
 
+
+:warning: **project undergoing renaming** :warning: 
+
 The command & control server for the LaunchControl project
 
 ## Configuration
