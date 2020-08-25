@@ -1,4 +1,4 @@
-package evtvzd
+package LaunchControlD
 
 import (
 	"io/ioutil"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apeunit/evtvzd/pkg/config"
+	"github.com/apeunit/lctrld/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 

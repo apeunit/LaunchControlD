@@ -1,4 +1,4 @@
-package evtvzd
+package LaunchControlD
 
 import (
 	"fmt"
@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/apeunit/evtvzd/pkg/config"
-	"github.com/apeunit/evtvzd/pkg/model"
-	"github.com/apeunit/evtvzd/pkg/utils"
+	"github.com/apeunit/lctrld/pkg/config"
+	"github.com/apeunit/lctrld/pkg/model"
+	"github.com/apeunit/lctrld/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

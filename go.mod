@@ -1,4 +1,4 @@
-module github.com/apeunit/evtvzd
+module github.com/apeunit/LaunchControlD
 
 go 1.14
 

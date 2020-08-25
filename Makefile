@@ -1,19 +1,19 @@
 GOFILES = $(shell find . -name '*.go' -not -path './vendor/*')
 GOPACKAGES = $(shell go list ./...  | grep -v /vendor/)
 GIT_DESCR = $(shell git describe --tags --always)
-APP=evtvzd
+APP=lctrld
 # build output folder
 OUTPUTFOLDER = dist
 # docker image
 DOCKER_REGISTRY = noandrea
-DOCKER_IMAGE = evtvzd
+DOCKER_IMAGE = LaunchControlD
 DOCKER_TAG = $(GIT_DESCR)
 # build paramters
 OS = linux
 ARCH = amd64
 # K8S
 K8S_NAMESPACE = geo
-K8S_DEPLOYMENT = evtvzd
+K8S_DEPLOYMENT = LaunchControlD
 
 .PHONY: list
 list:

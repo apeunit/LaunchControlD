@@ -1,10 +1,10 @@
-# EVTVZD
+# LaunchControlD
 
-The command & control server for the Eventivize project
+The command & control server for the LaunchControl project
 
 ## Configuration
 
-The evtvzd project **requires** a configuration file to run properly, here is an example `config.yaml` file:
+The LaunchControlD project **requires** a configuration file to run properly, here is an example `config.yaml` file:
 
 ```yaml
 ---
@@ -55,11 +55,11 @@ Other drivers can be added in the configuration file (a list of available driver
 The first step is to setup the environment using the command
 
 ```sh
-> evtvzd setup [--config config.yaml]
+> lctrld setup [--config config.yaml]
 ```
 
 
-> 💡: the default location for the config file is `/etc/evtvzd/config.yaml`
+> 💡: the default location for the config file is `/etc/lctrld/config.yaml`
 
 This command will setup the environment, download docker-machine and the drivers and create the necessary folders.
 It is usually necessary to run the setup only once, but you may have to run it again if you change the configuration, 
@@ -72,13 +72,13 @@ like for example you add new drivers.
 To manage the events lifecycle use the command 
 
 ```sh
-> evtvzd events
+> lctrld events
 ```
 
 Example: To create a new event run the command
 
 ```sh
-> evtvzd events new \
+> lctrld events new \
 --provider hetzner \
 --token EVTX \
 --coinbase 10000000 \
@@ -96,17 +96,17 @@ The chain will also have an additional token EVTX with a coinbase of 10_000k tok
 to list the available events and the status of their nodes run:
 
 ```
-> evtvzd events list --verbose
+> lctrld events list --verbose
 ```
 
 # Troubleshooting
 
-Here are some common errors that you may encounter in while running the `evtvzd` and also how to fix them.
+Here are some common errors that you may encounter in while running the `LaunchControlD` and also how to fix them.
 
 ### Config file not found:
 
 ```txt
-Error loading config file:  : Config File "config" Not Found in "[/home/andrea/Documents/workspaces/blockchain/eventivize/evtvzd/dist /etc/evtvzd]"
+Error loading config file:  : Config File "config" Not Found in "[/home/andrea/Documents/workspaces/blockchain/eventivize/lctrld/dist /etc/lctrld]"
 ```
 
 **Cause**: no valid configuration file was found
@@ -117,3 +117,6 @@ Error loading config file:  : Config File "config" Not Found in "[/home/andrea/D
 # References
 1. [Create a docker image programmatically](https://docs.docker.com/engine/api/sdk/examples/)
 2. [Docker machine](https://docs.docker.com/machine)
+
+
+23c2918c58ED82BC0C8eEC3dD7e78Fdb44D045d6

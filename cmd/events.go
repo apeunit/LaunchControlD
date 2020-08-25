@@ -20,8 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apeunit/evtvzd/pkg/evtvzd"
-	"github.com/apeunit/evtvzd/pkg/model"
+	"github.com/apeunit/lctrld/pkg/model"
 	"github.com/spf13/cobra"
 )
 
@@ -102,7 +101,7 @@ func setupEvent(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println("Here we go!!")
-	err := evtvzd.DeployEvent(settings, event)
+	err := LaunchControlD.DeployEvent(settings, event)
 	if err != nil {
 		fmt.Println("There was an error, run the command with --debug for more info:", err)
 	}
@@ -122,7 +121,7 @@ func tearDownEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("Teardown Event")
 	fmt.Println("Event ID is", args[0])
 	start := time.Now()
-	err := evtvzd.DestroyEvent(settings, args[0])
+	err := LaunchControlD.DestroyEvent(settings, args[0])
 	if err != nil {
 		fmt.Println("There was an error shutting down the event: ", err)
 	}
@@ -140,14 +139,14 @@ var listEventCmd = &cobra.Command{
 func listEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("List events")
 	start := time.Now()
-	events, err := evtvzd.ListEvents(settings)
+	events, err := LaunchControlD.ListEvents(settings)
 	if err != nil {
 		fmt.Println("There was an error shutting down the event: ", err)
 	}
 	for _, evt := range events {
 		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
 		if verbose {
-			evtvzd.InspectEvent(settings, evt)
+			LaunchControlD.InspectEvent(settings, evt)
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))

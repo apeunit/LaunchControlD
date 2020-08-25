@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/apeunit/evtvzd/pkg/config"
+	"github.com/apeunit/lctrld/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -30,8 +30,8 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "evtvzd",
-	Short: "The Eventivize command & control service",
+	Use:   "lctrld",
+	Short: "The LaunchControl command & control service",
 	Long:  ``,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -54,7 +54,7 @@ var settings config.Schema
 func init() {
 	cobra.OnInitialize(initConfig)
 	// config file
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.evtvzd.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is /etc/lctrld/config.yaml)")
 	// verbose logging
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
 }
@@ -80,9 +80,9 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Search config in home directory with name ".evtvzd" (without extension).
+		// Search config in home directory with name ".LaunchControlD" (without extension).
 		viper.AddConfigPath(".")
-		viper.AddConfigPath("/etc/evtvzd")
+		viper.AddConfigPath("/etc/lctrld")
 		viper.SetConfigName("config")
 	}
 
