@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/apeunit/lctrld/pkg/utils"
+	"github.com/apeunit/LaunchControlD/pkg/utils"
 	"github.com/gosimple/slug"
 )
 

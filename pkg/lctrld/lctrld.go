@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/apeunit/lctrld/pkg/config"
-	"github.com/apeunit/lctrld/pkg/model"
-	"github.com/apeunit/lctrld/pkg/utils"
+	"github.com/apeunit/LaunchControlD/pkg/config"
+	"github.com/apeunit/LaunchControlD/pkg/model"
+	"github.com/apeunit/LaunchControlD/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

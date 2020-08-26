@@ -20,7 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apeunit/lctrld/pkg/model"
+	"github.com/apeunit/LaunchControlD/pkg/lctrld"
+	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/spf13/cobra"
 )
 
@@ -101,7 +102,7 @@ func setupEvent(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println("Here we go!!")
-	err := LaunchControlD.DeployEvent(settings, event)
+	err := lctrld.DeployEvent(settings, event)
 	if err != nil {
 		fmt.Println("There was an error, run the command with --debug for more info:", err)
 	}
@@ -121,7 +122,7 @@ func tearDownEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("Teardown Event")
 	fmt.Println("Event ID is", args[0])
 	start := time.Now()
-	err := LaunchControlD.DestroyEvent(settings, args[0])
+	err := lctrld.DestroyEvent(settings, args[0])
 	if err != nil {
 		fmt.Println("There was an error shutting down the event: ", err)
 	}
@@ -139,14 +140,14 @@ var listEventCmd = &cobra.Command{
 func listEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("List events")
 	start := time.Now()
-	events, err := LaunchControlD.ListEvents(settings)
+	events, err := lctrld.ListEvents(settings)
 	if err != nil {
 		fmt.Println("There was an error shutting down the event: ", err)
 	}
 	for _, evt := range events {
 		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
 		if verbose {
-			LaunchControlD.InspectEvent(settings, evt)
+			lctrld.InspectEvent(settings, evt)
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))

@@ -1,4 +1,4 @@
-package LaunchControlD
+package lctrld
 
 import (
 	"io/ioutil"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apeunit/lctrld/pkg/config"
+	"github.com/apeunit/LaunchControlD/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 

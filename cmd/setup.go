@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/apeunit/lctrld/pkg/lctrld"
+	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/spf13/cobra"
 )
 

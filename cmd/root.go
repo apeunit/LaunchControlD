@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/apeunit/lctrld/pkg/config"
+	"github.com/apeunit/LaunchControlD/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
