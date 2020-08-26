@@ -18,17 +18,17 @@ const (
 
 // EvtvzE maintain the status of an event
 type EvtvzE struct {
-	TokenSymbol string          `json:"token_symbol,omitempty"` // token symbool
-	Coinbase    uint64          `json:"coinbase,omitempty"`     // total amount of tokens at stake
-	Stake       uint64          `json:"stake,omitempty"`        // stake for each validator
-	Owner       string          `json:"owner,omitempty"`        // email address of the owner
-	Validators  []string        `json:"validators,omitempty"`   // email addresses for the validators
-	Provider    string          `json:"provider,omitempty"`     // provider for provisioning
-	NodeIPs     []string        `json:"node_i_ps,omitempty"`    // ip addresses of the nodes
-	CreatedOn   time.Time       `json:"created_on,omitempty"`
-	StartsOn    time.Time       `json:"starts_on,omitempty"`
-	EndsOn      time.Time       `json:"ends_on,omitempty"`
-	State       map[string]Node `json:"state,omitempty"`
+	TokenSymbol string                   `json:"token_symbol,omitempty"` // token symbool
+	Coinbase    uint64                   `json:"coinbase,omitempty"`     // total amount of tokens at stake
+	Stake       uint64                   `json:"stake,omitempty"`        // stake for each validator
+	Owner       string                   `json:"owner,omitempty"`        // email address of the owner
+	Validators  []string                 `json:"validators,omitempty"`   // email addresses for the validators
+	Provider    string                   `json:"provider,omitempty"`     // provider for provisioning
+	NodeIPs     []string                 `json:"node_i_ps,omitempty"`    // ip addresses of the nodes
+	CreatedOn   time.Time                `json:"created_on,omitempty"`
+	StartsOn    time.Time                `json:"starts_on,omitempty"`
+	EndsOn      time.Time                `json:"ends_on,omitempty"`
+	State       map[string]MachineConfig `json:"state,omitempty"`
 }
 
 // NewEvtvzE helper for a new event
@@ -41,7 +41,7 @@ func NewEvtvzE(symbol, owner string, coinbase uint64) (e EvtvzE) {
 		Provider:    DefaultProvider,
 		CreatedOn:   time.Now(),
 		StartsOn:    time.Now(),
-		State:       make(map[string]Node),
+		State:       make(map[string]MachineConfig),
 	}
 }
 
@@ -70,9 +70,15 @@ func (e EvtvzE) NodeID(n int) string {
 	return slug.Make(fmt.Sprintf("%v %v %v", e.TokenSymbol, e.Hash(), n))
 }
 
-type Node struct {
-	ID        string `json:"id,omitempty"`
-	IP        string `json:"ip,omitempty"`
-	Validator string `json:"validator,omitempty"`
-	SSHKey    string `json:"ssh_key,omitempty"`
+// MachineConfig holds the configuration of a Machine
+type MachineConfig struct {
+	ID         string `json:"Name,omitempty"`
+	DriverName string `json:"driverName,omitempty"`
+	Instance   struct {
+		IPAddress   string `json:"IPAddress,omitempty"`
+		MachineName string `json:"MachineName,omitempty"`
+		SSHUser     string `json:"SSHUser,omitempty"`
+		SSHPort     int    `json:"SSHPort,omitempty"`
+		SSHKeyPath  string `json:"SSHKeyPath,omitempty"`
+	} `json:"Driver,omitempty"`
 }

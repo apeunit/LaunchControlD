@@ -113,7 +113,9 @@ func Provision(settings config.Schema, evt model.EvtvzE) (err error) {
 	if err != nil {
 		return
 	}
-
+	// init docker nodes map
+	evt.State = make(map[string]model.MachineConfig)
+	// run the thing
 	for i, v := range evt.Validators {
 		host := evt.NodeID(i)
 		driver := settings.DockerMachine.Drivers[evt.Provider]
@@ -123,19 +125,26 @@ func Provision(settings config.Schema, evt model.EvtvzE) (err error) {
 		p := []string{"create", "--driver", evt.Provider}
 		p = append(p, driver.Params...)
 		p = append(p, host)
-		log.Debug("DeployEvent cmd: ", dmBin, evt.Provider, host)
+		log.Debug("Provision cmd: ", dmBin, evt.Provider, host)
 		/// prepare the command
 		cmd := exec.Command(dmBin, p...)
 		// add the binary folder to the exec path
 		cmd.Env = evnVars
-		log.Debug("DeployEvent env vars set to ", cmd.Env)
+		log.Debug("Provision env vars set to ", cmd.Env)
 		// execute the command
 		out, err = cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("cmd.Run() failed with %s, %s\n", err, out)
+			log.Errorf("Provision cmd failed with %s, %s\n", err, out)
 			break
 		}
-		log.Debug("DeployEvent cmd ouput: ", string(out), err)
+		log.Debug("Provision cmd output: ", string(out), err)
+		// load the configuration of the machine
+		mc, err := machineConfig(settings, evt.ID(), i)
+		if err != nil {
+			log.Errorf("Provision read machine config error:", err)
+			break
+		}
+		evt.State[v] = mc
 	}
 	if err != nil {
 		return

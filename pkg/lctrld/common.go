@@ -1,12 +1,15 @@
 package lctrld
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
+	"github.com/apeunit/LaunchControlD/pkg/model"
+	"github.com/apeunit/LaunchControlD/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,6 +31,17 @@ func tmp(settings config.Schema) (string, error) {
 
 func evts(settings config.Schema, dir string) (string, error) {
 	return _absPath(_path(settings.Workspace, evtsDir, dir))
+}
+
+// machineHome get the path of a docker-machine instance home
+func machineHome(settings config.Schema, evtID string, machineID int) string {
+	return _path(settings.Workspace, evtsDir, evtID, ".docker", "machine", "machines", fmt.Sprintf("%s-%d", evtID, machineID))
+}
+
+// machineConfig return configuration of a docker machine
+func machineConfig(settings config.Schema, evtID string, machineID int) (mc model.MachineConfig, err error) {
+	err = utils.LoadJSON(_path(machineHome(settings, evtID, machineID), "config.json"), &mc)
+	return
 }
 
 func evtDescriptor(settings config.Schema, evtID string) (path string, err error) {
