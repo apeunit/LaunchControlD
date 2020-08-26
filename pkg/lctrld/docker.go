@@ -103,8 +103,8 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 	return
 }
 
-// DeployEvent deploy docker
-func DeployEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+// Provision provision the infrastructure for the event
+func Provision(settings config.Schema, evt model.EvtvzE) (err error) {
 	// Outputter
 	var out []byte
 	dmBin := dmBin(settings)
