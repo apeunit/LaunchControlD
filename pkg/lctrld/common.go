@@ -44,12 +44,24 @@ func machineConfig(settings config.Schema, evtID string, machineID int) (mc mode
 	return
 }
 
+// evtDescriptor returns the absolute path to the event descriptor file
 func evtDescriptor(settings config.Schema, evtID string) (path string, err error) {
 	path, err = evts(settings, evtID)
 	if err != nil {
 		return
 	}
 	path = _path(path, evtDescriptorFile)
+	return
+}
+
+//loadEvent returns the Event model of the specified event ID
+func loadEvent(settings config.Schema, evtID string) (evt model.EvtvzE, err error) {
+	path, err := evts(settings, evtID)
+	if err != nil {
+		return
+	}
+	path = _path(path, evtDescriptorFile)
+	err = utils.LoadJSON(path, &evt)
 	return
 }
 
