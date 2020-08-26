@@ -102,7 +102,11 @@ func setupEvent(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println("Here we go!!")
-	err := lctrld.Provision(settings, event)
+	err := lctrld.CreateEvent(settings, event)
+	if err != nil {
+		fmt.Println("There was an error, run the command with --debug for more info:", err)
+	}
+	err = lctrld.Provision(settings, event.ID())
 	if err != nil {
 		fmt.Println("There was an error, run the command with --debug for more info:", err)
 	}

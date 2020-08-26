@@ -104,7 +104,11 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt model.EvtvzE) (err error) {
+func Provision(settings config.Schema, evtID string) (err error) {
+	evt, err := loadEvent(settings, evtID)
+	if err != nil {
+		return
+	}
 	// Outputter
 	var out []byte
 	dmBin := dmBin(settings)
@@ -149,10 +153,6 @@ func Provision(settings config.Schema, evt model.EvtvzE) (err error) {
 	if err != nil {
 		return
 	}
-	p, err := evtDescriptor(settings, evt.ID())
-	if err != nil {
-		return
-	}
-	err = utils.StoreJSON(p, evt)
+	err = storeEvent(settings, evt)
 	return
 }

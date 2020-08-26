@@ -65,6 +65,17 @@ func loadEvent(settings config.Schema, evtID string) (evt model.EvtvzE, err erro
 	return
 }
 
+// storeEvent returns the Event model of the specified event ID
+func storeEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+	path, err := evts(settings, evt.ID())
+	if err != nil {
+		return
+	}
+	path = _path(path, evtDescriptorFile)
+	err = utils.StoreJSON(path, evt)
+	return
+}
+
 func _path(pieces ...string) string {
 	return filepath.Join(pieces...)
 }
