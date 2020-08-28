@@ -3,3 +3,4 @@ dist
 *.out
 workspace
 config.json
+config.yaml
