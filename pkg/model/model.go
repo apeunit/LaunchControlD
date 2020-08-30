@@ -81,4 +81,16 @@ type MachineConfig struct {
 		SSHPort     int    `json:"SSHPort,omitempty"`
 		SSHKeyPath  string `json:"SSHKeyPath,omitempty"`
 	} `json:"Driver,omitempty"`
+	PayloadConfig PayloadConfig `json:"PayloadConfig,omitempty"`
+}
+
+// PayloadConfig stores configuration details for the cosmos-sdk based payload
+type PayloadConfig struct {
+	Account struct {
+		Address  string `json:"address"`
+		Mnemonic string `json:"mnemonic"`
+	} `json:"Account,omitempty"`
+	TendermintNodeID string `json:"TendermintNodeID,omitempty"`
+	CLIConfigDir     string `json:"CLIConfigDir,omitempty"`
+	DaemonConfigDir  string `json:"DaemonConfigDir,omitempty"`
 }

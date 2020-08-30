@@ -3,6 +3,7 @@ package config
 type Schema struct {
 	Workspace     string        `mapstructure:"workspace,omitempty"`
 	DockerMachine DockerMachine `mapstructure:"docker_machine,omitempty"`
+	LaunchPayload LaunchPayload `mapstructure:"launch_payload,omitempty"`
 }
 
 // DockerMachine holds docker machine configuration
@@ -26,6 +27,8 @@ type DockerMachineDriver struct {
 
 // LaunchPayload holds metadata about launchpayloadd/launchpayloadcli
 type LaunchPayload struct {
-	BinaryURL string `mapstructure:"binary_url,omitempty"`
-	Binary    string `mapstructure:"binary,omitempty"`
+	BinaryURL  string `mapstructure:"binary_url,omitempty"`
+	BinaryPath string `mapstructure:"binary_path,omitempty"`
+	DaemonPath string `mapstructure:"daemon_path,omitempty"`
+	CLIPath    string `mapstructure:"cli_path,omitempty"`
 }
