@@ -118,7 +118,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 		return
 	}
 	// init docker nodes map
-	evt.State = make(map[string]model.MachineConfig)
+	evt.State = make(map[string]*model.MachineConfig)
 	// run the thing
 	for i, v := range evt.Validators {
 		host := evt.NodeID(i)
@@ -148,7 +148,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 			log.Errorf("Provision read machine config error:", err)
 			break
 		}
-		evt.State[v] = mc
+		evt.State[v] = &mc
 	}
 	if err != nil {
 		return

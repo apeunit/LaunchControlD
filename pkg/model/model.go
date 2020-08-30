@@ -18,17 +18,17 @@ const (
 
 // EvtvzE maintain the status of an event
 type EvtvzE struct {
-	TokenSymbol string                   `json:"token_symbol,omitempty"` // token symbool
-	Coinbase    uint64                   `json:"coinbase,omitempty"`     // total amount of tokens at stake
-	Stake       uint64                   `json:"stake,omitempty"`        // stake for each validator
-	Owner       string                   `json:"owner,omitempty"`        // email address of the owner
-	Validators  []string                 `json:"validators,omitempty"`   // email addresses for the validators
-	Provider    string                   `json:"provider,omitempty"`     // provider for provisioning
-	NodeIPs     []string                 `json:"node_i_ps,omitempty"`    // ip addresses of the nodes
-	CreatedOn   time.Time                `json:"created_on,omitempty"`
-	StartsOn    time.Time                `json:"starts_on,omitempty"`
-	EndsOn      time.Time                `json:"ends_on,omitempty"`
-	State       map[string]MachineConfig `json:"state,omitempty"`
+	TokenSymbol string                    `json:"token_symbol,omitempty"` // token symbool
+	Coinbase    uint64                    `json:"coinbase,omitempty"`     // total amount of tokens at stake
+	Stake       uint64                    `json:"stake,omitempty"`        // stake for each validator
+	Owner       string                    `json:"owner,omitempty"`        // email address of the owner
+	Validators  []string                  `json:"validators,omitempty"`   // email addresses for the validators
+	Provider    string                    `json:"provider,omitempty"`     // provider for provisioning
+	NodeIPs     []string                  `json:"node_i_ps,omitempty"`    // ip addresses of the nodes
+	CreatedOn   time.Time                 `json:"created_on,omitempty"`
+	StartsOn    time.Time                 `json:"starts_on,omitempty"`
+	EndsOn      time.Time                 `json:"ends_on,omitempty"`
+	State       map[string]*MachineConfig `json:"state,omitempty"`
 }
 
 // NewEvtvzE helper for a new event
@@ -41,7 +41,7 @@ func NewEvtvzE(symbol, owner string, coinbase uint64) (e EvtvzE) {
 		Provider:    DefaultProvider,
 		CreatedOn:   time.Now(),
 		StartsOn:    time.Now(),
-		State:       make(map[string]MachineConfig),
+		State:       make(map[string]*MachineConfig),
 	}
 }
 
