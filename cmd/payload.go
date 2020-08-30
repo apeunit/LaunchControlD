@@ -26,6 +26,6 @@ func init() {
 }
 
 func generateKeys(cmd *cobra.Command, args []string) {
-	err := lctrld.GenerateKeys(settings, args[0])
+	err := lctrld.InitDaemon(settings, args[0])
 	fmt.Println("GenerateKeys err:", err)
 }
