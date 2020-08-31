@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/spf13/cobra"
 )
@@ -13,19 +11,22 @@ var payloadCmd = &cobra.Command{
 	Long:  ``,
 }
 
-var generateKeysCmd = &cobra.Command{
-	Use:   "generatekeys",
+var payloadTestCmd = &cobra.Command{
+	Use:   "payloadtest",
 	Short: "Test commands that directly do things with the launchpayload",
 	Long:  ``,
-	Run:   generateKeys,
+	Run:   initCLI,
 }
 
 func init() {
 	rootCmd.AddCommand(payloadCmd)
-	payloadCmd.AddCommand(generateKeysCmd)
+	payloadCmd.AddCommand(payloadTestCmd)
 }
 
-func generateKeys(cmd *cobra.Command, args []string) {
-	err := lctrld.InitDaemon(settings, args[0])
-	fmt.Println("GenerateKeys err:", err)
+func initDaemon(cmd *cobra.Command, args []string) {
+	lctrld.InitDaemon(settings, args[0])
+}
+
+func initCLI(cmd *cobra.Command, args []string) {
+	lctrld.GenerateKeys(settings, args[0])
 }

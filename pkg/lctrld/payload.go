@@ -1,6 +1,7 @@
 package lctrld
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"path"
@@ -59,6 +60,40 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		state.PayloadConfig.TendermintNodeID = string(out)
 
 		fmt.Printf("State 2: %+v\n", state)
+	}
+
+	err = storeEvent(settings, evt)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// GenerateKeys generates keys for each validator. The specific command is
+// gaiacli keys add validatoremail -o json --keyring-backend test --home.... for
+// each node.
+func GenerateKeys(settings config.Schema, eventID string) (err error) {
+	evt, err := loadEvent(settings, eventID)
+	if err != nil {
+		return
+	}
+
+	for email, state := range evt.State {
+		fmt.Println("Node owner is", email)
+		fmt.Println("Node IP is", state.Instance.IPAddress)
+
+		args := []string{"keys", "add", email, "-o", "json", "--keyring-backend", "test", "--home", state.PayloadConfig.CLIConfigDir}
+		cmd := exec.Command(settings.LaunchPayload.CLIPath, args...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.CLIPath, args, err, out)
+			break
+		}
+
+		var result map[string]interface{}
+		json.Unmarshal(out, &result)
+		state.PayloadConfig.Account.Address = result["address"].(string)
+		state.PayloadConfig.Account.Mnemonic = result["mnemonic"].(string)
 	}
 
 	err = storeEvent(settings, evt)
