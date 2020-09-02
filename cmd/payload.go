@@ -11,22 +11,55 @@ var payloadCmd = &cobra.Command{
 	Long:  ``,
 }
 
-var payloadTestCmd = &cobra.Command{
-	Use:   "payloadtest",
-	Short: "Test commands that directly do things with the launchpayload",
+var initDaemonCmd = &cobra.Command{
+	Use:   "initdaemon",
+	Short: "Runs lctrld.InitDaemon",
 	Long:  ``,
-	Run:   initCLI,
+	Run:   initDaemon,
+}
+
+var generateKeysCmd = &cobra.Command{
+	Use:   "generatekeys",
+	Short: "Runs lctrld.InitDaemon",
+	Long:  ``,
+	Run:   generateKeys,
+}
+
+var addGenesisAccountsCmd = &cobra.Command{
+	Use:   "addgenesisaccounts",
+	Short: "Runs lctrld.InitDaemon",
+	Long:  ``,
+	Run:   addGenesisAccounts,
+}
+
+var genTxCmd = &cobra.Command{
+	Use:   "gentx",
+	Short: "Runs lctrld.GenesisTxs",
+	Long:  ``,
+	Run:   genTxs,
 }
 
 func init() {
 	rootCmd.AddCommand(payloadCmd)
-	payloadCmd.AddCommand(payloadTestCmd)
+	payloadCmd.AddCommand(initDaemonCmd)
+	payloadCmd.AddCommand(generateKeysCmd)
+	payloadCmd.AddCommand(addGenesisAccountsCmd)
+	payloadCmd.AddCommand(genTxCmd)
+
 }
 
 func initDaemon(cmd *cobra.Command, args []string) {
 	lctrld.InitDaemon(settings, args[0])
 }
 
-func initCLI(cmd *cobra.Command, args []string) {
+func generateKeys(cmd *cobra.Command, args []string) {
 	lctrld.GenerateKeys(settings, args[0])
+}
+
+func addGenesisAccounts(cmd *cobra.Command, args []string) {
+	lctrld.AddGenesisAccounts(settings, args[0])
+}
+
+func genTxs(cmd *cobra.Command, args []string) {
+	lctrld.GenesisTxs(settings, args[0])
 }

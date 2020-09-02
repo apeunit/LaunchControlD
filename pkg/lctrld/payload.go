@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	log "github.com/sirupsen/logrus"
@@ -15,14 +16,14 @@ func getConfigDir(settings config.Schema, eventID, nodeID string) (pathDaemon, p
 	if err != nil {
 		return
 	}
-
-	pathDaemon = path.Join(p, nodeID, "daemon")
-	pathCLI = path.Join(p, nodeID, "cli")
+	nodeIDsplit := strings.Split(nodeID, "-")
+	pathDaemon = path.Join(p, nodeIDsplit[len(nodeIDsplit)-1], "daemon")
+	pathCLI = path.Join(p, nodeIDsplit[len(nodeIDsplit)-1], "cli")
 	return
 }
 
 // InitDaemon runs gaiad init burnerchain --home
-// state.PayloadConfig.DaemonConfigDir
+// state.DaemonConfigDir
 // and gaiad tendermint show-node-id
 func InitDaemon(settings config.Schema, eventID string) (err error) {
 	evt, err := loadEvent(settings, eventID)
@@ -39,11 +40,11 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		if err != nil {
 			break
 		}
-		state.PayloadConfig.DaemonConfigDir = pathDaemon
-		state.PayloadConfig.CLIConfigDir = pathCLI
+		state.DaemonConfigDir = pathDaemon
+		state.CLIConfigDir = pathCLI
 		fmt.Printf("%+v\n", evt.State)
 
-		args := []string{"init", "burnerchain", "--home", state.PayloadConfig.DaemonConfigDir}
+		args := []string{"init", "burnerchain", "--home", state.DaemonConfigDir}
 		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -57,7 +58,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		if err != nil {
 			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
 		}
-		state.PayloadConfig.TendermintNodeID = string(out)
+		state.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
 
 		fmt.Printf("State 2: %+v\n", state)
 	}
@@ -82,7 +83,7 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 		fmt.Println("Node owner is", email)
 		fmt.Println("Node IP is", state.Instance.IPAddress)
 
-		args := []string{"keys", "add", email, "-o", "json", "--keyring-backend", "test", "--home", state.PayloadConfig.CLIConfigDir}
+		args := []string{"keys", "add", email, "-o", "json", "--keyring-backend", "test", "--home", state.CLIConfigDir}
 		cmd := exec.Command(settings.LaunchPayload.CLIPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -92,13 +93,55 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 
 		var result map[string]interface{}
 		json.Unmarshal(out, &result)
-		state.PayloadConfig.Account.Address = result["address"].(string)
-		state.PayloadConfig.Account.Mnemonic = result["mnemonic"].(string)
+		state.Account.Name = email
+		state.Account.Address = result["address"].(string)
+		state.Account.Mnemonic = result["mnemonic"].(string)
+		state.Account.GenesisBalance = evt.GenesisDeclaration()
+		fmt.Printf("%s -> %s with mnemonic \"%s\"\n", email, state.Account.Address, state.Account.Mnemonic)
 	}
 
 	err = storeEvent(settings, evt)
 	if err != nil {
 		return
+	}
+	return
+}
+
+func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
+	evt, err := loadEvent(settings, eventID)
+	if err != nil {
+		return
+	}
+
+	for _, state := range evt.State {
+		args := []string{"add-genesis-account", state.Account.Address, evt.GenesisDeclaration(), "--home", state.DaemonConfigDir}
+		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			break
+		}
+	}
+
+	return
+}
+
+func GenesisTxs(settings config.Schema, eventID string) (err error) {
+	evt, err := loadEvent(settings, eventID)
+	if err != nil {
+		return
+	}
+
+	for email, state := range evt.State {
+		stakeAmount := strings.Split(state.Account.GenesisBalance, ",")
+
+		args := []string{"gentx", "--name", email, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", state.CLIConfigDir, "--keyring-backend", "test", "--home", state.DaemonConfigDir}
+		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			break
+		}
 	}
 	return
 }
