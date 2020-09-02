@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/apeunit/LaunchControlD/pkg/utils"
@@ -70,27 +71,32 @@ func (e EvtvzE) NodeID(n int) string {
 	return slug.Make(fmt.Sprintf("%v %v %v", e.TokenSymbol, e.Hash(), n))
 }
 
+// GenesisDeclaration returns the string that should be passed to gaiad add-genesis-account
+func (e EvtvzE) GenesisDeclaration() string {
+	amount := e.Coinbase / uint64(e.ValidatorsCount())
+	return fmt.Sprintf("%v%s,%vstake", amount, strings.ToLower(e.TokenSymbol), e.Stake)
+}
+
 // MachineConfig holds the configuration of a Machine
 type MachineConfig struct {
-	ID         string `json:"Name,omitempty"`
-	DriverName string `json:"driverName,omitempty"`
-	Instance   struct {
+	ID               string  `json:"Name,omitempty"`
+	DriverName       string  `json:"DriverName,omitempty"`
+	Account          Account `json:"Account,omitempty"`
+	TendermintNodeID string  `json:"TendermintNodeID,omitempty"`
+	CLIConfigDir     string  `json:"CLIConfigDir,omitempty"`
+	DaemonConfigDir  string  `json:"DaemonConfigDir,omitempty"`
+	Instance         struct {
 		IPAddress   string `json:"IPAddress,omitempty"`
 		MachineName string `json:"MachineName,omitempty"`
 		SSHUser     string `json:"SSHUser,omitempty"`
 		SSHPort     int    `json:"SSHPort,omitempty"`
 		SSHKeyPath  string `json:"SSHKeyPath,omitempty"`
-	} `json:"Driver,omitempty"`
-	PayloadConfig PayloadConfig `json:"PayloadConfig,omitempty"`
+	} `json:"Instance,omitempty"`
 }
 
-// PayloadConfig stores configuration details for the cosmos-sdk based payload
-type PayloadConfig struct {
-	Account struct {
-		Address  string `json:"address"`
-		Mnemonic string `json:"mnemonic"`
-	} `json:"Account,omitempty"`
-	TendermintNodeID string `json:"TendermintNodeID,omitempty"`
-	CLIConfigDir     string `json:"CLIConfigDir,omitempty"`
-	DaemonConfigDir  string `json:"DaemonConfigDir,omitempty"`
+type Account struct {
+	Name           string `json:"name"`
+	Address        string `json:"address"`
+	Mnemonic       string `json:"mnemonic"`
+	GenesisBalance string `json:"genesis_balance"`
 }

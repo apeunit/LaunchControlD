@@ -25,7 +25,8 @@ type DockerMachineDriver struct {
 	Env       []string `mapstructure:"env,omitempty"`
 }
 
-// LaunchPayload holds metadata about launchpayloadd/launchpayloadcli
+// LaunchPayload holds metadata about the copy of the launchpayload that is
+// stored on the deployer's machine
 type LaunchPayload struct {
 	BinaryURL  string `mapstructure:"binary_url,omitempty"`
 	BinaryPath string `mapstructure:"binary_path,omitempty"`
