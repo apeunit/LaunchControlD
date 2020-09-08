@@ -46,6 +46,13 @@ var collectGenTxsCmd = &cobra.Command{
 	Run:   collectGenTxs,
 }
 
+var editConfigsCmd = &cobra.Command{
+	Use:   "editconfigs",
+	Short: "Runs lctrld.EditConfigs",
+	Long:  ``,
+	Run:   editConfigs,
+}
+
 func init() {
 	rootCmd.AddCommand(payloadCmd)
 	payloadCmd.AddCommand(initDaemonCmd)
@@ -53,6 +60,7 @@ func init() {
 	payloadCmd.AddCommand(addGenesisAccountsCmd)
 	payloadCmd.AddCommand(genTxCmd)
 	payloadCmd.AddCommand(collectGenTxsCmd)
+	payloadCmd.AddCommand(editConfigsCmd)
 
 }
 
@@ -74,4 +82,8 @@ func genTxs(cmd *cobra.Command, args []string) {
 
 func collectGenTxs(cmd *cobra.Command, args []string) {
 	lctrld.CollectGenesisTxs(settings, args[0])
+}
+
+func editConfigs(cmd *cobra.Command, args []string) {
+	lctrld.EditConfigs(settings, args[0])
 }

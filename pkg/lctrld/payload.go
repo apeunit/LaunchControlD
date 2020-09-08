@@ -54,13 +54,14 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 			return err
 		}
 
-		args = []string{"tendermint", "show-node-id"}
+		args = []string{"tendermint", "show-node-id", "--home", state.DaemonConfigDir}
 		cmd = exec.Command(settings.LaunchPayload.DaemonPath, args...)
 		out, err = cmd.CombinedOutput()
 		if err != nil {
 			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
 		}
 		state.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
+		fmt.Println("tendermint show-node-id said", out)
 
 		fmt.Printf("State 2: %+v\n", state)
 	}
@@ -214,6 +215,18 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 			log.Errorf("Copying %s to %s failed with %s\n", node0Genesis, newOtherGenesis, err)
 			break
 		}
+	}
+	return
+}
+
+func EditConfigs(settings config.Schema, eventID string) (err error) {
+	evt, err := loadEvent(settings, eventID)
+	if err != nil {
+		return
+	}
+
+	for email, state := range evt.State {
+		fmt.Printf("%s has tendermint-node-id %s and IP %s\n", email, state.TendermintNodeID, state.Instance.IPAddress)
 	}
 	return
 }
