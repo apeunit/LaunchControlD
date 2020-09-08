@@ -39,12 +39,20 @@ var genTxCmd = &cobra.Command{
 	Run:   genTxs,
 }
 
+var collectGenTxsCmd = &cobra.Command{
+	Use:   "collectgentxs",
+	Short: "Runs lctrld.CollectGenesisTxs",
+	Long:  ``,
+	Run:   collectGenTxs,
+}
+
 func init() {
 	rootCmd.AddCommand(payloadCmd)
 	payloadCmd.AddCommand(initDaemonCmd)
 	payloadCmd.AddCommand(generateKeysCmd)
 	payloadCmd.AddCommand(addGenesisAccountsCmd)
 	payloadCmd.AddCommand(genTxCmd)
+	payloadCmd.AddCommand(collectGenTxsCmd)
 
 }
 
@@ -62,4 +70,8 @@ func addGenesisAccounts(cmd *cobra.Command, args []string) {
 
 func genTxs(cmd *cobra.Command, args []string) {
 	lctrld.GenesisTxs(settings, args[0])
+}
+
+func collectGenTxs(cmd *cobra.Command, args []string) {
+	lctrld.CollectGenesisTxs(settings, args[0])
 }

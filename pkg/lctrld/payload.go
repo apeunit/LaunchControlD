@@ -3,6 +3,8 @@ package lctrld
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -44,7 +46,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		state.CLIConfigDir = pathCLI
 		fmt.Printf("%+v\n", evt.State)
 
-		args := []string{"init", "burnerchain", "--home", state.DaemonConfigDir}
+		args := []string{"init", fmt.Sprintf("%s node %s", email, state.ID), "--home", state.DaemonConfigDir, "--chain-id", evt.ID()}
 		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -112,14 +114,21 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
+	addresses := []string{}
+	for _, state := range evt.State {
+		addresses = append(addresses, state.Account.Address)
+	}
+	fmt.Println("addresses", addresses)
 
 	for _, state := range evt.State {
-		args := []string{"add-genesis-account", state.Account.Address, evt.GenesisDeclaration(), "--home", state.DaemonConfigDir}
-		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
-			break
+		for _, addr := range addresses {
+			args := []string{"add-genesis-account", addr, evt.GenesisDeclaration(), "--home", state.DaemonConfigDir}
+			cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+				break
+			}
 		}
 	}
 
@@ -131,15 +140,78 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
+	evtDir, err := evts(settings, evt.ID())
+	if err != nil {
+		return
+	}
+
+	// Ensure that the genesis txs destination directory exists
+	outputGenesisTxDir := path.Join(evtDir, "genesis_txs")
+	if _, err := os.Stat(outputGenesisTxDir); os.IsNotExist(err) {
+		os.Mkdir(outputGenesisTxDir, 0755)
+	}
 
 	for email, state := range evt.State {
+		outputDocument := path.Join(outputGenesisTxDir, fmt.Sprintf("%s.json", state.ID))
 		stakeAmount := strings.Split(state.Account.GenesisBalance, ",")
 
-		args := []string{"gentx", "--name", email, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", state.CLIConfigDir, "--keyring-backend", "test", "--home", state.DaemonConfigDir}
+		args := []string{"gentx", "--name", email, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", state.CLIConfigDir, "--keyring-backend", "test", "--home", state.DaemonConfigDir, "--output-document", outputDocument}
 		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			break
+		}
+
+	}
+	return
+}
+
+func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
+	evt, err := loadEvent(settings, eventID)
+	if err != nil {
+		return
+	}
+	evtDir, err := evts(settings, evt.ID())
+	if err != nil {
+		return
+	}
+	// Get the first validator/node and use it to generate the genesis.json with all gentxs.
+	// firstValidator := evt.Validators[0]
+
+	for _, state := range evt.State {
+		args := []string{"collect-gentxs", "--gentx-dir", path.Join(evtDir, "genesis_txs"), "--home", state.DaemonConfigDir}
+		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			break
+		}
+	}
+
+	// Although we just generated the genesis.json for every node (makes it
+	// easy to debug things) we only need one. Copy node 0's genesis.json to
+	// other node folders.
+	otherValidators := evt.Validators[1:]
+	pathToNode0Genesis := path.Join(evt.State[evt.Validators[0]].DaemonConfigDir, "config/genesis.json")
+	node0Genesis, err := os.Open(pathToNode0Genesis)
+	for _, validator := range otherValidators {
+		otherGenesis := path.Join(evt.State[validator].DaemonConfigDir, "config/genesis.json")
+		err := os.Remove(otherGenesis)
+		if err != nil {
+			log.Errorf("Removing %s failed with %s\n", otherGenesis, err)
+			break
+		}
+
+		newOtherGenesis, err := os.Create(otherGenesis)
+		if err != nil {
+			log.Errorf("Creating a blank %s failed with %s\n", newOtherGenesis, err)
+			break
+		}
+
+		_, err = io.Copy(newOtherGenesis, node0Genesis)
+		if err != nil {
+			log.Errorf("Copying %s to %s failed with %s\n", node0Genesis, newOtherGenesis, err)
 			break
 		}
 	}
