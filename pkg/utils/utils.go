@@ -52,7 +52,7 @@ func LoadJSON(filePath string, v interface{}) (err error) {
 
 // StoreJSON store a struct to a json file
 func StoreJSON(filePath string, v interface{}) (err error) {
-	data, err := json.Marshal(v)
+	data, err := json.Marshal(&v)
 	if err != nil {
 		return
 	}

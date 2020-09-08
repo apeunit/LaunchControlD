@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
+	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,7 +34,18 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		return
 	}
 
+	dmBin := dmBin(settings)
+	// set the path to find the executable
+	evnVars, err := dockerEnv(settings, evt)
+
 	for email, state := range evt.State {
+		ip, err := runCommand(dmBin, []string{"ip", state.ID}, evnVars)
+		if err != nil {
+			log.Error(err)
+			break
+		}
+		state.Instance.IPAddress = string(ip)
+
 		fmt.Println("Node owner is", email)
 		fmt.Println("Node IP is", state.Instance.IPAddress)
 
@@ -44,7 +56,6 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		}
 		state.DaemonConfigDir = pathDaemon
 		state.CLIConfigDir = pathCLI
-		fmt.Printf("%+v\n", evt.State)
 
 		args := []string{"init", fmt.Sprintf("%s node %s", email, state.ID), "--home", state.DaemonConfigDir, "--chain-id", evt.ID()}
 		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
@@ -61,11 +72,11 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
 		}
 		state.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
-		fmt.Println("tendermint show-node-id said", out)
 
-		fmt.Printf("State 2: %+v\n", state)
+		fmt.Printf("Final State: %+v\n", state)
 	}
 
+	fmt.Printf("evt now looks like: %+v\n", evt)
 	err = storeEvent(settings, evt)
 	if err != nil {
 		return
@@ -225,8 +236,33 @@ func EditConfigs(settings config.Schema, eventID string) (err error) {
 		return
 	}
 
+	// Build the persistent peer list
+	persistentPeerList := []string{}
 	for email, state := range evt.State {
 		fmt.Printf("%s has tendermint-node-id %s and IP %s\n", email, state.TendermintNodeID, state.Instance.IPAddress)
+		persistentPeerList = append(persistentPeerList, fmt.Sprintf("%s@%s:26656", state.TendermintNodeID, state.Instance.IPAddress))
+	}
+
+	// Insert the persistent peer list into each node's config.toml
+	for _, state := range evt.State {
+		configPath := path.Join(state.DaemonConfigDir, "config/config.toml")
+		t, err := toml.LoadFile(configPath)
+		if err != nil {
+			log.Errorf("Reading toml from file %s failed with %s", configPath, err)
+			break
+		}
+		t.SetPathWithComment([]string{"p2p", "persistent_peers"}, "persistent_peers has been automatically set by lctrld", false, strings.Join(persistentPeerList, ","))
+
+		w, err := os.Create(configPath)
+		if err != nil {
+			log.Errorf("Opening file %s in write-mode failed with %s", configPath, err)
+			break
+		}
+		_, err = t.WriteTo(w)
+		if err != nil {
+			log.Errorf("Writing TOML to %s failed with %s", configPath, err)
+			break
+		}
 	}
 	return
 }
