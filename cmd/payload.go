@@ -11,79 +11,23 @@ var payloadCmd = &cobra.Command{
 	Long:  ``,
 }
 
-var initDaemonCmd = &cobra.Command{
-	Use:   "initdaemon",
-	Short: "Runs lctrld.InitDaemon",
+var setupChainCmd = &cobra.Command{
+	Use:   "setup",
+	Short: "Does everything to setup a Cosmos-SDK based chain",
 	Long:  ``,
-	Run:   initDaemon,
-}
-
-var generateKeysCmd = &cobra.Command{
-	Use:   "generatekeys",
-	Short: "Runs lctrld.InitDaemon",
-	Long:  ``,
-	Run:   generateKeys,
-}
-
-var addGenesisAccountsCmd = &cobra.Command{
-	Use:   "addgenesisaccounts",
-	Short: "Runs lctrld.InitDaemon",
-	Long:  ``,
-	Run:   addGenesisAccounts,
-}
-
-var genTxCmd = &cobra.Command{
-	Use:   "gentx",
-	Short: "Runs lctrld.GenesisTxs",
-	Long:  ``,
-	Run:   genTxs,
-}
-
-var collectGenTxsCmd = &cobra.Command{
-	Use:   "collectgentxs",
-	Short: "Runs lctrld.CollectGenesisTxs",
-	Long:  ``,
-	Run:   collectGenTxs,
-}
-
-var editConfigsCmd = &cobra.Command{
-	Use:   "editconfigs",
-	Short: "Runs lctrld.EditConfigs",
-	Long:  ``,
-	Run:   editConfigs,
+	Run:   setupChain,
 }
 
 func init() {
 	rootCmd.AddCommand(payloadCmd)
-	payloadCmd.AddCommand(initDaemonCmd)
-	payloadCmd.AddCommand(generateKeysCmd)
-	payloadCmd.AddCommand(addGenesisAccountsCmd)
-	payloadCmd.AddCommand(genTxCmd)
-	payloadCmd.AddCommand(collectGenTxsCmd)
-	payloadCmd.AddCommand(editConfigsCmd)
-
+	payloadCmd.AddCommand(setupChainCmd)
 }
 
-func initDaemon(cmd *cobra.Command, args []string) {
+func setupChain(cmd *cobra.Command, args []string) {
 	lctrld.InitDaemon(settings, args[0])
-}
-
-func generateKeys(cmd *cobra.Command, args []string) {
 	lctrld.GenerateKeys(settings, args[0])
-}
-
-func addGenesisAccounts(cmd *cobra.Command, args []string) {
 	lctrld.AddGenesisAccounts(settings, args[0])
-}
-
-func genTxs(cmd *cobra.Command, args []string) {
 	lctrld.GenesisTxs(settings, args[0])
-}
-
-func collectGenTxs(cmd *cobra.Command, args []string) {
 	lctrld.CollectGenesisTxs(settings, args[0])
-}
-
-func editConfigs(cmd *cobra.Command, args []string) {
 	lctrld.EditConfigs(settings, args[0])
 }
