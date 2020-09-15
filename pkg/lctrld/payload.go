@@ -121,6 +121,8 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 	return
 }
 
+// AddGenesisAccounts runs gaiad add-genesis-account with the created addresses
+// and default initial balances
 func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
@@ -147,6 +149,8 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 	return
 }
 
+// GenesisTxs runs gentx to turn accounts into validator accounts and outputs
+// the genesis transactions into a single folder.
 func GenesisTxs(settings config.Schema, eventID string) (err error) {
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
@@ -179,6 +183,9 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 	return
 }
 
+// CollectGenesisTxs is run on every node's config directory from the single
+// directory where the genesis transactions were placed before. In the end, only
+// the first node's genesis.josn will be used.
 func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
@@ -230,6 +237,7 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 	return
 }
 
+// EditConfigs edits the config.toml of every node to have the same persistent_peers.
 func EditConfigs(settings config.Schema, eventID string) (err error) {
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
