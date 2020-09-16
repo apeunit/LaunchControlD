@@ -68,6 +68,7 @@ func init() {
 	eventsCmd.AddCommand(listEventCmd)
 	listEventCmd.Flags().BoolVar(&verbose, "verbose", false, "Print more details")
 
+	eventsCmd.AddCommand(deployPayloadCmd)
 }
 
 var event model.EvtvzE
@@ -159,4 +160,16 @@ func listEvent(cmd *cobra.Command, args []string) {
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))
+}
+
+var deployPayloadCmd = &cobra.Command{
+	Use:   "deploy",
+	Short: "tells the provisioned machines to run the docker image",
+	Long:  ``,
+	Args:  cobra.ExactArgs(1),
+	Run:   deployPayload,
+}
+
+func deployPayload(cmd *cobra.Command, args []string) {
+	lctrld.DeployPayload(settings, args[0])
 }

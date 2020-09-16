@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
@@ -154,5 +155,37 @@ func Provision(settings config.Schema, evtID string) (err error) {
 		return
 	}
 	err = storeEvent(settings, evt)
+	return
+}
+
+func DeployPayload(settings config.Schema, evtID string) (err error) {
+
+	evt, err := loadEvent(settings, evtID)
+	if err != nil {
+		return
+	}
+	dmBin := dmBin(settings)
+
+	for _, state := range evt.State {
+		envVars, err := dockerEnv(settings, evt)
+		if err != nil {
+			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+			break
+		}
+
+		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
+		splitMachineID := strings.Split(state.ID, "-") // evtx-d97517a3673688070aef-1
+		machineID, err := strconv.ParseInt(splitMachineID[len(splitMachineID)-1], 0, 64)
+		if err != nil {
+			log.Errorf("while jumping through hoops to get the machineID out of state.ID, strconv.ParseInt failed with %s", err)
+			break
+		}
+
+		machineHomeDir := machineHome(settings, evtID, int(machineID))
+		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
+
+		fmt.Printf("dmBin: %s, envVars: %s\n", dmBin, envVars)
+
+	}
 	return
 }
