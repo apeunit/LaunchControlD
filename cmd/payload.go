@@ -12,9 +12,10 @@ var payloadCmd = &cobra.Command{
 }
 
 var setupChainCmd = &cobra.Command{
-	Use:   "setup",
-	Short: "Does everything to setup a Cosmos-SDK based chain",
+	Use:   "setup EVENTID",
+	Short: "Does everything to initialize a Cosmos-SDK based payload for EVENTID",
 	Long:  ``,
+	Args:  cobra.ExactArgs(1),
 	Run:   setupChain,
 }
 
