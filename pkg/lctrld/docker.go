@@ -183,9 +183,23 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 
 		machineHomeDir := machineHome(settings, evtID, int(machineID))
 		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
+		pathDaemon, pathCLI, err := getConfigDir(settings, evtID, state.ID)
+		if err != nil {
+			log.Errorf("Error while getting Cosmos-SDK cli/daemon config directory: %s", err)
+			break
+		}
 
-		fmt.Printf("dmBin: %s, envVars: %s\n", dmBin, envVars)
+		fmt.Printf("dmBin: %s, envVars: %s\n pathDaemon: %s, pathCLI: %s\n", dmBin, envVars, pathDaemon, pathCLI)
 
+		// docker run -v /tmp/workspace/evts/evtx-d97517a3673688070aef/0/:/payload/config apeunit/launchpayload
+		args := []string{"run", "-v", fmt.Sprintf("%s:/payload/config", pathDaemon), "apeunit/launchpayload"}
+		fmt.Println("Running docker", args)
+		out, err := runCommand("docker", args, envVars)
+		if err != nil {
+			log.Errorf("docker run failed with %s", err)
+			break
+		}
+		fmt.Println("docker:", out)
 	}
 	return
 }
