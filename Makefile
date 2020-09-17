@@ -37,6 +37,10 @@ build-zip: build
 	sha1sum $(APP)-$(GIT_DESCR).zip
 	@echo done
 
+install: build
+	cp dist/lctrld $(GOPATH)/bin
+	@echo done
+
 test: test-all
 
 test-all:
