@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
@@ -159,44 +158,66 @@ func Provision(settings config.Schema, evtID string) (err error) {
 }
 
 func DeployPayload(settings config.Schema, evtID string) (err error) {
-
 	evt, err := loadEvent(settings, evtID)
 	if err != nil {
 		return
 	}
 	dmBin := dmBin(settings)
+	envVars, err := dockerEnv(settings, evt)
+	if err != nil {
+		log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+		return
+	}
 
 	for _, state := range evt.State {
-		envVars, err := dockerEnv(settings, evt)
-		if err != nil {
-			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
-			break
-		}
-
-		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
-		splitMachineID := strings.Split(state.ID, "-") // evtx-d97517a3673688070aef-1
-		machineID, err := strconv.ParseInt(splitMachineID[len(splitMachineID)-1], 0, 64)
-		if err != nil {
-			log.Errorf("while jumping through hoops to get the machineID out of state.ID, strconv.ParseInt failed with %s", err)
-			break
-		}
-
-		machineHomeDir := machineHome(settings, evtID, int(machineID))
-		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
 		pathDaemon, pathCLI, err := getConfigDir(settings, evtID, state.ID)
 		if err != nil {
 			log.Errorf("Error while getting Cosmos-SDK cli/daemon config directory: %s", err)
 			break
 		}
 
-		fmt.Printf("dmBin: %s, envVars: %s\n pathDaemon: %s, pathCLI: %s\n", dmBin, envVars, pathDaemon, pathCLI)
+		// docker-machine ssh mkdir -p /home/docker/nodeconfig
+		args := []string{"ssh", state.ID, "mkdir", "-p", "/home/docker/nodeconfig"}
+		_, err = runCommand(dmBin, args, envVars)
+		if err != nil {
+			log.Errorf("docker-machine %s failed with %s", args, err)
+			break
+		}
 
-		// docker run -v /tmp/workspace/evts/evtx-d97517a3673688070aef/0/:/payload/config apeunit/launchpayload
-		args := []string{"run", "-v", fmt.Sprintf("%s:/payload/config", pathDaemon), "apeunit/launchpayload"}
-		fmt.Println("Running docker", args)
+		// docker-machine scp -r pathDaemon evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
+		args = []string{"scp", "-r", pathDaemon, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
+		_, err = runCommand(dmBin, args, envVars)
+		if err != nil {
+			log.Errorf("docker-machine %s failed with %s", args, err)
+			break
+		}
+
+		// docker-machine scp -r pathCLI evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
+		args = []string{"scp", "-r", pathCLI, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
+		_, err = runCommand(dmBin, args, envVars)
+		if err != nil {
+			log.Errorf("docker-machine %s failed with %s", args, err)
+			break
+		}
+	}
+
+	for email, state := range evt.State {
+		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
+		machineID, err := state.NumberID()
+		if err != nil {
+			log.Errorf("state.NumberID() failed with %s", err)
+			break
+		}
+
+		machineHomeDir := machineHome(settings, evtID, machineID)
+		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
+
+		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
+		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "apeunit/launchpayload"}
+		fmt.Printf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		out, err := runCommand("docker", args, envVars)
 		if err != nil {
-			log.Errorf("docker run failed with %s", err)
+			log.Errorf("docker %s failed with %s", args, err)
 			break
 		}
 		fmt.Println("docker:", out)

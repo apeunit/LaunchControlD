@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -92,6 +93,12 @@ type MachineConfig struct {
 		SSHPort     int    `json:"SSHPort,omitempty"`
 		SSHKeyPath  string `json:"SSHKeyPath,omitempty"`
 	} `json:"Instance,omitempty"`
+}
+
+func (m MachineConfig) NumberID() (numberID int, err error) {
+	splitID := strings.Split(m.ID, "-") // evtx-d97517a3673688070aef-1
+	nID, err := strconv.ParseInt(splitID[len(splitID)-1], 0, 64)
+	return int(nID), err
 }
 
 type Account struct {
