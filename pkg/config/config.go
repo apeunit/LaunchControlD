@@ -4,6 +4,7 @@ type Schema struct {
 	Workspace     string        `mapstructure:"workspace,omitempty"`
 	DockerMachine DockerMachine `mapstructure:"docker_machine,omitempty"`
 	LaunchPayload LaunchPayload `mapstructure:"launch_payload,omitempty"`
+	EventParams   EventParams   `mapstructure:"event_params,omitempty"`
 }
 
 // DockerMachine holds docker machine configuration
@@ -32,4 +33,15 @@ type LaunchPayload struct {
 	BinaryPath string `mapstructure:"binary_path,omitempty"`
 	DaemonPath string `mapstructure:"daemon_path,omitempty"`
 	CLIPath    string `mapstructure:"cli_path,omitempty"`
+}
+
+// EventParams specifies how the genesis.json should be setup
+type EventParams struct {
+	GenesisAccounts []GenesisAccount `mapstructure:"genesis_accounts,omitempty"`
+}
+
+type GenesisAccount struct {
+	Name           string `mapstructure:"name,omitempty"`
+	GenesisBalance string `mapstructure:"genesis_balance,omitempty"`
+	Validator      bool   `mapstructure:"validator,omitempty"`
 }

@@ -155,13 +155,12 @@ func ListEvents(settings config.Schema) (events []model.EvtvzE, err error) {
 		}
 		if info.Name() == evtDescriptorFile {
 			log.Debugln("Event found", info.Name())
-			evt := model.EvtvzE{}
-			err := utils.LoadJSON(subPath, &evt)
+			evt, err := model.LoadEvtvzE(subPath)
 			if err != nil {
 				log.Error("ListEvents failed:", err)
 				return err
 			}
-			events = append(events, evt)
+			events = append(events, *evt)
 		}
 		return nil
 	})

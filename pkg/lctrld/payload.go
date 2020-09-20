@@ -46,8 +46,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		}
 		state.Instance.IPAddress = string(ip)
 
-		fmt.Println("Node owner is", email)
-		fmt.Println("Node IP is", state.Instance.IPAddress)
+		fmt.Printf("Node owned by validator %s is at %s\n", email, state.Instance.IPAddress)
 
 		// Make the config directory for the node CLI
 		pathDaemon, pathCLI, err := getConfigDir(settings, eventID, state.ID)
@@ -72,8 +71,6 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
 		}
 		state.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
-
-		fmt.Printf("Final State: %+v\n", state)
 	}
 
 	fmt.Printf("evt now looks like: %+v\n", evt)
@@ -84,20 +81,17 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 	return
 }
 
-// GenerateKeys generates keys for each validator. The specific command is
-// gaiacli keys add validatoremail -o json --keyring-backend test --home.... for
-// each node.
+// GenerateKeys generates keys for each genesis account (this includes validator
+// accounts). The specific command is gaiacli keys add validatoremail/some other name -o json
+// --keyring-backend test --home.... for each node.
 func GenerateKeys(settings config.Schema, eventID string) (err error) {
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
 
-	for email, state := range evt.State {
-		fmt.Println("Node owner is", email)
-		fmt.Println("Node IP is", state.Instance.IPAddress)
-
-		args := []string{"keys", "add", email, "-o", "json", "--keyring-backend", "test", "--home", state.CLIConfigDir}
+	for _, account := range evt.ValidatorAccounts() {
+		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", evt.State[account.Name].CLIConfigDir}
 		cmd := exec.Command(settings.LaunchPayload.CLIPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -107,11 +101,11 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 
 		var result map[string]interface{}
 		json.Unmarshal(out, &result)
-		state.Account.Name = email
-		state.Account.Address = result["address"].(string)
-		state.Account.Mnemonic = result["mnemonic"].(string)
-		state.Account.GenesisBalance = evt.GenesisDeclaration()
-		fmt.Printf("%s -> %s with mnemonic \"%s\"\n", email, state.Account.Address, state.Account.Mnemonic)
+
+		account.Address = result["address"].(string)
+		account.Mnemonic = result["mnemonic"].(string)
+
+		fmt.Printf("%s -> %s with mnemonic \"%s\"\n", account.Name, account.Address, account.Mnemonic)
 	}
 
 	err = storeEvent(settings, evt)
@@ -128,15 +122,10 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
-	addresses := []string{}
-	for _, state := range evt.State {
-		addresses = append(addresses, state.Account.Address)
-	}
-	fmt.Println("addresses", addresses)
 
 	for _, state := range evt.State {
-		for _, addr := range addresses {
-			args := []string{"add-genesis-account", addr, evt.GenesisDeclaration(), "--home", state.DaemonConfigDir}
+		for _, account := range evt.ValidatorAccounts() {
+			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", state.DaemonConfigDir}
 			cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
@@ -169,8 +158,10 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 
 	for email, state := range evt.State {
 		outputDocument := path.Join(outputGenesisTxDir, fmt.Sprintf("%s.json", state.ID))
-		stakeAmount := strings.Split(state.Account.GenesisBalance, ",")
+		stakeAmount := strings.Split(evt.Accounts[email].GenesisBalance, ",")
 
+		// Here we assume that last part of genesis_balance is the # of stake tokens
+		// launchpayloadd gentx --name v1@email.com --amount 10000stake --home-client ... --keyring-backend test --home ... --output-document ...
 		args := []string{"gentx", "--name", email, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", state.CLIConfigDir, "--keyring-backend", "test", "--home", state.DaemonConfigDir, "--output-document", outputDocument}
 		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
@@ -211,8 +202,8 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 	// Although we just generated the genesis.json for every node (makes it
 	// easy to debug things) we only need one. Copy node 0's genesis.json to
 	// other node folders.
-	otherValidators := evt.Validators[1:]
-	pathToNode0Genesis := path.Join(evt.State[evt.Validators[0]].DaemonConfigDir, "config/genesis.json")
+	otherValidators := evt.Validators()[1:]
+	pathToNode0Genesis := path.Join(evt.State[evt.Validators()[0]].DaemonConfigDir, "config/genesis.json")
 	node0Genesis, err := os.Open(pathToNode0Genesis)
 	for _, validator := range otherValidators {
 		otherGenesis := path.Join(evt.State[validator].DaemonConfigDir, "config/genesis.json")

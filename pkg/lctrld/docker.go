@@ -39,7 +39,7 @@ func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	dmBin := dmBin(settings)
 	// set the path to find the executable
 	evnVars, err := dockerEnv(settings, evt)
-	for i := range evt.Validators {
+	for i := range evt.Validators() {
 		host := evt.NodeID(i)
 		out, err := runCommand(dmBin, []string{"status", host}, evnVars)
 		if err != nil {
@@ -72,19 +72,18 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 		log.Error("DestroyEvent failed:", err)
 		return
 	}
-	evt := model.EvtvzE{}
-	err = utils.LoadJSON(p, &evt)
+	evt, err := model.LoadEvtvzE(p)
 	if err != nil {
 		return
 	}
 	// run the rm command for each validator
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerEnv(settings, *evt)
 	if err != nil {
 		return
 	}
-	for i, v := range evt.Validators {
+	for i, v := range evt.Validators() {
 		host := evt.NodeID(i)
 		//driver := settings.DockerMachine.Drivers[evt.Provider]
 		log.Infof("Node ID for %s is %s", v, host)
@@ -120,7 +119,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 	// init docker nodes map
 	evt.State = make(map[string]*model.MachineConfig)
 	// run the thing
-	for i, v := range evt.Validators {
+	for i, v := range evt.Validators() {
 		host := evt.NodeID(i)
 		driver := settings.DockerMachine.Drivers[evt.Provider]
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
 	"github.com/gosimple/slug"
 )
@@ -13,20 +14,16 @@ import (
 // defaults
 // TODO: this will have to be moved somewhere else
 const (
-	DefaultStake    = 1_000_000
-	DefaultCoinbase = 1_000_000_000
 	DefaultProvider = "hetzner"
 )
 
 // EvtvzE maintain the status of an event
 type EvtvzE struct {
 	TokenSymbol string                    `json:"token_symbol,omitempty"` // token symbool
-	Coinbase    uint64                    `json:"coinbase,omitempty"`     // total amount of tokens at stake
-	Stake       uint64                    `json:"stake,omitempty"`        // stake for each validator
 	Owner       string                    `json:"owner,omitempty"`        // email address of the owner
-	Validators  []string                  `json:"validators,omitempty"`   // email addresses for the validators
-	Provider    string                    `json:"provider,omitempty"`     // provider for provisioning
-	NodeIPs     []string                  `json:"node_i_ps,omitempty"`    // ip addresses of the nodes
+	Accounts    map[string]*Account       `json:"accounts,omitempty"`
+	Provider    string                    `json:"provider,omitempty"`  // provider for provisioning
+	NodeIPs     []string                  `json:"node_i_ps,omitempty"` // ip addresses of the nodes
 	CreatedOn   time.Time                 `json:"created_on,omitempty"`
 	StartsOn    time.Time                 `json:"starts_on,omitempty"`
 	EndsOn      time.Time                 `json:"ends_on,omitempty"`
@@ -34,22 +31,37 @@ type EvtvzE struct {
 }
 
 // NewEvtvzE helper for a new event
-func NewEvtvzE(symbol, owner string, coinbase uint64) (e EvtvzE) {
+func NewEvtvzE(symbol, owner, provider string, genesisAccounts []config.GenesisAccount) (e EvtvzE) {
+	accounts := make(map[string]*Account)
+	for _, acc := range genesisAccounts {
+		a := &Account{
+			Name:           acc.Name,
+			Address:        "",
+			Mnemonic:       "",
+			GenesisBalance: acc.GenesisBalance,
+			Validator:      acc.Validator,
+		}
+
+		accounts[acc.Name] = a
+	}
 	return EvtvzE{
 		TokenSymbol: symbol,
 		Owner:       owner,
-		Coinbase:    coinbase,
-		Stake:       DefaultStake,
-		Provider:    DefaultProvider,
+		Accounts:    accounts,
+		Provider:    provider,
+		NodeIPs:     nil,
 		CreatedOn:   time.Now(),
 		StartsOn:    time.Now(),
+		EndsOn:      time.Time{},
 		State:       make(map[string]*MachineConfig),
 	}
 }
 
-// ValidatorsCount returns the number of validators
-func (e EvtvzE) ValidatorsCount() int {
-	return len(e.Validators)
+// LoadEvtvzE is a convenience function that ensures you don't have to manually
+// create an empty models.Evtvze{} struct and use NewEvtvzE() all the time
+func LoadEvtvzE(path string) (evt *EvtvzE, err error) {
+	err = utils.LoadJSON(path, &evt)
+	return
 }
 
 // FormatAmount print the amount in a human readable format
@@ -59,7 +71,7 @@ func (e EvtvzE) FormatAmount(a uint64) string {
 
 // Hash Generate the event hash
 func (e EvtvzE) Hash() string {
-	return utils.ShortHash(e.TokenSymbol, e.Owner, fmt.Sprint(e.Coinbase))
+	return utils.ShortHash(e.TokenSymbol, e.Owner, e.Provider)
 }
 
 // ID generate a event identifier (determinitstic)
@@ -72,20 +84,49 @@ func (e EvtvzE) NodeID(n int) string {
 	return slug.Make(fmt.Sprintf("%v %v %v", e.TokenSymbol, e.Hash(), n))
 }
 
-// GenesisDeclaration returns the string that should be passed to gaiad add-genesis-account
-func (e EvtvzE) GenesisDeclaration() string {
-	amount := e.Coinbase / uint64(e.ValidatorsCount())
-	return fmt.Sprintf("%v%s,%vstake", amount, strings.ToLower(e.TokenSymbol), e.Stake)
+// Validators returns the names (emails) of the validators
+func (e EvtvzE) Validators() (v []string) {
+	for _, acc := range e.Accounts {
+		if acc.Validator {
+			v = append(v, acc.Name)
+		}
+	}
+	return
+}
+
+// ValidatorsCount returns the number of validators
+func (e EvtvzE) ValidatorsCount() int {
+	return len(e.Validators())
+}
+
+// ValidatorAccounts returns EvtvzE.Accounts while excluding accounts that are
+// not validators
+func (e EvtvzE) ValidatorAccounts() (a []*Account) {
+	for _, acc := range e.Accounts {
+		if acc.Validator {
+			a = append(a, acc)
+		}
+	}
+	return
+}
+
+// ExtraAccounts returns EvtvzE.Accounts excluding accounts that are validators
+func (e EvtvzE) ExtraAccounts() (a []*Account) {
+	for _, acc := range e.Accounts {
+		if !acc.Validator {
+			a = append(a, acc)
+		}
+	}
+	return
 }
 
 // MachineConfig holds the configuration of a Machine
 type MachineConfig struct {
-	ID               string  `json:"Name,omitempty"`
-	DriverName       string  `json:"DriverName,omitempty"`
-	Account          Account `json:"Account,omitempty"`
-	TendermintNodeID string  `json:"TendermintNodeID,omitempty"`
-	CLIConfigDir     string  `json:"CLIConfigDir,omitempty"`
-	DaemonConfigDir  string  `json:"DaemonConfigDir,omitempty"`
+	ID               string `json:"Name,omitempty"`
+	DriverName       string `json:"DriverName,omitempty"`
+	TendermintNodeID string `json:"TendermintNodeID,omitempty"`
+	CLIConfigDir     string `json:"CLIConfigDir,omitempty"`
+	DaemonConfigDir  string `json:"DaemonConfigDir,omitempty"`
 	Instance         struct {
 		IPAddress   string `json:"IPAddress,omitempty"`
 		MachineName string `json:"MachineName,omitempty"`
@@ -106,4 +147,15 @@ type Account struct {
 	Address        string `json:"address"`
 	Mnemonic       string `json:"mnemonic"`
 	GenesisBalance string `json:"genesis_balance"`
+	Validator      bool   `json:"validator"`
+}
+
+func NewAccount(name, address, mnemonic, genesisBalance string, validator bool) *Account {
+	return &Account{
+		Name:           name,
+		Address:        address,
+		Mnemonic:       mnemonic,
+		GenesisBalance: genesisBalance,
+		Validator:      validator,
+	}
 }

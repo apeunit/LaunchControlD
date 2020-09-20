@@ -34,6 +34,7 @@ var eventsCmd = &cobra.Command{
 	// 	fmt.Println("events called")
 	// },
 }
+var provider string
 
 func init() {
 	rootCmd.AddCommand(eventsCmd)
@@ -41,21 +42,8 @@ func init() {
 	// SETUP
 	// ******************
 	eventsCmd.AddCommand(setupEventCmd)
-	// token symbol
-	setupEventCmd.Flags().StringVarP(&event.TokenSymbol, "token", "t", "", "The token symbol for the Event")
-	setupEventCmd.MarkFlagRequired("token")
-	// event owner
-	setupEventCmd.Flags().StringVarP(&event.Owner, "owner", "o", "", "Set the owner address")
-	setupEventCmd.MarkFlagRequired("owner")
-	// validators emails
-	setupEventCmd.Flags().StringSliceVarP(&event.Validators, "email", "m", []string{}, "Set the validator addresses")
-	setupEventCmd.MarkFlagRequired("email")
-	// staking variables
-	setupEventCmd.Flags().Uint64VarP(&event.Coinbase, "coinbase", "b", model.DefaultCoinbase, "Amount of tokens to be available on the chain and distributed among the validators")
-	setupEventCmd.Flags().Uint64VarP(&event.Stake, "stake", "s", model.DefaultStake, "Amount of tokens at stake")
 	// provisioning
-	setupEventCmd.Flags().StringVar(&event.Provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
-	// TODO add more parameters like: startDate, endDate,
+	setupEventCmd.Flags().StringVar(&provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
 
 	// ******************
 	// TEARDOWN
@@ -71,14 +59,14 @@ func init() {
 	eventsCmd.AddCommand(deployPayloadCmd)
 }
 
-var event model.EvtvzE
 var verbose bool
 
 // setupEventCmd represents the setupEvent command
 var setupEventCmd = &cobra.Command{
-	Use:   "new",
+	Use:   "new token_symbol owner_email",
 	Short: "Setup a new event",
 	Long:  ``,
+	Args:  cobra.ExactArgs(2),
 	Run:   setupEvent,
 }
 
@@ -86,14 +74,20 @@ func setupEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("Preparing the environment")
 	start := time.Now()
 
-	vc := event.ValidatorsCount()
-	tpv := event.Coinbase / uint64(vc)
+	event := model.NewEvtvzE(args[0], args[1], provider, settings.EventParams.GenesisAccounts)
 
+	vc := event.ValidatorsCount()
+
+	fmt.Printf("%+v\n", event)
 	fmt.Println("Summary:")
 	fmt.Printf("there are %v validators\n", vc)
-	fmt.Printf("each with %v stake\n", event.Stake)
-	fmt.Printf("and a total coinbase of %s\n", event.FormatAmount(event.Coinbase))
-	fmt.Printf("that will be distributed over the %v validators (~ %s each).\n", vc, event.FormatAmount(tpv))
+	for _, acc := range event.ValidatorAccounts() {
+		fmt.Printf("Validator %s has initial balance of %+v\n", acc.Name, acc.GenesisBalance)
+	}
+	fmt.Printf("Including other accounts, the genesis account state is:\n")
+	for k, v := range event.Accounts {
+		fmt.Printf("%s: %+v\n", k, v)
+	}
 	fmt.Printf("Finally will be deploying %v servers+nodes (1 for each validators) on %s\n", vc, event.Provider)
 	fmt.Print("Shall we proceed? [Y/n]:")
 	proceed := "Y"
