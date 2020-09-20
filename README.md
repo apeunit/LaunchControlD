@@ -50,10 +50,22 @@ launch_payload:
   binary_path: "/tmp/workspace/bin"
   daemon_path: "/tmp/workspace/bin/launchpayloadd"
   cli_path: "/tmp/workspace/bin/launchpayloadcli"
-  initial_balances:
-    v1@email.com: "500drops,1000000evtx,10000stake"
-    v2@email.com: "500drops,1000000evtx,10000stake"
-    dropgiver: "10000000000drops,10000stake"
+
+
+event_params:
+  genesis_accounts:
+    -
+      name: "v1@email.com"
+      genesis_balance: "500drops,1000000evtx,10000stake"
+      validator: true
+    -
+      name: "v2@email.com"
+      genesis_balance: "500drops,1000000evtx,10000stake"
+      validator: true
+    -
+      name: "dropgiver"
+      genesis_balance: "10000000000drops,10000stake"
+      validator: false
 
 ```
 
@@ -89,24 +101,13 @@ To manage the events lifecycle use the command
 Example: To create a new event run the command
 
 ```sh
-> lctrld events new \
---provider hetzner \
---token EVTX \
---coinbase 10000000 \
---owner owner@emailc.om \
--m validator_n1@email.com \
--m validator_n2@email.com \
--m validator_n3@email.com \
--m validator_n4@email.com \
---stake 10000
+> lctrld events new drop owner@email.com
 ```
+This will start as many cx11 instances on hetzner as there were validators specified in the config.yaml, one instance for each validator.
 
-This will start 4 cx11 instances on hetzner with a node each, one for each validator. Each validator will have a stake of 10k stake tokens.
-The chain will also have an additional token EVTX with a coinbase of 10_000k tokens, each validator account will also own 10_000k/4 EVTX tokens.
+To list the available events and the status of their nodes run:
 
-to list the available events and the status of their nodes run:
-
-```
+```sh
 > lctrld events list --verbose
 ```
 
