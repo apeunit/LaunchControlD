@@ -10,18 +10,30 @@ import (
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
+
 	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 )
 
-func getConfigDir(settings config.Schema, eventID, nodeID string) (pathDaemon, pathCLI string, err error) {
+// getConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
+func getConfigDir(settings config.Schema, eventID string) (finalPath string, err error) {
 	p, err := evts(settings, eventID)
 	if err != nil {
 		return
 	}
+	return path.Join(p, "nodeconfig"), nil
+}
+
+// getNodeConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs/0
+func getNodeConfigDir(settings config.Schema, eventID, nodeID string) (pathDaemon, pathCLI string, err error) {
+	basePath, err := getConfigDir(settings, eventID)
+	if err != nil {
+		return
+	}
+
 	nodeIDsplit := strings.Split(nodeID, "-")
-	pathDaemon = path.Join(p, nodeIDsplit[len(nodeIDsplit)-1], "daemon")
-	pathCLI = path.Join(p, nodeIDsplit[len(nodeIDsplit)-1], "cli")
+	pathDaemon = path.Join(basePath, nodeIDsplit[len(nodeIDsplit)-1], "daemon")
+	pathCLI = path.Join(basePath, nodeIDsplit[len(nodeIDsplit)-1], "cli")
 	return
 }
 
@@ -29,6 +41,7 @@ func getConfigDir(settings config.Schema, eventID, nodeID string) (pathDaemon, p
 // state.DaemonConfigDir
 // and gaiad tendermint show-node-id
 func InitDaemon(settings config.Schema, eventID string) (err error) {
+	fmt.Println("Initializing daemon configs for each node")
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
 		return
@@ -46,10 +59,8 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		}
 		state.Instance.IPAddress = string(ip)
 
-		fmt.Printf("Node owned by validator %s is at %s\n", email, state.Instance.IPAddress)
-
 		// Make the config directory for the node CLI
-		pathDaemon, pathCLI, err := getConfigDir(settings, eventID, state.ID)
+		pathDaemon, pathCLI, err := getNodeConfigDir(settings, eventID, state.ID)
 		if err != nil {
 			break
 		}
@@ -73,7 +84,6 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		state.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
 	}
 
-	fmt.Printf("evt now looks like: %+v\n", evt)
 	err = storeEvent(settings, evt)
 	if err != nil {
 		return
@@ -85,6 +95,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 // accounts). The specific command is gaiacli keys add validatoremail/some other name -o json
 // --keyring-backend test --home.... for each node.
 func GenerateKeys(settings config.Schema, eventID string) (err error) {
+	fmt.Println("Generating keys")
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
 		return
@@ -118,6 +129,7 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 // AddGenesisAccounts runs gaiad add-genesis-account with the created addresses
 // and default initial balances
 func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
+	fmt.Println("Adding accounts to the genesis.json files")
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
 		return
@@ -141,17 +153,15 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 // GenesisTxs runs gentx to turn accounts into validator accounts and outputs
 // the genesis transactions into a single folder.
 func GenesisTxs(settings config.Schema, eventID string) (err error) {
+	fmt.Println("Creating genesis transactions to turn accounts into validators")
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
-	evtDir, err := evts(settings, evt.ID())
-	if err != nil {
-		return
-	}
+	basePath, err := getConfigDir(settings, eventID)
 
 	// Ensure that the genesis txs destination directory exists
-	outputGenesisTxDir := path.Join(evtDir, "genesis_txs")
+	outputGenesisTxDir := path.Join(basePath, "genesis_txs")
 	if _, err := os.Stat(outputGenesisTxDir); os.IsNotExist(err) {
 		os.Mkdir(outputGenesisTxDir, 0755)
 	}
@@ -162,7 +172,7 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 
 		// Here we assume that last part of genesis_balance is the # of stake tokens
 		// launchpayloadd gentx --name v1@email.com --amount 10000stake --home-client ... --keyring-backend test --home ... --output-document ...
-		args := []string{"gentx", "--name", email, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", state.CLIConfigDir, "--keyring-backend", "test", "--home", state.DaemonConfigDir, "--output-document", outputDocument}
+		args := []string{"gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", state.CLIConfigDir, "--keyring-backend", "test", "--home", state.DaemonConfigDir, "--output-document", outputDocument}
 		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -178,11 +188,12 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 // directory where the genesis transactions were placed before. In the end, only
 // the first node's genesis.josn will be used.
 func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
+	fmt.Println("Collecting genesis transactions and writing final genesis.json")
 	evt, err := loadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
-	evtDir, err := evts(settings, evt.ID())
+	basePath, err := getConfigDir(settings, eventID)
 	if err != nil {
 		return
 	}
@@ -190,13 +201,23 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 	// firstValidator := evt.Validators[0]
 
 	for _, state := range evt.State {
-		args := []string{"collect-gentxs", "--gentx-dir", path.Join(evtDir, "genesis_txs"), "--home", state.DaemonConfigDir}
+		args := []string{"collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", state.DaemonConfigDir}
 		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
 			break
 		}
+	}
+	return
+}
+
+// EditConfigs edits the config.toml of every node to have the same persistent_peers.
+func EditConfigs(settings config.Schema, eventID string) (err error) {
+	fmt.Println("Copying node 0's genesis.json to others and setting up p2p.persistent_peers")
+	evt, err := loadEvent(settings, eventID)
+	if err != nil {
+		return
 	}
 
 	// Although we just generated the genesis.json for every node (makes it
@@ -225,21 +246,12 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 			break
 		}
 	}
-	return
-}
 
-// EditConfigs edits the config.toml of every node to have the same persistent_peers.
-func EditConfigs(settings config.Schema, eventID string) (err error) {
-	evt, err := loadEvent(settings, eventID)
-	if err != nil {
-		return
-	}
-
-	// Build the persistent peer list
+	// Build the persistent peer list.
 	persistentPeerList := []string{}
 	for email, state := range evt.State {
-		fmt.Printf("%s has tendermint-node-id %s and IP %s\n", email, state.TendermintNodeID, state.Instance.IPAddress)
-		persistentPeerList = append(persistentPeerList, fmt.Sprintf("%s@%s:26656", state.TendermintNodeID, state.Instance.IPAddress))
+		fmt.Printf("%s's node is %s \n", email, state.TendermintPeerNodeID())
+		persistentPeerList = append(persistentPeerList, state.TendermintPeerNodeID())
 	}
 
 	// Insert the persistent peer list into each node's config.toml

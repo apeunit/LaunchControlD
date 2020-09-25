@@ -142,6 +142,11 @@ func (m MachineConfig) NumberID() (numberID int, err error) {
 	return int(nID), err
 }
 
+// TendermintPeerNodeID returns <nodeID@192.168.1....:26656> which is used in specifying peers to connect to in the daemon's config.toml file
+func (m MachineConfig) TendermintPeerNodeID() string {
+	return fmt.Sprintf("%s@%s:26656", m.TendermintNodeID, m.Instance.IPAddress)
+}
+
 type Account struct {
 	Name           string `json:"name"`
 	Address        string `json:"address"`

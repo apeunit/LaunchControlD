@@ -169,7 +169,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	}
 
 	for _, state := range evt.State {
-		pathDaemon, pathCLI, err := getConfigDir(settings, evtID, state.ID)
+		pathDaemon, pathCLI, err := getNodeConfigDir(settings, evtID, state.ID)
 		if err != nil {
 			log.Errorf("Error while getting Cosmos-SDK cli/daemon config directory: %s", err)
 			break
@@ -212,7 +212,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
 
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
-		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "apeunit/launchpayload"}
+		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "apeunit/launchpayload"}
 		fmt.Printf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		out, err := runCommand("docker", args, envVars)
 		if err != nil {
