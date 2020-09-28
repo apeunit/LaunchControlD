@@ -211,6 +211,28 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		machineHomeDir := machineHome(settings, evtID, machineID)
 		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
 
+		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
+		args := []string{"pull", "apeunit/launchpayload"}
+		fmt.Printf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
+		out, err := runCommand("docker", args, envVars)
+		if err != nil {
+			log.Errorf("docker %s failed with %s", args, err)
+			break
+		}
+		fmt.Println("docker:", out)
+	}
+
+	for email, state := range evt.State {
+		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
+		machineID, err := state.NumberID()
+		if err != nil {
+			log.Errorf("state.NumberID() failed with %s", err)
+			break
+		}
+
+		machineHomeDir := machineHome(settings, evtID, machineID)
+		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
+
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
 		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "apeunit/launchpayload"}
 		fmt.Printf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
