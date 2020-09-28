@@ -166,14 +166,15 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		return
 	}
 	dmBin := dmBin(settings)
-	envVars, err := dockerEnv(settings, evt)
-	if err != nil {
-		log.Errorf("dockerEnv() failed while generating envVars: %s", err)
-		return
-	}
 
 	fmt.Println("Copying node configs to each provisioned machine")
 	for _, state := range evt.State {
+		envVars, err := dockerEnv(settings, evt)
+		if err != nil {
+			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+			break
+		}
+
 		pathDaemon, pathCLI, err := getNodeConfigDir(settings, evtID, state.ID)
 		if err != nil {
 			log.Errorf("Error while getting Cosmos-SDK cli/daemon config directory: %s", err)
@@ -206,6 +207,12 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	}
 
 	for email, state := range evt.State {
+		envVars, err := dockerEnv(settings, evt)
+		if err != nil {
+			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+			break
+		}
+
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
 		machineID, err := state.NumberID()
 		if err != nil {
@@ -228,6 +235,12 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	}
 
 	for email, state := range evt.State {
+		envVars, err := dockerEnv(settings, evt)
+		if err != nil {
+			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+			break
+		}
+
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
 		machineID, err := state.NumberID()
 		if err != nil {
