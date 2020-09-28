@@ -19,9 +19,18 @@ var setupChainCmd = &cobra.Command{
 	Run:   setupChain,
 }
 
+var deployCmd = &cobra.Command{
+	Use:   "deploy EVENTID",
+	Short: "Tells the provisioned machines to run the dockerized payload for EVENTID",
+	Long:  ``,
+	Args:  cobra.ExactArgs(1),
+	Run:   deploy,
+}
+
 func init() {
 	rootCmd.AddCommand(payloadCmd)
 	payloadCmd.AddCommand(setupChainCmd)
+	payloadCmd.AddCommand(deployCmd)
 }
 
 func setupChain(cmd *cobra.Command, args []string) {
@@ -31,4 +40,8 @@ func setupChain(cmd *cobra.Command, args []string) {
 	lctrld.GenesisTxs(settings, args[0])
 	lctrld.CollectGenesisTxs(settings, args[0])
 	lctrld.EditConfigs(settings, args[0])
+}
+
+func deploy(cmd *cobra.Command, args []string) {
+	lctrld.DeployPayload(settings, args[0])
 }
