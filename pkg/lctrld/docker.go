@@ -157,6 +157,14 @@ func Provision(settings config.Schema, evtID string) (err error) {
 			log.Errorf("Provision read machine config error:", err)
 			break
 		}
+
+		ip, err := runCommand(dmBin, []string{"ip", host}, evnVars)
+		if err != nil {
+			log.Error(err)
+			break
+		}
+		mc.Instance.IPAddress = string(ip)
+
 		evt.State[v.Name] = &mc
 	}
 	if err != nil {

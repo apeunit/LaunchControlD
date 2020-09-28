@@ -47,18 +47,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		return
 	}
 
-	dmBin := dmBin(settings)
-	// set the path to find the executable
-	evnVars, err := dockerEnv(settings, evt)
-
 	for email, state := range evt.State {
-		ip, err := runCommand(dmBin, []string{"ip", state.ID}, evnVars)
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		state.Instance.IPAddress = string(ip)
-
 		// Make the config directory for the node CLI
 		pathDaemon, pathCLI, err := getNodeConfigDir(settings, eventID, state.ID)
 		if err != nil {
