@@ -91,7 +91,13 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 		//driver := settings.DockerMachine.Drivers[evt.Provider]
 		log.Infof("Node ID for %s is %s", v, host)
 		// create the parameters
-		out, err := runCommand(dmBin, []string{"rm", host}, envVars)
+		out, err := runCommand(dmBin, []string{"stop", host}, envVars)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(host, "stop:", out)
+
+		out, err = runCommand(dmBin, []string{"rm", host}, envVars)
 		if err != nil {
 			fmt.Println(err)
 		}
