@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -84,11 +85,21 @@ func (e EvtvzE) NodeID(n int) string {
 	return slug.Make(fmt.Sprintf("%v %v %v", e.TokenSymbol, e.Hash(), n))
 }
 
+func (e EvtvzE) sortedAccounts() (keys []string) {
+	// We need to return the accounts in a deterministic order, sorted by key
+	for k := range e.Accounts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 // Validators returns the names (emails) of the validators
-func (e EvtvzE) Validators() (v []string) {
-	for _, acc := range e.Accounts {
-		if acc.Validator {
-			v = append(v, acc.Name)
+func (e EvtvzE) Validators() (v []string, a []*Account) {
+	for _, k := range e.sortedAccounts() {
+		if e.Accounts[k].Validator {
+			v = append(v, e.Accounts[k].Name)
+			a = append(a, e.Accounts[k])
 		}
 	}
 	return
@@ -96,25 +107,15 @@ func (e EvtvzE) Validators() (v []string) {
 
 // ValidatorsCount returns the number of validators
 func (e EvtvzE) ValidatorsCount() int {
-	return len(e.Validators())
-}
-
-// ValidatorAccounts returns EvtvzE.Accounts while excluding accounts that are
-// not validators
-func (e EvtvzE) ValidatorAccounts() (a []*Account) {
-	for _, acc := range e.Accounts {
-		if acc.Validator {
-			a = append(a, acc)
-		}
-	}
-	return
+	validatorNames, _ := e.Validators()
+	return len(validatorNames)
 }
 
 // ExtraAccounts returns EvtvzE.Accounts excluding accounts that are validators
 func (e EvtvzE) ExtraAccounts() (a []*Account) {
-	for _, acc := range e.Accounts {
-		if !acc.Validator {
-			a = append(a, acc)
+	for _, k := range e.sortedAccounts() {
+		if !e.Accounts[k].Validator {
+			a = append(a, e.Accounts[k])
 		}
 	}
 	return

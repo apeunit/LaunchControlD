@@ -39,7 +39,8 @@ func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	dmBin := dmBin(settings)
 	// set the path to find the executable
 	evnVars, err := dockerEnv(settings, evt)
-	for i := range evt.Validators() {
+	_, validatorAccounts := evt.Validators()
+	for i := range validatorAccounts {
 		host := evt.NodeID(i)
 		out, err := runCommand(dmBin, []string{"status", host}, evnVars)
 		if err != nil {
@@ -83,7 +84,9 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 	if err != nil {
 		return
 	}
-	for i, v := range evt.Validators() {
+
+	_, validatorAccounts := evt.Validators()
+	for i, v := range validatorAccounts {
 		host := evt.NodeID(i)
 		//driver := settings.DockerMachine.Drivers[evt.Provider]
 		log.Infof("Node ID for %s is %s", v, host)
@@ -119,7 +122,8 @@ func Provision(settings config.Schema, evtID string) (err error) {
 	// init docker nodes map
 	evt.State = make(map[string]*model.MachineConfig)
 	// run the thing
-	for i, v := range evt.Validators() {
+	_, validatorAccounts := evt.Validators()
+	for i, v := range validatorAccounts {
 		host := evt.NodeID(i)
 		driver := settings.DockerMachine.Drivers[evt.Provider]
 
@@ -147,7 +151,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 			log.Errorf("Provision read machine config error:", err)
 			break
 		}
-		evt.State[v] = &mc
+		evt.State[v.Name] = &mc
 	}
 	if err != nil {
 		return
@@ -168,6 +172,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		return
 	}
 
+	fmt.Println("Copying node configs to each provisioned machine")
 	for _, state := range evt.State {
 		pathDaemon, pathCLI, err := getNodeConfigDir(settings, evtID, state.ID)
 		if err != nil {

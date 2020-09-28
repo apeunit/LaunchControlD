@@ -101,7 +101,8 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 		return
 	}
 
-	for _, account := range evt.ValidatorAccounts() {
+	_, validatorAccounts := evt.Validators()
+	for _, account := range validatorAccounts {
 		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", evt.State[account.Name].CLIConfigDir}
 		cmd := exec.Command(settings.LaunchPayload.CLIPath, args...)
 		out, err := cmd.CombinedOutput()
@@ -135,8 +136,9 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 		return
 	}
 
+	_, validatorAccounts := evt.Validators()
 	for _, state := range evt.State {
-		for _, account := range evt.ValidatorAccounts() {
+		for _, account := range validatorAccounts {
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", state.DaemonConfigDir}
 			cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
 			out, err := cmd.CombinedOutput()
@@ -223,12 +225,13 @@ func EditConfigs(settings config.Schema, eventID string) (err error) {
 	// Although we just generated the genesis.json for every node (makes it
 	// easy to debug things) we only need one. Copy node 0's genesis.json to
 	// other node folders.
-	otherValidators := evt.Validators()[1:]
-	pathToNode0Genesis := path.Join(evt.State[evt.Validators()[0]].DaemonConfigDir, "config/genesis.json")
-	node0Genesis, err := os.Open(pathToNode0Genesis)
-	for _, validator := range otherValidators {
+	validatorNames, _ := evt.Validators()
+	pathToNode0Genesis := path.Join(evt.State[validatorNames[0]].DaemonConfigDir, "config/genesis.json")
+	for _, validator := range validatorNames[1:] {
+		node0Genesis, err := os.Open(pathToNode0Genesis)
 		otherGenesis := path.Join(evt.State[validator].DaemonConfigDir, "config/genesis.json")
-		err := os.Remove(otherGenesis)
+		log.Infof("otherGenesis: %s\n", otherGenesis)
+		err = os.Remove(otherGenesis)
 		if err != nil {
 			log.Errorf("Removing %s failed with %s\n", otherGenesis, err)
 			break
@@ -240,11 +243,12 @@ func EditConfigs(settings config.Schema, eventID string) (err error) {
 			break
 		}
 
-		_, err = io.Copy(newOtherGenesis, node0Genesis)
+		written, err := io.Copy(newOtherGenesis, node0Genesis)
 		if err != nil {
 			log.Errorf("Copying %s to %s failed with %s\n", node0Genesis, newOtherGenesis, err)
 			break
 		}
+		log.Debugf("Copied %v bytes to %s", written, otherGenesis)
 	}
 
 	// Build the persistent peer list.

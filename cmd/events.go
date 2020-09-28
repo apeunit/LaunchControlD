@@ -81,7 +81,8 @@ func setupEvent(cmd *cobra.Command, args []string) {
 	fmt.Printf("%+v\n", event)
 	fmt.Println("Summary:")
 	fmt.Printf("there are %v validators\n", vc)
-	for _, acc := range event.ValidatorAccounts() {
+	_, validatorAccounts := event.Validators()
+	for _, acc := range validatorAccounts {
 		fmt.Printf("Validator %s has initial balance of %+v\n", acc.Name, acc.GenesisBalance)
 	}
 	fmt.Printf("Including other accounts, the genesis account state is:\n")
