@@ -23,8 +23,8 @@ type EvtvzE struct {
 	TokenSymbol string                    `json:"token_symbol,omitempty"` // token symbool
 	Owner       string                    `json:"owner,omitempty"`        // email address of the owner
 	Accounts    map[string]*Account       `json:"accounts,omitempty"`
-	Provider    string                    `json:"provider,omitempty"`  // provider for provisioning
-	NodeIPs     []string                  `json:"node_i_ps,omitempty"` // ip addresses of the nodes
+	Provider    string                    `json:"provider,omitempty"`     // provider for provisioning
+	DockerImage string                    `json:"docker_image,omitempty"` // docker image payload to be deployed on the machines
 	CreatedOn   time.Time                 `json:"created_on,omitempty"`
 	StartsOn    time.Time                 `json:"starts_on,omitempty"`
 	EndsOn      time.Time                 `json:"ends_on,omitempty"`
@@ -32,7 +32,7 @@ type EvtvzE struct {
 }
 
 // NewEvtvzE helper for a new event
-func NewEvtvzE(symbol, owner, provider string, genesisAccounts []config.GenesisAccount) (e EvtvzE) {
+func NewEvtvzE(symbol, owner, provider, dockerImage string, genesisAccounts []config.GenesisAccount) (e EvtvzE) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
 		a := &Account{
@@ -50,7 +50,7 @@ func NewEvtvzE(symbol, owner, provider string, genesisAccounts []config.GenesisA
 		Owner:       owner,
 		Accounts:    accounts,
 		Provider:    provider,
-		NodeIPs:     nil,
+		DockerImage: dockerImage,
 		CreatedOn:   time.Now(),
 		StartsOn:    time.Now(),
 		EndsOn:      time.Time{},

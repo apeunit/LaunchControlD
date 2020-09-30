@@ -4,7 +4,6 @@ package config
 type Schema struct {
 	Workspace     string        `mapstructure:"workspace,omitempty"`
 	DockerMachine DockerMachine `mapstructure:"docker_machine,omitempty"`
-	LaunchPayload LaunchPayload `mapstructure:"launch_payload,omitempty"`
 	EventParams   EventParams   `mapstructure:"event_params,omitempty"`
 }
 
@@ -39,6 +38,8 @@ type LaunchPayload struct {
 
 // EventParams specifies how the genesis.json should be setup
 type EventParams struct {
+	LaunchPayload   LaunchPayload    `mapstructure:"launch_payload,omitempty"`
+	DockerImage     string           `mapstructure:"docker_image,omitempty"`
 	GenesisAccounts []GenesisAccount `mapstructure:"genesis_accounts,omitempty"`
 }
 

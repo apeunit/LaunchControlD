@@ -45,26 +45,25 @@ docker_machine:
       env:
       - "DIGITALOCEAN_ACCESS_TOKEN=123"
 
-launch_payload:
-  binary_url: https://github.com/apeunit/launchpayload
-  binary_path: "/tmp/workspace/bin"
-  daemon_path: "/tmp/workspace/bin/launchpayloadd"
-  cli_path: "/tmp/workspace/bin/launchpayloadcli"
-
-
 event_params:
+  docker_image: "apeunit/launchpayload"
+  launch_payload:
+    binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
+    binary_path: "/tmp/workspace/bin"
+    daemon_path: "/tmp/workspace/bin/launchpayloadd"
+    cli_path: "/tmp/workspace/bin/launchpayloadcli"
   genesis_accounts:
     -
-      name: "v1@email.com"
-      genesis_balance: "500drops,1000000evtx,10000stake"
+      name: "alice@apeunit.com"
+      genesis_balance: "500drops,1000000evtx,100000000stake"
       validator: true
     -
-      name: "v2@email.com"
-      genesis_balance: "500drops,1000000evtx,10000stake"
+      name: "bob@apeunit.com"
+      genesis_balance: "500drops,1000000evtx,100000000stake"
       validator: true
     -
       name: "dropgiver"
-      genesis_balance: "10000000000drops,10000stake"
+      genesis_balance: "10000000000drops"
       validator: false
 
 ```
@@ -109,6 +108,23 @@ To list the available events and the status of their nodes run:
 
 ```sh
 > lctrld events list --verbose
+```
+
+Now you should setup the payload (Cosmos-SDK based chain) that will run on the machines. The generated config files are stored in the same directory as the event information.
+
+```sh
+> lctrld payload setup $EVTID
+```
+
+Tell the provisioned machines to run the docker images using the configuration files that were just generated.
+
+```sh
+> lctrld payload deploy $EVTID
+```
+
+To stop and remove all the machines and their associated configuration, run
+```sh
+> lctrld events teardown $EVTID
 ```
 
 # Troubleshooting

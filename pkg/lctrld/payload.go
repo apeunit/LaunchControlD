@@ -57,18 +57,18 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		state.CLIConfigDir = pathCLI
 
 		args := []string{"init", fmt.Sprintf("%s node %s", email, state.ID), "--home", state.DaemonConfigDir, "--chain-id", evt.ID()}
-		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			return err
 		}
 
 		args = []string{"tendermint", "show-node-id", "--home", state.DaemonConfigDir}
-		cmd = exec.Command(settings.LaunchPayload.DaemonPath, args...)
+		cmd = exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err = cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 		}
 		state.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
 	}
@@ -93,10 +93,10 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 	_, validatorAccounts := evt.Validators()
 	for _, account := range validatorAccounts {
 		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", evt.State[account.Name].CLIConfigDir}
-		cmd := exec.Command(settings.LaunchPayload.CLIPath, args...)
+		cmd := exec.Command(settings.EventParams.LaunchPayload.CLIPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.CLIPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
 			break
 		}
 
@@ -129,10 +129,10 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 	for _, state := range evt.State {
 		for _, account := range validatorAccounts {
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", state.DaemonConfigDir}
-			cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+			cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+				log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 				break
 			}
 		}
@@ -164,10 +164,10 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 		// Here we assume that last part of genesis_balance is the # of stake tokens
 		// launchpayloadd gentx --name v1@email.com --amount 10000stake --home-client ... --keyring-backend test --home ... --output-document ...
 		args := []string{"gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", state.CLIConfigDir, "--keyring-backend", "test", "--home", state.DaemonConfigDir, "--output-document", outputDocument}
-		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			break
 		}
 
@@ -193,10 +193,10 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 
 	for _, state := range evt.State {
 		args := []string{"collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", state.DaemonConfigDir}
-		cmd := exec.Command(settings.LaunchPayload.DaemonPath, args...)
+		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.LaunchPayload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			break
 		}
 	}
