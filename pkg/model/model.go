@@ -137,6 +137,7 @@ type MachineConfig struct {
 	} `json:"Instance,omitempty"`
 }
 
+// NumberID takes the ID, e.g. evtx-d97517a3673688070aef-1 and returns "1"
 func (m MachineConfig) NumberID() (numberID int, err error) {
 	splitID := strings.Split(m.ID, "-") // evtx-d97517a3673688070aef-1
 	nID, err := strconv.ParseInt(splitID[len(splitID)-1], 0, 64)

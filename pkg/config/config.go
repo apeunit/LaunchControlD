@@ -1,5 +1,6 @@
 package config
 
+// Schema describes the layout of config.yaml
 type Schema struct {
 	Workspace     string        `mapstructure:"workspace,omitempty"`
 	DockerMachine DockerMachine `mapstructure:"docker_machine,omitempty"`
@@ -7,7 +8,7 @@ type Schema struct {
 	EventParams   EventParams   `mapstructure:"event_params,omitempty"`
 }
 
-// DockerMachine holds docker machine configuration
+// DockerMachine describes the host's docker-machine binary
 type DockerMachine struct {
 	Workspace  string                         `mapstructure:"workspace,omitempty"`
 	SearchPath []string                       `mapstructure:"search_path,omitempty"`
@@ -17,7 +18,8 @@ type DockerMachine struct {
 	Drivers    map[string]DockerMachineDriver `mapstructure:"drivers,omitempty"`
 }
 
-// DockerMachineDriver holds a driver configuration
+// DockerMachineDriver describes the location and environment params of any
+// optional (non-built-in) docker-machine drivers on the host system
 type DockerMachineDriver struct {
 	Version   string   `mapstructure:"version,omitempty"`
 	BinaryURL string   `mapstructure:"binary_url,omitempty"`
