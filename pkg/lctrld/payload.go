@@ -11,6 +11,7 @@ import (
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 
+	"github.com/melbahja/got"
 	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 )
@@ -35,6 +36,33 @@ func getNodeConfigDir(settings config.Schema, eventID, nodeID string) (pathDaemo
 	pathDaemon = path.Join(basePath, nodeIDsplit[len(nodeIDsplit)-1], "daemon")
 	pathCLI = path.Join(basePath, nodeIDsplit[len(nodeIDsplit)-1], "cli")
 	return
+}
+
+// DownloadPayloadBinary downloads a copy of the payload binaries to the host
+// running lctrld to generate the config files for the provisioned machines
+func DownloadPayloadBinary(settings config.Schema, eventID string) (err error) {
+	_, cliExistsErr := os.Stat(settings.EventParams.LaunchPayload.CLIPath)
+	_, daemonExistsErr := os.Stat(settings.EventParams.LaunchPayload.DaemonPath)
+	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
+		binFile := bin(settings, "payloadBinaries.zip")
+		log.Infof("downloading payload binaries from %s to %s", settings.EventParams.LaunchPayload.BinaryURL, binFile)
+		g := got.New()
+		err = g.Download(settings.EventParams.LaunchPayload.BinaryURL, binFile)
+		if err != nil {
+			return
+		}
+
+		_, err = runCommand("unzip", []string{"-d", bin(settings, ""), "-o", binFile}, []string{})
+		if err != nil {
+			return
+		}
+
+		err = os.Remove(binFile)
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
 
 // InitDaemon runs gaiad init burnerchain --home
