@@ -16,7 +16,7 @@ var setupChainCmd = &cobra.Command{
 	Short: "Does everything to initialize a Cosmos-SDK based payload for EVENTID",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	Run:   setupChain,
+	RunE:  setupChain,
 }
 
 var deployCmd = &cobra.Command{
@@ -24,7 +24,7 @@ var deployCmd = &cobra.Command{
 	Short: "Tells the provisioned machines to run the dockerized payload for EVENTID",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	Run:   deploy,
+	RunE:  deploy,
 }
 
 func init() {
@@ -33,15 +33,39 @@ func init() {
 	payloadCmd.AddCommand(deployCmd)
 }
 
-func setupChain(cmd *cobra.Command, args []string) {
-	lctrld.InitDaemon(settings, args[0])
-	lctrld.GenerateKeys(settings, args[0])
-	lctrld.AddGenesisAccounts(settings, args[0])
-	lctrld.GenesisTxs(settings, args[0])
-	lctrld.CollectGenesisTxs(settings, args[0])
-	lctrld.EditConfigs(settings, args[0])
+func setupChain(cmd *cobra.Command, args []string) (err error) {
+	err = lctrld.DownloadPayloadBinary(settings, args[0])
+	if err != nil {
+		return
+	}
+	err = lctrld.InitDaemon(settings, args[0])
+	if err != nil {
+		return
+	}
+	err = lctrld.GenerateKeys(settings, args[0])
+	if err != nil {
+		return
+	}
+	err = lctrld.AddGenesisAccounts(settings, args[0])
+	if err != nil {
+		return
+	}
+	err = lctrld.GenesisTxs(settings, args[0])
+	if err != nil {
+		return
+	}
+	err = lctrld.CollectGenesisTxs(settings, args[0])
+	if err != nil {
+		return
+	}
+	err = lctrld.EditConfigs(settings, args[0])
+	if err != nil {
+		return
+	}
+	return
 }
 
-func deploy(cmd *cobra.Command, args []string) {
-	lctrld.DeployPayload(settings, args[0])
+func deploy(cmd *cobra.Command, args []string) (err error) {
+	err = lctrld.DeployPayload(settings, args[0])
+	return
 }
