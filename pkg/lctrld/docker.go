@@ -89,7 +89,7 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 	for i, v := range validatorAccounts {
 		host := evt.NodeID(i)
 		//driver := settings.DockerMachine.Drivers[evt.Provider]
-		log.Infof("Node ID for %s is %s", v, host)
+		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
 		out, err := runCommand(dmBin, []string{"stop", host}, envVars)
 		if err != nil {
@@ -133,7 +133,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 		host := evt.NodeID(i)
 		driver := settings.DockerMachine.Drivers[evt.Provider]
 
-		log.Infof("Node ID for %s is %s", v, host)
+		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
 		p := []string{"create", "--driver", evt.Provider}
 		p = append(p, driver.Params...)
@@ -181,7 +181,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	}
 	dmBin := dmBin(settings)
 
-	fmt.Println("Copying node configs to each provisioned machine")
+	log.Infoln("Copying node configs to each provisioned machine")
 	for _, state := range evt.State {
 		envVars, err := dockerEnv(settings, evt)
 		if err != nil {
@@ -220,6 +220,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		}
 	}
 
+	log.Infof("Running docker pull %s on each provisioned machine", evt.DockerImage)
 	for email, state := range evt.State {
 		envVars, err := dockerEnv(settings, evt)
 		if err != nil {
@@ -239,15 +240,15 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 
 		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
 		args := []string{"pull", evt.DockerImage}
-		fmt.Printf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
-		out, err := runCommand("docker", args, envVars)
+		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
+		_, err = runCommand("docker", args, envVars)
 		if err != nil {
 			log.Errorf("docker %s failed with %s", args, err)
 			break
 		}
-		fmt.Println("docker:", out)
 	}
 
+	log.Infoln("Running the docker image on the provisioned machines")
 	for email, state := range evt.State {
 		envVars, err := dockerEnv(settings, evt)
 		if err != nil {
@@ -267,13 +268,12 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
 		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "-p", "26658:26658", evt.DockerImage}
-		fmt.Printf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
-		out, err := runCommand("docker", args, envVars)
+		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
+		_, err = runCommand("docker", args, envVars)
 		if err != nil {
 			log.Errorf("docker %s failed with %s", args, err)
 			break
 		}
-		fmt.Println("docker:", out)
 	}
 	return
 }
