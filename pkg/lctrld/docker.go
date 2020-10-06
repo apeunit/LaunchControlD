@@ -164,7 +164,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 			break
 		}
 		mc.Instance.IPAddress = string(ip)
-
+		mc.ID = evt.NodeID(i)
 		evt.State[v.Name] = &mc
 	}
 	if err != nil {
@@ -182,16 +182,10 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	dmBin := dmBin(settings)
 
 	log.Infoln("Copying node configs to each provisioned machine")
-	for _, state := range evt.State {
+	for name, state := range evt.State {
 		envVars, err := dockerEnv(settings, evt)
 		if err != nil {
 			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
-			break
-		}
-
-		pathDaemon, pathCLI, err := getNodeConfigDir(settings, evtID, state.ID)
-		if err != nil {
-			log.Errorf("Error while getting Cosmos-SDK cli/daemon config directory: %s", err)
 			break
 		}
 
@@ -204,7 +198,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		}
 
 		// docker-machine scp -r pathDaemon evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
-		args = []string{"scp", "-r", pathDaemon, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
+		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.DaemonConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
 		_, err = runCommand(dmBin, args, envVars)
 		if err != nil {
 			log.Errorf("docker-machine %s failed with %s", args, err)
@@ -212,7 +206,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		}
 
 		// docker-machine scp -r pathCLI evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
-		args = []string{"scp", "-r", pathCLI, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
+		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
 		_, err = runCommand(dmBin, args, envVars)
 		if err != nil {
 			log.Errorf("docker-machine %s failed with %s", args, err)

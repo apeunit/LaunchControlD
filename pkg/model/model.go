@@ -35,15 +35,7 @@ type EvtvzE struct {
 func NewEvtvzE(symbol, owner, provider, dockerImage string, genesisAccounts []config.GenesisAccount) (e EvtvzE) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
-		a := &Account{
-			Name:           acc.Name,
-			Address:        "",
-			Mnemonic:       "",
-			GenesisBalance: acc.GenesisBalance,
-			Validator:      acc.Validator,
-		}
-
-		accounts[acc.Name] = a
+		accounts[acc.Name] = NewAccount(acc.Name, "", "", acc.GenesisBalance, acc.Validator)
 	}
 	return EvtvzE{
 		TokenSymbol: symbol,
@@ -121,13 +113,16 @@ func (e EvtvzE) ExtraAccounts() (a []*Account) {
 	return
 }
 
+type ConfigLocation struct {
+	CLIConfigDir    string `json:"CLIConfigDir"`
+	DaemonConfigDir string `json:"DaemonConfigDir"`
+}
+
 // MachineConfig holds the configuration of a Machine
 type MachineConfig struct {
-	ID               string `json:"Name,omitempty"`
+	ID               string `json:"ID,omitempty"`
 	DriverName       string `json:"DriverName,omitempty"`
 	TendermintNodeID string `json:"TendermintNodeID,omitempty"`
-	CLIConfigDir     string `json:"CLIConfigDir,omitempty"`
-	DaemonConfigDir  string `json:"DaemonConfigDir,omitempty"`
 	Instance         struct {
 		IPAddress   string `json:"IPAddress,omitempty"`
 		MachineName string `json:"MachineName,omitempty"`
@@ -150,11 +145,12 @@ func (m MachineConfig) TendermintPeerNodeID() string {
 }
 
 type Account struct {
-	Name           string `json:"name"`
-	Address        string `json:"address"`
-	Mnemonic       string `json:"mnemonic"`
-	GenesisBalance string `json:"genesis_balance"`
-	Validator      bool   `json:"validator"`
+	Name           string          `json:"name"`
+	Address        string          `json:"address"`
+	Mnemonic       string          `json:"mnemonic"`
+	GenesisBalance string          `json:"genesis_balance"`
+	Validator      bool            `json:"validator"`
+	ConfigLocation *ConfigLocation `json:"config_location"`
 }
 
 func NewAccount(name, address, mnemonic, genesisBalance string, validator bool) *Account {
@@ -164,5 +160,9 @@ func NewAccount(name, address, mnemonic, genesisBalance string, validator bool) 
 		Mnemonic:       mnemonic,
 		GenesisBalance: genesisBalance,
 		Validator:      validator,
+		ConfigLocation: &ConfigLocation{
+			CLIConfigDir:    "",
+			DaemonConfigDir: "",
+		},
 	}
 }

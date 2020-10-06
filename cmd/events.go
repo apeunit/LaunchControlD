@@ -104,9 +104,6 @@ func setupEvent(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println("There was an error, run the command with --debug for more info:", err)
 	}
-	// lctrld.SetupNode
-	// lctrld.BuildImage
-	// lctrld.DeployEventChain(settings, event)
 
 	fmt.Println("Operation completed in", time.Since(start))
 }
