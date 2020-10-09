@@ -38,16 +38,16 @@ func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	}
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	evnVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerEnv(settings, evt)
 	_, validatorAccounts := evt.Validators()
 	for i := range validatorAccounts {
 		host := evt.NodeID(i)
-		out, err := runCommand(dmBin, []string{"status", host}, evnVars)
+		out, err := runCommand(dmBin, []string{"status", host}, envVars)
 		if err != nil {
 			break
 		}
 		fmt.Println(host, "status:", out)
-		out, err = runCommand(dmBin, []string{"ip", host}, evnVars)
+		out, err = runCommand(dmBin, []string{"ip", host}, envVars)
 		fmt.Println(host, "IP:", out)
 	}
 	return
@@ -121,7 +121,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 	var out []byte
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	evnVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
 		return
 	}
@@ -142,7 +142,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 		/// prepare the command
 		cmd := exec.Command(dmBin, p...)
 		// add the binary folder to the exec path
-		cmd.Env = evnVars
+		cmd.Env = envVars
 		log.Debug("Provision env vars set to ", cmd.Env)
 		// execute the command
 		out, err = cmd.CombinedOutput()
@@ -158,7 +158,7 @@ func Provision(settings config.Schema, evtID string) (err error) {
 			break
 		}
 
-		ip, err := runCommand(dmBin, []string{"ip", host}, evnVars)
+		ip, err := runCommand(dmBin, []string{"ip", host}, envVars)
 		if err != nil {
 			log.Error(err)
 			break
