@@ -103,7 +103,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			return err
 		}
 
@@ -111,7 +111,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		cmd = exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err = cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 		}
 		machineConfig.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
 	}
@@ -139,7 +139,7 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 		cmd := exec.Command(settings.EventParams.LaunchPayload.CLIPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
 			break
 		}
 
@@ -163,7 +163,7 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 		cmd := exec.Command(settings.EventParams.LaunchPayload.CLIPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
 			break
 		}
 
@@ -198,7 +198,7 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 			cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+				log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 				break
 			}
 		}
@@ -233,7 +233,7 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			break
 		}
 
@@ -262,7 +262,7 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			break
 		}
 	}
@@ -288,19 +288,19 @@ func EditConfigs(settings config.Schema, eventID string) (err error) {
 		log.Infof("otherGenesis: %s\n", otherGenesis)
 		err = os.Remove(otherGenesis)
 		if err != nil {
-			log.Errorf("Removing %s failed with %s\n", otherGenesis, err)
+			log.Fatalf("Removing %s failed with %s\n", otherGenesis, err)
 			break
 		}
 
 		newOtherGenesis, err := os.Create(otherGenesis)
 		if err != nil {
-			log.Errorf("Creating a blank %s failed with %s\n", newOtherGenesis, err)
+			log.Fatalf("Creating a blank %s failed with %s\n", newOtherGenesis, err)
 			break
 		}
 
 		written, err := io.Copy(newOtherGenesis, node0Genesis)
 		if err != nil {
-			log.Errorf("Copying %s to %s failed with %s\n", node0Genesis, newOtherGenesis, err)
+			log.Fatalf("Copying %s to %s failed with %s\n", node0Genesis, newOtherGenesis, err)
 			break
 		}
 		log.Debugf("Copied %v bytes to %s", written, otherGenesis)
@@ -318,19 +318,19 @@ func EditConfigs(settings config.Schema, eventID string) (err error) {
 		configPath := path.Join(evt.Accounts[name].ConfigLocation.DaemonConfigDir, "config/config.toml")
 		t, err := toml.LoadFile(configPath)
 		if err != nil {
-			log.Errorf("Reading toml from file %s failed with %s", configPath, err)
+			log.Fatalf("Reading toml from file %s failed with %s", configPath, err)
 			break
 		}
 		t.SetPathWithComment([]string{"p2p", "persistent_peers"}, "persistent_peers has been automatically set by lctrld", false, strings.Join(persistentPeerList, ","))
 
 		w, err := os.Create(configPath)
 		if err != nil {
-			log.Errorf("Opening file %s in write-mode failed with %s", configPath, err)
+			log.Fatalf("Opening file %s in write-mode failed with %s", configPath, err)
 			break
 		}
 		_, err = t.WriteTo(w)
 		if err != nil {
-			log.Errorf("Writing TOML to %s failed with %s", configPath, err)
+			log.Fatalf("Writing TOML to %s failed with %s", configPath, err)
 			break
 		}
 	}

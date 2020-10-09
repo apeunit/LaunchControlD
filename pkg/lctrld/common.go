@@ -101,7 +101,7 @@ func runCommand(bin string, args, envVars []string) (out string, err error) {
 	// execute the command
 	o, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Errorf("%s %s failed with %s, %s\n", bin, args, err, string(o))
+		log.Fatalf("%s %s failed with %s, %s\n", bin, args, err, string(o))
 		return
 	}
 	out = strings.TrimSpace(string(o))

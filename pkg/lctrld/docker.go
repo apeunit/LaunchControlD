@@ -33,7 +33,7 @@ func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
-		log.Error("Inspect failed:", err)
+		log.Fatal("Inspect failed:", err)
 		return
 	}
 	dmBin := dmBin(settings)
@@ -58,19 +58,19 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 	path, err := evts(settings, evtID)
 	log.Debugln("DestroyEvent event", evtID, "home:", path)
 	if err != nil {
-		log.Error("DestroyEvent failed:", err)
+		log.Fatal("DestroyEvent failed:", err)
 		return
 	}
 	if !utils.FileExists(path) {
 		err = fmt.Errorf("Event ID %s not found", evtID)
-		log.Error("DestroyEvent failed:", err)
+		log.Fatal("DestroyEvent failed:", err)
 		return
 	}
 	// load the descriptor
 	p, err := evtDescriptor(settings, evtID)
 	log.Debug("DestroyEvent event descriptor:", p)
 	if err != nil {
-		log.Error("DestroyEvent failed:", err)
+		log.Fatal("DestroyEvent failed:", err)
 		return
 	}
 	evt, err := model.LoadEvtvzE(p)
@@ -147,20 +147,20 @@ func Provision(settings config.Schema, evtID string) (err error) {
 		// execute the command
 		out, err = cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("Provision cmd failed with %s, %s\n", err, out)
+			log.Fatalf("Provision cmd failed with %s, %s\n", err, out)
 			break
 		}
 		log.Debug("Provision cmd output: ", string(out), err)
 		// load the configuration of the machine
 		mc, err := machineConfig(settings, evt.ID(), i)
 		if err != nil {
-			log.Errorf("Provision read machine config error:", err)
+			log.Fatalf("Provision read machine config error:", err)
 			break
 		}
 
 		ip, err := runCommand(dmBin, []string{"ip", host}, envVars)
 		if err != nil {
-			log.Error(err)
+			log.Fatal(err)
 			break
 		}
 		mc.Instance.IPAddress = string(ip)
@@ -185,7 +185,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	for name, state := range evt.State {
 		envVars, err := dockerEnv(settings, evt)
 		if err != nil {
-			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+			log.Fatalf("dockerEnv() failed while generating envVars: %s", err)
 			break
 		}
 
@@ -193,7 +193,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		args := []string{"ssh", state.ID, "mkdir", "-p", "/home/docker/nodeconfig"}
 		_, err = runCommand(dmBin, args, envVars)
 		if err != nil {
-			log.Errorf("docker-machine %s failed with %s", args, err)
+			log.Fatalf("docker-machine %s failed with %s", args, err)
 			break
 		}
 
@@ -201,7 +201,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.DaemonConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
 		_, err = runCommand(dmBin, args, envVars)
 		if err != nil {
-			log.Errorf("docker-machine %s failed with %s", args, err)
+			log.Fatalf("docker-machine %s failed with %s", args, err)
 			break
 		}
 
@@ -209,7 +209,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
 		_, err = runCommand(dmBin, args, envVars)
 		if err != nil {
-			log.Errorf("docker-machine %s failed with %s", args, err)
+			log.Fatalf("docker-machine %s failed with %s", args, err)
 			break
 		}
 	}
@@ -218,14 +218,14 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	for email, state := range evt.State {
 		envVars, err := dockerEnv(settings, evt)
 		if err != nil {
-			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+			log.Fatalf("dockerEnv() failed while generating envVars: %s", err)
 			break
 		}
 
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
 		machineID, err := state.NumberID()
 		if err != nil {
-			log.Errorf("state.NumberID() failed with %s", err)
+			log.Fatalf("state.NumberID() failed with %s", err)
 			break
 		}
 
@@ -237,7 +237,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		_, err = runCommand("docker", args, envVars)
 		if err != nil {
-			log.Errorf("docker %s failed with %s", args, err)
+			log.Fatalf("docker %s failed with %s", args, err)
 			break
 		}
 	}
@@ -246,14 +246,14 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 	for email, state := range evt.State {
 		envVars, err := dockerEnv(settings, evt)
 		if err != nil {
-			log.Errorf("dockerEnv() failed while generating envVars: %s", err)
+			log.Fatalf("dockerEnv() failed while generating envVars: %s", err)
 			break
 		}
 
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
 		machineID, err := state.NumberID()
 		if err != nil {
-			log.Errorf("state.NumberID() failed with %s", err)
+			log.Fatalf("state.NumberID() failed with %s", err)
 			break
 		}
 
@@ -265,7 +265,7 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		_, err = runCommand("docker", args, envVars)
 		if err != nil {
-			log.Errorf("docker %s failed with %s", args, err)
+			log.Fatalf("docker %s failed with %s", args, err)
 			break
 		}
 	}
