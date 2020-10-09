@@ -4,3 +4,5 @@ dist
 workspace
 config.json
 config.yaml
+go.sum
+.vscode/
