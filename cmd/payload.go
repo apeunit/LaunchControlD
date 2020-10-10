@@ -34,31 +34,43 @@ func init() {
 }
 
 func setupChain(cmd *cobra.Command, args []string) (err error) {
-	err = lctrld.DownloadPayloadBinary(settings, args[0])
+	evt, err := lctrld.LoadEvent(settings, args[0])
+	if err != nil {
+		return err
+	}
+	err = lctrld.DownloadPayloadBinary(settings, evt)
 	if err != nil {
 		return
 	}
-	err = lctrld.InitDaemon(settings, args[0])
+	evt, err = lctrld.InitDaemon(settings, evt)
 	if err != nil {
 		return
 	}
-	err = lctrld.GenerateKeys(settings, args[0])
+	err = lctrld.StoreEvent(settings, evt)
 	if err != nil {
 		return
 	}
-	err = lctrld.AddGenesisAccounts(settings, args[0])
+	evt, err = lctrld.GenerateKeys(settings, evt)
 	if err != nil {
 		return
 	}
-	err = lctrld.GenesisTxs(settings, args[0])
+	err = lctrld.StoreEvent(settings, evt)
 	if err != nil {
 		return
 	}
-	err = lctrld.CollectGenesisTxs(settings, args[0])
+	err = lctrld.AddGenesisAccounts(settings, evt)
 	if err != nil {
 		return
 	}
-	err = lctrld.EditConfigs(settings, args[0])
+	err = lctrld.GenesisTxs(settings, evt)
+	if err != nil {
+		return
+	}
+	err = lctrld.CollectGenesisTxs(settings, evt)
+	if err != nil {
+		return
+	}
+	err = lctrld.EditConfigs(settings, evt)
 	if err != nil {
 		return
 	}

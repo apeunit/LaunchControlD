@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
+	"github.com/apeunit/LaunchControlD/pkg/model"
 
 	"github.com/melbahja/got"
 	"github.com/pelletier/go-toml"
@@ -45,7 +46,7 @@ func getExtraAccountConfigDir(settings config.Schema, eventID, name string) (fin
 
 // DownloadPayloadBinary downloads a copy of the payload binaries to the host
 // running lctrld to generate the config files for the provisioned machines
-func DownloadPayloadBinary(settings config.Schema, eventID string) (err error) {
+func DownloadPayloadBinary(settings config.Schema, evt *model.EvtvzE) (err error) {
 	_, cliExistsErr := os.Stat(settings.EventParams.LaunchPayload.CLIPath)
 	_, daemonExistsErr := os.Stat(settings.EventParams.LaunchPayload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
@@ -73,15 +74,12 @@ func DownloadPayloadBinary(settings config.Schema, eventID string) (err error) {
 // InitDaemon runs gaiad init burnerchain --home
 // state.DaemonConfigDir
 // and gaiad tendermint show-node-id
-func InitDaemon(settings config.Schema, eventID string) (err error) {
+func InitDaemon(settings config.Schema, evt *model.EvtvzE) (*model.EvtvzE, error) {
 	log.Infoln("Initializing daemon configs for each node")
-	evt, err := LoadEvent(settings, eventID)
-	if err != nil {
-		return
-	}
+
 	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	_, accounts := evt.Validators()
@@ -89,14 +87,14 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		// Make the config directory for the node CLI
 		machineConfig := evt.State[acc.Name]
 		if acc.Validator {
-			nodeConfigDir, err := getNodeConfigDir(settings, eventID, machineConfig.ID)
+			nodeConfigDir, err := getNodeConfigDir(settings, evt.ID(), machineConfig.ID)
 			if err != nil {
 				break
 			}
 			acc.ConfigLocation.DaemonConfigDir = path.Join(nodeConfigDir, "daemon")
 			acc.ConfigLocation.CLIConfigDir = path.Join(nodeConfigDir, "cli")
 		} else {
-			extraAccDir, err := getExtraAccountConfigDir(settings, eventID, acc.Name)
+			extraAccDir, err := getExtraAccountConfigDir(settings, evt.ID(), acc.Name)
 			if err != nil {
 				break
 			}
@@ -107,7 +105,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
 			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
-			return err
+			return nil, err
 		}
 
 		args = []string{"tendermint", "show-node-id", "--home", acc.ConfigLocation.DaemonConfigDir}
@@ -118,25 +116,18 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		machineConfig.TendermintNodeID = strings.TrimSuffix(out, "\n")
 	}
 
-	err = StoreEvent(settings, evt)
-	if err != nil {
-		return
-	}
-	return
+	return evt, nil
 }
 
 // GenerateKeys generates keys for each genesis account (this includes validator
 // accounts). The specific command is gaiacli keys add validatoremail/some other name -o json
 // --keyring-backend test --home.... for each node.
-func GenerateKeys(settings config.Schema, eventID string) (err error) {
+func GenerateKeys(settings config.Schema, evt *model.EvtvzE) (*model.EvtvzE, error) {
 	log.Infoln("Generating keys for validator accounts")
-	evt, err := LoadEvent(settings, eventID)
-	if err != nil {
-		return
-	}
+
 	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	_, validatorAccounts := evt.Validators()
@@ -159,9 +150,9 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 
 	log.Infoln("Generating keys for non-validator accounts")
 	for _, acc := range evt.ExtraAccounts() {
-		extraAccDir, err2 := getExtraAccountConfigDir(settings, eventID, acc.Name)
+		extraAccDir, err2 := getExtraAccountConfigDir(settings, evt.ID(), acc.Name)
 		if err2 != nil {
-			return err2
+			return nil, err2
 		}
 
 		args := []string{"keys", "add", acc.Name, "-o", "json", "--keyring-backend", "test", "--home", extraAccDir}
@@ -179,21 +170,14 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 
 		log.Infof("%s -> %s\n", acc.Name, acc.Address)
 	}
-	err = StoreEvent(settings, evt)
-	if err != nil {
-		return
-	}
-	return
+	return evt, nil
 }
 
 // AddGenesisAccounts runs gaiad add-genesis-account with the created addresses
 // and default initial balances
-func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
+func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
-	evt, err := LoadEvent(settings, eventID)
-	if err != nil {
-		return
-	}
+
 	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
 		return
@@ -216,17 +200,14 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 
 // GenesisTxs runs gentx to turn accounts into validator accounts and outputs
 // the genesis transactions into a single folder.
-func GenesisTxs(settings config.Schema, eventID string) (err error) {
+func GenesisTxs(settings config.Schema, evt *model.EvtvzE) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
-	evt, err := LoadEvent(settings, eventID)
-	if err != nil {
-		return
-	}
+
 	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
 		return
 	}
-	basePath, err := getConfigDir(settings, eventID)
+	basePath, err := getConfigDir(settings, evt.ID())
 
 	// Ensure that the genesis txs destination directory exists
 	outputGenesisTxDir := path.Join(basePath, "genesis_txs")
@@ -254,17 +235,14 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 // CollectGenesisTxs is run on every node's config directory from the single
 // directory where the genesis transactions were placed before. In the end, only
 // the first node's genesis.josn will be used.
-func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
+func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
-	evt, err := LoadEvent(settings, eventID)
-	if err != nil {
-		return
-	}
+
 	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
 		return
 	}
-	basePath, err := getConfigDir(settings, eventID)
+	basePath, err := getConfigDir(settings, evt.ID())
 	if err != nil {
 		return
 	}
@@ -283,12 +261,8 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 }
 
 // EditConfigs edits the config.toml of every node to have the same persistent_peers.
-func EditConfigs(settings config.Schema, eventID string) (err error) {
+func EditConfigs(settings config.Schema, evt *model.EvtvzE) (err error) {
 	log.Infoln("Copying node 0's genesis.json to others and setting up p2p.persistent_peers")
-	evt, err := LoadEvent(settings, eventID)
-	if err != nil {
-		return
-	}
 
 	// Although we just generated the genesis.json for every node (makes it
 	// easy to debug things) we only need one. Copy node 0's genesis.json to
