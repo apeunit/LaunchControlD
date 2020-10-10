@@ -3,7 +3,6 @@ package lctrld
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
@@ -118,7 +117,6 @@ func Provision(settings config.Schema, evtID string) (err error) {
 		return
 	}
 	// Outputter
-	var out []byte
 	dmBin := dmBin(settings)
 	// set the path to find the executable
 	envVars, err := dockerEnv(settings, evt)
@@ -138,18 +136,15 @@ func Provision(settings config.Schema, evtID string) (err error) {
 		p := []string{"create", "--driver", evt.Provider}
 		p = append(p, driver.Params...)
 		p = append(p, host)
-		log.Debug("Provision cmd: ", dmBin, evt.Provider, host)
-		/// prepare the command
-		cmd := exec.Command(dmBin, p...)
-		// add the binary folder to the exec path
-		cmd.Env = envVars
-		log.Debug("Provision env vars set to ", cmd.Env)
-		// execute the command
-		out, err = cmd.CombinedOutput()
+
+		log.Debugf("Provision cmd: %s %s %s", dmBin, evt.Provider, host)
+		log.Debug("Provision env vars set to ", envVars)
+		out, err := runCommand(dmBin, p, envVars)
 		if err != nil {
 			log.Fatalf("Provision cmd failed with %s, %s\n", err, out)
 			break
 		}
+
 		log.Debug("Provision cmd output: ", string(out), err)
 		// load the configuration of the machine
 		mc, err := machineConfig(settings, evt.ID(), i)

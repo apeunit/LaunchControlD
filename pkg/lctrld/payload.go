@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -80,6 +79,11 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
+	envVars, err := dockerEnv(settings, evt)
+	if err != nil {
+		return
+	}
+
 	_, accounts := evt.Validators()
 	for _, acc := range accounts {
 		// Make the config directory for the node CLI
@@ -100,20 +104,18 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		}
 
 		args := []string{"init", fmt.Sprintf("%s node %s", acc.Name, machineConfig.ID), "--home", acc.ConfigLocation.DaemonConfigDir, "--chain-id", evt.ID()}
-		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
-		out, err := cmd.CombinedOutput()
+		out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
 			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			return err
 		}
 
 		args = []string{"tendermint", "show-node-id", "--home", acc.ConfigLocation.DaemonConfigDir}
-		cmd = exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
-		out, err = cmd.CombinedOutput()
+		out, err = runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
 			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 		}
-		machineConfig.TendermintNodeID = strings.TrimSuffix(string(out), "\n")
+		machineConfig.TendermintNodeID = strings.TrimSuffix(out, "\n")
 	}
 
 	err = storeEvent(settings, evt)
@@ -132,19 +134,22 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
+	envVars, err := dockerEnv(settings, evt)
+	if err != nil {
+		return
+	}
 
 	_, validatorAccounts := evt.Validators()
 	for _, account := range validatorAccounts {
 		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", account.ConfigLocation.CLIConfigDir}
-		cmd := exec.Command(settings.EventParams.LaunchPayload.CLIPath, args...)
-		out, err := cmd.CombinedOutput()
+		out, err := runCommand(settings.EventParams.LaunchPayload.CLIPath, args, envVars)
 		if err != nil {
 			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
 			break
 		}
 
 		var result map[string]interface{}
-		json.Unmarshal(out, &result)
+		json.Unmarshal([]byte(out), &result)
 
 		account.Address = result["address"].(string)
 		account.Mnemonic = result["mnemonic"].(string)
@@ -160,15 +165,14 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 		}
 
 		args := []string{"keys", "add", acc.Name, "-o", "json", "--keyring-backend", "test", "--home", extraAccDir}
-		cmd := exec.Command(settings.EventParams.LaunchPayload.CLIPath, args...)
-		out, err := cmd.CombinedOutput()
+		out, err := runCommand(settings.EventParams.LaunchPayload.CLIPath, args, envVars)
 		if err != nil {
 			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
 			break
 		}
 
 		var result map[string]interface{}
-		json.Unmarshal(out, &result)
+		json.Unmarshal([]byte(out), &result)
 
 		acc.Address = result["address"].(string)
 		acc.Mnemonic = result["mnemonic"].(string)
@@ -190,13 +194,16 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
+	envVars, err := dockerEnv(settings, evt)
+	if err != nil {
+		return
+	}
 
 	for name, state := range evt.State {
 		for _, account := range evt.Accounts {
 			fmt.Printf("%s %s %s\n", state.ID, account.Name, account.Address)
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-			cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
-			out, err := cmd.CombinedOutput()
+			out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
 			if err != nil {
 				log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 				break
@@ -215,6 +222,10 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
+	envVars, err := dockerEnv(settings, evt)
+	if err != nil {
+		return
+	}
 	basePath, err := getConfigDir(settings, eventID)
 
 	// Ensure that the genesis txs destination directory exists
@@ -230,8 +241,7 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 		// Here we assume that last part of genesis_balance is the # of stake tokens
 		// launchpayloadd gentx --name v1@email.com --amount 10000stake --home-client ... --keyring-backend test --home ... --output-document ...
 		args := []string{"gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", evt.Accounts[email].ConfigLocation.CLIConfigDir, "--keyring-backend", "test", "--home", evt.Accounts[email].ConfigLocation.DaemonConfigDir, "--output-document", outputDocument}
-		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
-		out, err := cmd.CombinedOutput()
+		out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
 			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			break
@@ -250,6 +260,10 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 	if err != nil {
 		return
 	}
+	envVars, err := dockerEnv(settings, evt)
+	if err != nil {
+		return
+	}
 	basePath, err := getConfigDir(settings, eventID)
 	if err != nil {
 		return
@@ -259,8 +273,7 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 
 	for name := range evt.State {
 		args := []string{"collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-		cmd := exec.Command(settings.EventParams.LaunchPayload.DaemonPath, args...)
-		out, err := cmd.CombinedOutput()
+		out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
 			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
 			break
