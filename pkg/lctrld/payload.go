@@ -75,7 +75,7 @@ func DownloadPayloadBinary(settings config.Schema, eventID string) (err error) {
 // and gaiad tendermint show-node-id
 func InitDaemon(settings config.Schema, eventID string) (err error) {
 	log.Infoln("Initializing daemon configs for each node")
-	evt, err := loadEvent(settings, eventID)
+	evt, err := LoadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
@@ -118,7 +118,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 		machineConfig.TendermintNodeID = strings.TrimSuffix(out, "\n")
 	}
 
-	err = storeEvent(settings, evt)
+	err = StoreEvent(settings, evt)
 	if err != nil {
 		return
 	}
@@ -130,7 +130,7 @@ func InitDaemon(settings config.Schema, eventID string) (err error) {
 // --keyring-backend test --home.... for each node.
 func GenerateKeys(settings config.Schema, eventID string) (err error) {
 	log.Infoln("Generating keys for validator accounts")
-	evt, err := loadEvent(settings, eventID)
+	evt, err := LoadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
@@ -179,7 +179,7 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 
 		log.Infof("%s -> %s\n", acc.Name, acc.Address)
 	}
-	err = storeEvent(settings, evt)
+	err = StoreEvent(settings, evt)
 	if err != nil {
 		return
 	}
@@ -190,7 +190,7 @@ func GenerateKeys(settings config.Schema, eventID string) (err error) {
 // and default initial balances
 func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
-	evt, err := loadEvent(settings, eventID)
+	evt, err := LoadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
@@ -218,7 +218,7 @@ func AddGenesisAccounts(settings config.Schema, eventID string) (err error) {
 // the genesis transactions into a single folder.
 func GenesisTxs(settings config.Schema, eventID string) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
-	evt, err := loadEvent(settings, eventID)
+	evt, err := LoadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
@@ -256,7 +256,7 @@ func GenesisTxs(settings config.Schema, eventID string) (err error) {
 // the first node's genesis.josn will be used.
 func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
-	evt, err := loadEvent(settings, eventID)
+	evt, err := LoadEvent(settings, eventID)
 	if err != nil {
 		return
 	}
@@ -285,7 +285,7 @@ func CollectGenesisTxs(settings config.Schema, eventID string) (err error) {
 // EditConfigs edits the config.toml of every node to have the same persistent_peers.
 func EditConfigs(settings config.Schema, eventID string) (err error) {
 	log.Infoln("Copying node 0's genesis.json to others and setting up p2p.persistent_peers")
-	evt, err := loadEvent(settings, eventID)
+	evt, err := LoadEvent(settings, eventID)
 	if err != nil {
 		return
 	}

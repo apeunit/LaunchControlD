@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func dockerEnv(settings config.Schema, evt model.EvtvzE) (env []string, err error) {
+func dockerEnv(settings config.Schema, evt *model.EvtvzE) (env []string, err error) {
 	// set the path to find executable
 	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
@@ -28,7 +28,7 @@ func dockerEnv(settings config.Schema, evt model.EvtvzE) (env []string, err erro
 }
 
 // InspectEvent inspect status of the infrastructure for an event
-func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+func InspectEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -53,33 +53,30 @@ func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 }
 
 // DestroyEvent destroy an existing event
-func DestroyEvent(settings config.Schema, evtID string) (err error) {
-	path, err := evts(settings, evtID)
-	log.Debugln("DestroyEvent event", evtID, "home:", path)
+func DestroyEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
+	path, err := evts(settings, evt.ID())
+	log.Debugln("DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
 		log.Fatal("DestroyEvent failed:", err)
 		return
 	}
 	if !utils.FileExists(path) {
-		err = fmt.Errorf("Event ID %s not found", evtID)
+		err = fmt.Errorf("Event ID %s not found", evt.ID())
 		log.Fatal("DestroyEvent failed:", err)
 		return
 	}
 	// load the descriptor
-	p, err := evtDescriptor(settings, evtID)
+	p, err := evtDescriptor(settings, evt.ID())
 	log.Debug("DestroyEvent event descriptor:", p)
 	if err != nil {
 		log.Fatal("DestroyEvent failed:", err)
 		return
 	}
-	evt, err := model.LoadEvtvzE(p)
-	if err != nil {
-		return
-	}
+
 	// run the rm command for each validator
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	envVars, err := dockerEnv(settings, *evt)
+	envVars, err := dockerEnv(settings, evt)
 	if err != nil {
 		return
 	}
@@ -111,11 +108,7 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evtID string) (err error) {
-	evt, err := loadEvent(settings, evtID)
-	if err != nil {
-		return
-	}
+func Provision(settings config.Schema, evt *model.EvtvzE) (err error) {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
@@ -165,17 +158,13 @@ func Provision(settings config.Schema, evtID string) (err error) {
 	if err != nil {
 		return
 	}
-	err = storeEvent(settings, evt)
+	err = StoreEvent(settings, evt)
 	return
 }
 
 // DeployPayload tells the provisioned machines to run the configured docker
 // image
-func DeployPayload(settings config.Schema, evtID string) (err error) {
-	evt, err := loadEvent(settings, evtID)
-	if err != nil {
-		return
-	}
+func DeployPayload(settings config.Schema, evt *model.EvtvzE) (err error) {
 	dmBin := dmBin(settings)
 
 	log.Infoln("Copying node configs to each provisioned machine")
@@ -226,8 +215,8 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 			break
 		}
 
-		machineHomeDir := machineHome(settings, evtID, machineID)
-		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
+		machineHomeDir := machineHome(settings, evt.ID(), machineID)
+		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID))
 
 		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
 		args := []string{"pull", evt.DockerImage}
@@ -254,8 +243,8 @@ func DeployPayload(settings config.Schema, evtID string) (err error) {
 			break
 		}
 
-		machineHomeDir := machineHome(settings, evtID, machineID)
-		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evtID, state.ID))
+		machineHomeDir := machineHome(settings, evt.ID(), machineID)
+		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID))
 
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
 		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "-p", "26658:26658", evt.DockerImage}

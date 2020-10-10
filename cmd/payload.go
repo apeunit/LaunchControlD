@@ -66,6 +66,10 @@ func setupChain(cmd *cobra.Command, args []string) (err error) {
 }
 
 func deploy(cmd *cobra.Command, args []string) (err error) {
-	err = lctrld.DeployPayload(settings, args[0])
+	evt, err := lctrld.LoadEvent(settings, args[0])
+	if err != nil {
+		return err
+	}
+	err = lctrld.DeployPayload(settings, evt)
 	return
 }

@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -65,10 +66,10 @@ var setupEventCmd = &cobra.Command{
 	Short: "Setup a new event",
 	Long:  ``,
 	Args:  cobra.ExactArgs(2),
-	Run:   setupEvent,
+	RunE:  setupEvent,
 }
 
-func setupEvent(cmd *cobra.Command, args []string) {
+func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Preparing the environment")
 	start := time.Now()
 
@@ -96,16 +97,19 @@ func setupEvent(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println("Here we go!!")
-	err := lctrld.CreateEvent(settings, event)
+	err = lctrld.CreateEvent(settings, event)
 	if err != nil {
-		fmt.Println("There was an error, run the command with --debug for more info:", err)
+		log.Fatal("There was an error, run the command with --debug for more info:", err)
+		return err
 	}
-	err = lctrld.Provision(settings, event.ID())
+	err = lctrld.Provision(settings, event)
 	if err != nil {
-		fmt.Println("There was an error, run the command with --debug for more info:", err)
+		log.Fatal("There was an error, run the command with --debug for more info:", err)
+		return err
 	}
 
 	fmt.Println("Operation completed in", time.Since(start))
+	return nil
 }
 
 // tearDownEventCmd represents the tearDownEvent command
@@ -114,18 +118,25 @@ var tearDownEventCmd = &cobra.Command{
 	Short: "Destroy the resources associated to an event",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	Run:   tearDownEvent,
+	RunE:  tearDownEvent,
 }
 
-func tearDownEvent(cmd *cobra.Command, args []string) {
+func tearDownEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Teardown Event")
 	fmt.Println("Event ID is", args[0])
 	start := time.Now()
-	err := lctrld.DestroyEvent(settings, args[0])
+	evt, err := lctrld.LoadEvent(settings, args[0])
 	if err != nil {
-		fmt.Println("There was an error shutting down the event: ", err)
+		log.Fatal("There was an error shutting down the event: ", err)
+		return err
+	}
+	err = lctrld.DestroyEvent(settings, evt)
+	if err != nil {
+		log.Fatal("There was an error shutting down the event: ", err)
+		return err
 	}
 	fmt.Println("Operation completed in", time.Since(start))
+	return nil
 }
 
 // listEventCmd represents the tearDownEvent command
@@ -146,7 +157,7 @@ func listEvent(cmd *cobra.Command, args []string) {
 	for _, evt := range events {
 		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
 		if verbose {
-			lctrld.InspectEvent(settings, evt)
+			lctrld.InspectEvent(settings, &evt)
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))

@@ -32,12 +32,12 @@ type EvtvzE struct {
 }
 
 // NewEvtvzE helper for a new event
-func NewEvtvzE(symbol, owner, provider, dockerImage string, genesisAccounts []config.GenesisAccount) (e EvtvzE) {
+func NewEvtvzE(symbol, owner, provider, dockerImage string, genesisAccounts []config.GenesisAccount) (e *EvtvzE) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
 		accounts[acc.Name] = NewAccount(acc.Name, "", "", acc.GenesisBalance, acc.Validator)
 	}
-	return EvtvzE{
+	return &EvtvzE{
 		TokenSymbol: symbol,
 		Owner:       owner,
 		Accounts:    accounts,
@@ -58,26 +58,26 @@ func LoadEvtvzE(path string) (evt *EvtvzE, err error) {
 }
 
 // FormatAmount print the amount in a human readable format
-func (e EvtvzE) FormatAmount(a uint64) string {
+func (e *EvtvzE) FormatAmount(a uint64) string {
 	return fmt.Sprintf("%v%s", a, e.TokenSymbol)
 }
 
 // Hash Generate the event hash
-func (e EvtvzE) Hash() string {
+func (e *EvtvzE) Hash() string {
 	return utils.ShortHash(e.TokenSymbol, e.Owner, e.Provider)
 }
 
 // ID generate a event identifier (determinitstic)
-func (e EvtvzE) ID() string {
+func (e *EvtvzE) ID() string {
 	return slug.Make(fmt.Sprintf("%v %v", e.TokenSymbol, e.Hash()))
 }
 
 // NodeID generate a node identifier (determinitstic)
-func (e EvtvzE) NodeID(n int) string {
+func (e *EvtvzE) NodeID(n int) string {
 	return slug.Make(fmt.Sprintf("%v %v %v", e.TokenSymbol, e.Hash(), n))
 }
 
-func (e EvtvzE) sortedAccounts() (keys []string) {
+func (e *EvtvzE) sortedAccounts() (keys []string) {
 	// We need to return the accounts in a deterministic order, sorted by key
 	for k := range e.Accounts {
 		keys = append(keys, k)
@@ -87,7 +87,7 @@ func (e EvtvzE) sortedAccounts() (keys []string) {
 }
 
 // Validators returns the names (emails) of the validators
-func (e EvtvzE) Validators() (v []string, a []*Account) {
+func (e *EvtvzE) Validators() (v []string, a []*Account) {
 	for _, k := range e.sortedAccounts() {
 		if e.Accounts[k].Validator {
 			v = append(v, e.Accounts[k].Name)
@@ -98,13 +98,13 @@ func (e EvtvzE) Validators() (v []string, a []*Account) {
 }
 
 // ValidatorsCount returns the number of validators
-func (e EvtvzE) ValidatorsCount() int {
+func (e *EvtvzE) ValidatorsCount() int {
 	validatorNames, _ := e.Validators()
 	return len(validatorNames)
 }
 
 // ExtraAccounts returns EvtvzE.Accounts excluding accounts that are validators
-func (e EvtvzE) ExtraAccounts() (a []*Account) {
+func (e *EvtvzE) ExtraAccounts() (a []*Account) {
 	for _, k := range e.sortedAccounts() {
 		if !e.Accounts[k].Validator {
 			a = append(a, e.Accounts[k])

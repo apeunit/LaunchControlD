@@ -128,7 +128,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 }
 
 // CreateEvent creates the event home and the event descriptor
-func CreateEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+func CreateEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
 	path, err := evts(settings, evt.ID())
 	if !utils.FileExists(path) {
 		err = os.MkdirAll(path, 0700)
@@ -136,7 +136,7 @@ func CreateEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 			return
 		}
 	}
-	err = storeEvent(settings, evt)
+	err = StoreEvent(settings, evt)
 	return
 }
 

@@ -54,8 +54,8 @@ func evtDescriptor(settings config.Schema, evtID string) (path string, err error
 	return
 }
 
-//loadEvent returns the Event model of the specified event ID
-func loadEvent(settings config.Schema, evtID string) (evt model.EvtvzE, err error) {
+//LoadEvent returns the Event model of the specified event ID
+func LoadEvent(settings config.Schema, evtID string) (evt *model.EvtvzE, err error) {
 	path, err := evts(settings, evtID)
 	if err != nil {
 		return
@@ -65,8 +65,8 @@ func loadEvent(settings config.Schema, evtID string) (evt model.EvtvzE, err erro
 	return
 }
 
-// storeEvent returns the Event model of the specified event ID
-func storeEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+// StoreEvent returns the Event model of the specified event ID
+func StoreEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
 	path, err := evts(settings, evt.ID())
 	if err != nil {
 		return
