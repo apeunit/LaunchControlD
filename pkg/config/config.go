@@ -43,6 +43,7 @@ type EventParams struct {
 	GenesisAccounts []GenesisAccount `mapstructure:"genesis_accounts,omitempty"`
 }
 
+// GenesisAccount is the configuration of accounts present in the genesis block
 type GenesisAccount struct {
 	Name           string `mapstructure:"name,omitempty"`
 	GenesisBalance string `mapstructure:"genesis_balance,omitempty"`

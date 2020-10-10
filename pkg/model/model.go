@@ -113,6 +113,8 @@ func (e EvtvzE) ExtraAccounts() (a []*Account) {
 	return
 }
 
+// ConfigLocation holds the paths to the configuration files for the Cosmos-SDK
+// based node and CLI.
 type ConfigLocation struct {
 	CLIConfigDir    string `json:"CLIConfigDir"`
 	DaemonConfigDir string `json:"DaemonConfigDir"`
@@ -144,6 +146,7 @@ func (m MachineConfig) TendermintPeerNodeID() string {
 	return fmt.Sprintf("%s@%s:26656", m.TendermintNodeID, m.Instance.IPAddress)
 }
 
+// Account represents an Account for a Event
 type Account struct {
 	Name           string          `json:"name"`
 	Address        string          `json:"address"`
@@ -153,6 +156,7 @@ type Account struct {
 	ConfigLocation *ConfigLocation `json:"config_location"`
 }
 
+// NewAccount ensures that all Account fields are filled out
 func NewAccount(name, address, mnemonic, genesisBalance string, validator bool) *Account {
 	return &Account{
 		Name:           name,

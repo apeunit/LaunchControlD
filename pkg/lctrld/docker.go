@@ -169,6 +169,8 @@ func Provision(settings config.Schema, evtID string) (err error) {
 	return
 }
 
+// DeployPayload tells the provisioned machines to run the configured docker
+// image
 func DeployPayload(settings config.Schema, evtID string) (err error) {
 	evt, err := loadEvent(settings, evtID)
 	if err != nil {
