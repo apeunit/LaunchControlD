@@ -142,7 +142,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunn
 		// load the configuration of the machine
 		mc, err := machineConfig(settings, evt.ID(), i)
 		if err != nil {
-			log.Fatalf("Provision read machine config error:", err)
+			log.Fatal("Provision read machine config error:", err)
 			break
 		}
 

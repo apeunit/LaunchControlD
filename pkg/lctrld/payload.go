@@ -281,13 +281,13 @@ func EditConfigs(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRu
 
 		newOtherGenesis, err := os.Create(otherGenesis)
 		if err != nil {
-			log.Fatalf("Creating a blank %s failed with %s\n", newOtherGenesis, err)
+			log.Fatalf("Creating a blank %s failed with %s\n", otherGenesis, err)
 			break
 		}
 
 		written, err := io.Copy(newOtherGenesis, node0Genesis)
 		if err != nil {
-			log.Fatalf("Copying %s to %s failed with %s\n", node0Genesis, newOtherGenesis, err)
+			log.Fatalf("Copying %s to %s failed with %s\n", pathToNode0Genesis, otherGenesis, err)
 			break
 		}
 		log.Debugf("Copied %v bytes to %s", written, otherGenesis)
