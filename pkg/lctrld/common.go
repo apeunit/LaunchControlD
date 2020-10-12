@@ -92,7 +92,19 @@ func dmDriverBin(settings config.Schema, driverName string) string {
 	return bin(settings, settings.DockerMachine.Drivers[driverName].Binary)
 }
 
-func runCommand(bin string, args, envVars []string) (out string, err error) {
+type commandRunner interface {
+	Run(string, []string, []string) (string, error)
+}
+type CommandRunner struct{}
+
+// NewCommandRunner returns a pointer to a new CommandRunner instance
+func NewCommandRunner() *CommandRunner {
+	return new(CommandRunner)
+}
+
+// Run is a pure function implemented as a method so that I can use it in an
+// interface for mocking
+func (c *CommandRunner) Run(bin string, args, envVars []string) (out string, err error) {
 	/// prepare the command
 	cmd := exec.Command(bin, args...)
 	// add the binary folder to the exec path

@@ -71,6 +71,7 @@ var setupEventCmd = &cobra.Command{
 
 func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Preparing the environment")
+	c := lctrld.NewCommandRunner()
 	start := time.Now()
 
 	event := model.NewEvtvzE(args[0], args[1], provider, settings.EventParams.DockerImage, settings.EventParams.GenesisAccounts)
@@ -102,7 +103,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 		log.Fatal("There was an error, run the command with --debug for more info:", err)
 		return err
 	}
-	err = lctrld.Provision(settings, event)
+	err = lctrld.Provision(settings, event, c)
 	if err != nil {
 		log.Fatal("There was an error, run the command with --debug for more info:", err)
 		return err
@@ -124,13 +125,14 @@ var tearDownEventCmd = &cobra.Command{
 func tearDownEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Teardown Event")
 	fmt.Println("Event ID is", args[0])
+	c := lctrld.NewCommandRunner()
 	start := time.Now()
 	evt, err := lctrld.LoadEvent(settings, args[0])
 	if err != nil {
 		log.Fatal("There was an error shutting down the event: ", err)
 		return err
 	}
-	err = lctrld.DestroyEvent(settings, evt)
+	err = lctrld.DestroyEvent(settings, evt, c)
 	if err != nil {
 		log.Fatal("There was an error shutting down the event: ", err)
 		return err
@@ -149,6 +151,7 @@ var listEventCmd = &cobra.Command{
 
 func listEvent(cmd *cobra.Command, args []string) {
 	fmt.Println("List events")
+	c := lctrld.NewCommandRunner()
 	start := time.Now()
 	events, err := lctrld.ListEvents(settings)
 	if err != nil {
@@ -157,7 +160,7 @@ func listEvent(cmd *cobra.Command, args []string) {
 	for _, evt := range events {
 		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
 		if verbose {
-			lctrld.InspectEvent(settings, &evt)
+			lctrld.InspectEvent(settings, &evt, c)
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))

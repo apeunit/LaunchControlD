@@ -28,7 +28,7 @@ func dockerEnv(settings config.Schema, evt *model.EvtvzE) (env []string, err err
 }
 
 // InspectEvent inspect status of the infrastructure for an event
-func InspectEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
+func InspectEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -41,19 +41,19 @@ func InspectEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
 	_, validatorAccounts := evt.Validators()
 	for i := range validatorAccounts {
 		host := evt.NodeID(i)
-		out, err := runCommand(dmBin, []string{"status", host}, envVars)
+		out, err := cmdRunner.Run(dmBin, []string{"status", host}, envVars)
 		if err != nil {
 			break
 		}
 		fmt.Println(host, "status:", out)
-		out, err = runCommand(dmBin, []string{"ip", host}, envVars)
+		out, err = cmdRunner.Run(dmBin, []string{"ip", host}, envVars)
 		fmt.Println(host, "IP:", out)
 	}
 	return
 }
 
 // DestroyEvent destroy an existing event
-func DestroyEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
+func DestroyEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -87,13 +87,13 @@ func DestroyEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
 		//driver := settings.DockerMachine.Drivers[evt.Provider]
 		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
-		out, err := runCommand(dmBin, []string{"stop", host}, envVars)
+		out, err := cmdRunner.Run(dmBin, []string{"stop", host}, envVars)
 		if err != nil {
 			fmt.Println(err)
 		}
 		fmt.Println(host, "stop:", out)
 
-		out, err = runCommand(dmBin, []string{"rm", host}, envVars)
+		out, err = cmdRunner.Run(dmBin, []string{"rm", host}, envVars)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -108,7 +108,7 @@ func DestroyEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt *model.EvtvzE) (err error) {
+func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
@@ -132,7 +132,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE) (err error) {
 
 		log.Debugf("Provision cmd: %s %s %s", dmBin, evt.Provider, host)
 		log.Debug("Provision env vars set to ", envVars)
-		out, err := runCommand(dmBin, p, envVars)
+		out, err := cmdRunner.Run(dmBin, p, envVars)
 		if err != nil {
 			log.Fatalf("Provision cmd failed with %s, %s\n", err, out)
 			break
@@ -146,7 +146,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE) (err error) {
 			break
 		}
 
-		ip, err := runCommand(dmBin, []string{"ip", host}, envVars)
+		ip, err := cmdRunner.Run(dmBin, []string{"ip", host}, envVars)
 		if err != nil {
 			log.Fatal(err)
 			break
@@ -164,7 +164,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE) (err error) {
 
 // DeployPayload tells the provisioned machines to run the configured docker
 // image
-func DeployPayload(settings config.Schema, evt *model.EvtvzE) (err error) {
+func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
 	dmBin := dmBin(settings)
 
 	log.Infoln("Copying node configs to each provisioned machine")
@@ -177,7 +177,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE) (err error) {
 
 		// docker-machine ssh mkdir -p /home/docker/nodeconfig
 		args := []string{"ssh", state.ID, "mkdir", "-p", "/home/docker/nodeconfig"}
-		_, err = runCommand(dmBin, args, envVars)
+		_, err = cmdRunner.Run(dmBin, args, envVars)
 		if err != nil {
 			log.Fatalf("docker-machine %s failed with %s", args, err)
 			break
@@ -185,7 +185,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE) (err error) {
 
 		// docker-machine scp -r pathDaemon evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
 		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.DaemonConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
-		_, err = runCommand(dmBin, args, envVars)
+		_, err = cmdRunner.Run(dmBin, args, envVars)
 		if err != nil {
 			log.Fatalf("docker-machine %s failed with %s", args, err)
 			break
@@ -193,7 +193,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE) (err error) {
 
 		// docker-machine scp -r pathCLI evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
 		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID)}
-		_, err = runCommand(dmBin, args, envVars)
+		_, err = cmdRunner.Run(dmBin, args, envVars)
 		if err != nil {
 			log.Fatalf("docker-machine %s failed with %s", args, err)
 			break
@@ -221,7 +221,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE) (err error) {
 		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
 		args := []string{"pull", evt.DockerImage}
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
-		_, err = runCommand("docker", args, envVars)
+		_, err = cmdRunner.Run("docker", args, envVars)
 		if err != nil {
 			log.Fatalf("docker %s failed with %s", args, err)
 			break
@@ -249,7 +249,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE) (err error) {
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
 		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "-p", "26658:26658", evt.DockerImage}
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
-		_, err = runCommand("docker", args, envVars)
+		_, err = cmdRunner.Run("docker", args, envVars)
 		if err != nil {
 			log.Fatalf("docker %s failed with %s", args, err)
 			break
