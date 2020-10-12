@@ -20,15 +20,15 @@ const (
 
 // EvtvzE maintain the status of an event
 type EvtvzE struct {
-	TokenSymbol string                    `json:"token_symbol,omitempty"` // token symbool
-	Owner       string                    `json:"owner,omitempty"`        // email address of the owner
-	Accounts    map[string]*Account       `json:"accounts,omitempty"`
-	Provider    string                    `json:"provider,omitempty"`     // provider for provisioning
-	DockerImage string                    `json:"docker_image,omitempty"` // docker image payload to be deployed on the machines
-	CreatedOn   time.Time                 `json:"created_on,omitempty"`
-	StartsOn    time.Time                 `json:"starts_on,omitempty"`
-	EndsOn      time.Time                 `json:"ends_on,omitempty"`
-	State       map[string]*MachineConfig `json:"state,omitempty"`
+	TokenSymbol string                    `json:"token_symbol"` // token symbool
+	Owner       string                    `json:"owner"`        // email address of the owner
+	Accounts    map[string]*Account       `json:"accounts"`
+	Provider    string                    `json:"provider"`     // provider for provisioning
+	DockerImage string                    `json:"docker_image"` // docker image payload to be deployed on the machines
+	CreatedOn   time.Time                 `json:"created_on"`
+	StartsOn    time.Time                 `json:"starts_on"`
+	EndsOn      time.Time                 `json:"ends_on"`
+	State       map[string]*MachineConfig `json:"state"`
 }
 
 // NewEvtvzE helper for a new event
@@ -122,16 +122,13 @@ type ConfigLocation struct {
 
 // MachineConfig holds the configuration of a Machine
 type MachineConfig struct {
-	ID               string `json:"ID,omitempty"`
-	DriverName       string `json:"DriverName,omitempty"`
-	TendermintNodeID string `json:"TendermintNodeID,omitempty"`
+	ID               string `json:"ID"`
+	DriverName       string `json:"DriverName"`
+	TendermintNodeID string `json:"TendermintNodeID"`
 	Instance         struct {
-		IPAddress   string `json:"IPAddress,omitempty"`
-		MachineName string `json:"MachineName,omitempty"`
-		SSHUser     string `json:"SSHUser,omitempty"`
-		SSHPort     int    `json:"SSHPort,omitempty"`
-		SSHKeyPath  string `json:"SSHKeyPath,omitempty"`
-	} `json:"Instance,omitempty"`
+		IPAddress   string `json:"IPAddress"`
+		MachineName string `json:"MachineName"`
+	} `json:"Instance"`
 }
 
 // NumberID takes the ID, e.g. evtx-d97517a3673688070aef-1 and returns "1"
