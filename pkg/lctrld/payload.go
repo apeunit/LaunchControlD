@@ -46,7 +46,7 @@ func getExtraAccountConfigDir(settings config.Schema, eventID, name string) (fin
 
 // DownloadPayloadBinary downloads a copy of the payload binaries to the host
 // running lctrld to generate the config files for the provisioned machines
-func DownloadPayloadBinary(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
+func DownloadPayloadBinary(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (err error) {
 	_, cliExistsErr := os.Stat(settings.EventParams.LaunchPayload.CLIPath)
 	_, daemonExistsErr := os.Stat(settings.EventParams.LaunchPayload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
@@ -74,7 +74,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.EvtvzE, cmdRunner 
 // InitDaemon runs gaiad init burnerchain --home
 // state.DaemonConfigDir
 // and gaiad tendermint show-node-id
-func InitDaemon(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (*model.EvtvzE, error) {
+func InitDaemon(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (*model.EvtvzE, error) {
 	log.Infoln("Initializing daemon configs for each node")
 
 	envVars, err := dockerEnv(settings, evt)
@@ -122,7 +122,7 @@ func InitDaemon(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRun
 // GenerateKeys generates keys for each genesis account (this includes validator
 // accounts). The specific command is gaiacli keys add validatoremail/some other name -o json
 // --keyring-backend test --home.... for each node.
-func GenerateKeys(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (*model.EvtvzE, error) {
+func GenerateKeys(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (*model.EvtvzE, error) {
 	log.Infoln("Generating keys for validator accounts")
 
 	envVars, err := dockerEnv(settings, evt)
@@ -175,7 +175,7 @@ func GenerateKeys(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandR
 
 // AddGenesisAccounts runs gaiad add-genesis-account with the created addresses
 // and default initial balances
-func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
+func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
 
 	envVars, err := dockerEnv(settings, evt)
@@ -200,7 +200,7 @@ func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, cmdRunner *Co
 
 // GenesisTxs runs gentx to turn accounts into validator accounts and outputs
 // the genesis transactions into a single folder.
-func GenesisTxs(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
+func GenesisTxs(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
 
 	envVars, err := dockerEnv(settings, evt)
@@ -235,7 +235,7 @@ func GenesisTxs(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRun
 // CollectGenesisTxs is run on every node's config directory from the single
 // directory where the genesis transactions were placed before. In the end, only
 // the first node's genesis.josn will be used.
-func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
+func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 
 	envVars, err := dockerEnv(settings, evt)
@@ -261,7 +261,7 @@ func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, cmdRunner *Com
 }
 
 // EditConfigs edits the config.toml of every node to have the same persistent_peers.
-func EditConfigs(settings config.Schema, evt *model.EvtvzE, cmdRunner *CommandRunner) (err error) {
+func EditConfigs(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (err error) {
 	log.Infoln("Copying node 0's genesis.json to others and setting up p2p.persistent_peers")
 
 	// Although we just generated the genesis.json for every node (makes it
