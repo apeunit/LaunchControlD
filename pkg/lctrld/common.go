@@ -33,14 +33,35 @@ func evts(settings config.Schema, dir string) (string, error) {
 	return _absPath(_path(settings.Workspace, evtsDir, dir))
 }
 
-// machineHome get the path of a docker-machine instance home
-func machineHome(settings config.Schema, evtID string, machineID int) string {
-	return _path(settings.Workspace, evtsDir, evtID, ".docker", "machine", "machines", fmt.Sprintf("%s-%d", evtID, machineID))
+type DockerMachineInterface interface {
+	HomeDir(int) string
+	ReadConfig(int) (*model.MachineConfig, error)
 }
 
-// machineConfig return configuration of a docker machine
-func machineConfig(settings config.Schema, evtID string, machineID int) (mc model.MachineConfig, err error) {
-	err = utils.LoadJSON(_path(machineHome(settings, evtID, machineID), "config.json"), &mc)
+// DockerMachineConfig holds information that lets lctrld read the state of a
+// docker-machine provisioning
+type DockerMachineConfig struct {
+	EventID  string
+	Settings config.Schema
+}
+
+// NewDockerMachineConfig ensures that all fields of a DockerMachineConfig are filled out
+func NewDockerMachineConfig(settings config.Schema, eventID string) *DockerMachineConfig {
+	return &DockerMachineConfig{
+		EventID:  eventID,
+		Settings: settings,
+	}
+}
+
+// HomeDir get the path of a docker-machine instance home
+func (dmc *DockerMachineConfig) HomeDir(machineN int) string {
+	return _path(dmc.Settings.Workspace, evtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%d", dmc.EventID, machineN))
+
+}
+
+// ReadConfig return configuration of a docker machine
+func (dmc *DockerMachineConfig) ReadConfig(machineN int) (mc model.MachineConfig, err error) {
+	err = utils.LoadJSON(_path(dmc.HomeDir(machineN), "config.json"), &mc)
 	return
 }
 

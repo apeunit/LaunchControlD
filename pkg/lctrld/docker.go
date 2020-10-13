@@ -108,7 +108,7 @@ func DestroyEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRu
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (err error) {
+func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner, dmc DockerMachineInterface) (err error) {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
@@ -140,7 +140,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunne
 
 		log.Debug("Provision cmd output: ", string(out), err)
 		// load the configuration of the machine
-		mc, err := machineConfig(settings, evt.ID(), i)
+		mc, err := dmc.ReadConfig(i)
 		if err != nil {
 			log.Fatal("Provision read machine config error:", err)
 			break
@@ -153,7 +153,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunne
 		}
 		mc.Instance.IPAddress = string(ip)
 		mc.ID = evt.NodeID(i)
-		evt.State[v.Name] = &mc
+		evt.State[v.Name] = mc
 	}
 	if err != nil {
 		return
@@ -164,7 +164,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunne
 
 // DeployPayload tells the provisioned machines to run the configured docker
 // image
-func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner) (err error) {
+func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner commandRunner, dmc DockerMachineInterface) (err error) {
 	dmBin := dmBin(settings)
 
 	log.Infoln("Copying node configs to each provisioned machine")
@@ -215,7 +215,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner commandR
 			break
 		}
 
-		machineHomeDir := machineHome(settings, evt.ID(), machineID)
+		machineHomeDir := dmc.HomeDir(machineID)
 		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID))
 
 		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
@@ -243,7 +243,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner commandR
 			break
 		}
 
-		machineHomeDir := machineHome(settings, evt.ID(), machineID)
+		machineHomeDir := dmc.HomeDir(machineID)
 		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID))
 
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
