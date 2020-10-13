@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -122,7 +121,8 @@ type ConfigLocation struct {
 
 // MachineConfig holds the configuration of a Machine
 type MachineConfig struct {
-	ID               string `json:"ID"`
+	N                string `json:"N"`
+	EventID          string `json:"EventID"`
 	DriverName       string `json:"DriverName"`
 	TendermintNodeID string `json:"TendermintNodeID"`
 	Instance         struct {
@@ -131,15 +131,15 @@ type MachineConfig struct {
 	} `json:"Instance"`
 }
 
-// NumberID takes the ID, e.g. evtx-d97517a3673688070aef-1 and returns "1"
-func (m MachineConfig) NumberID() (numberID int, err error) {
-	splitID := strings.Split(m.ID, "-") // evtx-d97517a3673688070aef-1
-	nID, err := strconv.ParseInt(splitID[len(splitID)-1], 0, 64)
-	return int(nID), err
+// ID joins the EventID and N, e.g. EventID is evtx-d97517a3673688070aef, N is
+// 1, then it will return evtx-d97517a3673688070aef-1
+func (m *MachineConfig) ID() string {
+	s := []string{m.EventID, m.N}
+	return strings.Join(s, "-")
 }
 
 // TendermintPeerNodeID returns <nodeID@192.168.1....:26656> which is used in specifying peers to connect to in the daemon's config.toml file
-func (m MachineConfig) TendermintPeerNodeID() string {
+func (m *MachineConfig) TendermintPeerNodeID() string {
 	return fmt.Sprintf("%s@%s:26656", m.TendermintNodeID, m.Instance.IPAddress)
 }
 

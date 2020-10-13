@@ -33,9 +33,11 @@ func evts(settings config.Schema, dir string) (string, error) {
 	return _absPath(_path(settings.Workspace, evtsDir, dir))
 }
 
+// DockerMachineInterface is sa mocking interface for functions that need to
+// read docker-machine config files
 type DockerMachineInterface interface {
-	HomeDir(int) string
-	ReadConfig(int) (*model.MachineConfig, error)
+	HomeDir(string) string
+	ReadConfig(string) (*model.MachineConfig, error)
 }
 
 // DockerMachineConfig holds information that lets lctrld read the state of a
@@ -54,13 +56,13 @@ func NewDockerMachineConfig(settings config.Schema, eventID string) *DockerMachi
 }
 
 // HomeDir get the path of a docker-machine instance home
-func (dmc *DockerMachineConfig) HomeDir(machineN int) string {
-	return _path(dmc.Settings.Workspace, evtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%d", dmc.EventID, machineN))
+func (dmc *DockerMachineConfig) HomeDir(machineN string) string {
+	return _path(dmc.Settings.Workspace, evtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dmc.EventID, machineN))
 
 }
 
 // ReadConfig return configuration of a docker machine
-func (dmc *DockerMachineConfig) ReadConfig(machineN int) (mc model.MachineConfig, err error) {
+func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.MachineConfig, err error) {
 	err = utils.LoadJSON(_path(dmc.HomeDir(machineN), "config.json"), &mc)
 	return
 }
@@ -113,19 +115,11 @@ func dmDriverBin(settings config.Schema, driverName string) string {
 	return bin(settings, settings.DockerMachine.Drivers[driverName].Binary)
 }
 
-type commandRunner interface {
-	Run(string, []string, []string) (string, error)
-}
-type CommandRunner struct{}
+// CommandRunner func type allows for mocking out RunCommand()
+type CommandRunner func(string, []string, []string) (string, error)
 
-// NewCommandRunner returns a pointer to a new CommandRunner instance
-func NewCommandRunner() *CommandRunner {
-	return new(CommandRunner)
-}
-
-// Run is a pure function implemented as a method so that I can use it in an
-// interface for mocking
-func (c *CommandRunner) Run(bin string, args, envVars []string) (out string, err error) {
+// RunCommand runs a command
+func RunCommand(bin string, args, envVars []string) (out string, err error) {
 	/// prepare the command
 	cmd := exec.Command(bin, args...)
 	// add the binary folder to the exec path

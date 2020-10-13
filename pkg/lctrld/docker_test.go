@@ -8,36 +8,24 @@ import (
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
+	"github.com/stretchr/testify/assert"
 )
 
-type mockCommandRunner struct {
-	MockOutput string
-	WantError  bool
-}
-
-func (m *mockCommandRunner) Run(string, []string, []string) (string, error) {
-	if m.WantError {
-		return "", errors.New("Here is your new error")
-	}
-	return m.MockOutput, nil
-}
-
 type mockDockerMachineConfig struct {
-	WantMachineConfig *model.MachineConfig
-	WantError         bool
+	WantError bool
 }
 
-func (m *mockDockerMachineConfig) HomeDir(machineN int) string {
+func (m *mockDockerMachineConfig) HomeDir(machineN string) string {
 	n := []string{"mock_path", fmt.Sprint(machineN)}
 	return path.Join(n...)
 }
 
-func (m *mockDockerMachineConfig) ReadConfig(machineN int) (mc *model.MachineConfig, err error) {
+func (m *mockDockerMachineConfig) ReadConfig(machineN string) (mc *model.MachineConfig, err error) {
 	if m.WantError {
 		return nil, errors.New("Here is your new error")
 	}
 
-	return m.WantMachineConfig, nil
+	return new(model.MachineConfig), nil
 }
 
 func TestProvision(t *testing.T) {
@@ -64,26 +52,116 @@ func TestProvision(t *testing.T) {
 		},
 	}
 	settings := config.Schema{}
-	evt := model.NewEvtvzE("TEST", "owner", "virtualbox", "nonexistent/testimage", fakeGenesisAccounts)
-	c := &mockCommandRunner{}
-	c.MockOutput = "HELLO WORLD"
+	evt := model.NewEvtvzE("evtx", "owner", "virtualbox", "nonexistent/testimage", fakeGenesisAccounts)
+
+	wantCommandOutput := "1.2.3.4"
+	var mockCommandRunner = func(cmd string, args, envVars []string) (out string, err error) {
+		fmt.Println("cmd", cmd, "args", args, "envVars", envVars)
+		return wantCommandOutput, nil
+	}
+
 	dmc := &mockDockerMachineConfig{
-		WantMachineConfig: &model.MachineConfig{
-			ID:               "",
-			DriverName:       "",
-			TendermintNodeID: "",
-			Instance: struct {
-				IPAddress   string "json:\"IPAddress\""
-				MachineName string "json:\"MachineName\""
-			}{
-				IPAddress:   "",
-				MachineName: "",
-			},
-		},
 		WantError: false,
 	}
-	err := Provision(settings, evt, c, dmc)
-	if err != nil {
-		t.Fatal(err)
+	evt, err := Provision(settings, evt, mockCommandRunner, dmc)
+	assert.Nil(t, err)
+
+	expectedEvt := &model.EvtvzE{
+		TokenSymbol: "evtx",
+		Owner:       "owner",
+		Accounts: map[string]*model.Account{
+			"first validator": {
+				Name:           "first validator",
+				Address:        "",
+				Mnemonic:       "",
+				GenesisBalance: "1000000stake",
+				Validator:      true,
+				ConfigLocation: &model.ConfigLocation{
+					CLIConfigDir:    "",
+					DaemonConfigDir: "",
+				},
+			},
+			"second validator": {
+				Name:           "second validator",
+				Address:        "",
+				Mnemonic:       "",
+				GenesisBalance: "1000000stake",
+				Validator:      true,
+				ConfigLocation: &model.ConfigLocation{
+					CLIConfigDir:    "",
+					DaemonConfigDir: "",
+				},
+			},
+			"third validator": {
+				Name:           "third validator",
+				Address:        "",
+				Mnemonic:       "",
+				GenesisBalance: "1000000stake",
+				Validator:      true,
+				ConfigLocation: &model.ConfigLocation{
+					CLIConfigDir:    "",
+					DaemonConfigDir: "",
+				},
+			},
+			"hanger on": {
+				Name:           "hanger on",
+				Address:        "",
+				Mnemonic:       "",
+				GenesisBalance: "1000000drop,10stake",
+				Validator:      false,
+				ConfigLocation: &model.ConfigLocation{
+					CLIConfigDir:    "",
+					DaemonConfigDir: "",
+				},
+			},
+		},
+		Provider:    "virtualbox",
+		DockerImage: "nonexistent/testimage",
+		CreatedOn:   evt.CreatedOn,
+		StartsOn:    evt.StartsOn,
+		EndsOn:      evt.EndsOn,
+		State: map[string]*model.MachineConfig{
+			"first validator": {
+				N:                "0",
+				EventID:          "evtx-2189cd35d97b3f53cc89",
+				DriverName:       "",
+				TendermintNodeID: "",
+				Instance: struct {
+					IPAddress   string "json:\"IPAddress\""
+					MachineName string "json:\"MachineName\""
+				}{
+					IPAddress:   "1.2.3.4",
+					MachineName: "",
+				},
+			},
+			"second validator": {
+				N:                "1",
+				EventID:          "evtx-2189cd35d97b3f53cc89",
+				DriverName:       "",
+				TendermintNodeID: "",
+				Instance: struct {
+					IPAddress   string "json:\"IPAddress\""
+					MachineName string "json:\"MachineName\""
+				}{
+					IPAddress:   "1.2.3.4",
+					MachineName: "",
+				},
+			},
+			"third validator": {
+				N:                "2",
+				EventID:          "evtx-2189cd35d97b3f53cc89",
+				DriverName:       "",
+				TendermintNodeID: "",
+				Instance: struct {
+					IPAddress   string "json:\"IPAddress\""
+					MachineName string "json:\"MachineName\""
+				}{
+					IPAddress:   "1.2.3.4",
+					MachineName: "",
+				},
+			},
+		},
 	}
+	fmt.Printf("%+v\n", evt.State["second validator"])
+	assert.Equal(t, expectedEvt, evt)
 }
