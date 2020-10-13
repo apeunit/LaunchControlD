@@ -34,24 +34,15 @@ func init() {
 }
 
 func setupChain(cmd *cobra.Command, args []string) (err error) {
-	c := lctrld.NewCommandRunner()
 	evt, err := lctrld.LoadEvent(settings, args[0])
 	if err != nil {
 		return err
 	}
-	err = lctrld.DownloadPayloadBinary(settings, evt, c)
+	err = lctrld.DownloadPayloadBinary(settings, evt, lctrld.RunCommand)
 	if err != nil {
 		return
 	}
-	evt, err = lctrld.InitDaemon(settings, evt, c)
-	if err != nil {
-		return
-	}
-	err = lctrld.StoreEvent(settings, evt)
-	if err != nil {
-		return
-	}
-	evt, err = lctrld.GenerateKeys(settings, evt, c)
+	evt, err = lctrld.InitDaemon(settings, evt, lctrld.RunCommand)
 	if err != nil {
 		return
 	}
@@ -59,19 +50,27 @@ func setupChain(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return
 	}
-	err = lctrld.AddGenesisAccounts(settings, evt, c)
+	evt, err = lctrld.GenerateKeys(settings, evt, lctrld.RunCommand)
 	if err != nil {
 		return
 	}
-	err = lctrld.GenesisTxs(settings, evt, c)
+	err = lctrld.StoreEvent(settings, evt)
 	if err != nil {
 		return
 	}
-	err = lctrld.CollectGenesisTxs(settings, evt, c)
+	err = lctrld.AddGenesisAccounts(settings, evt, lctrld.RunCommand)
 	if err != nil {
 		return
 	}
-	err = lctrld.EditConfigs(settings, evt, c)
+	err = lctrld.GenesisTxs(settings, evt, lctrld.RunCommand)
+	if err != nil {
+		return
+	}
+	err = lctrld.CollectGenesisTxs(settings, evt, lctrld.RunCommand)
+	if err != nil {
+		return
+	}
+	err = lctrld.EditConfigs(settings, evt, lctrld.RunCommand)
 	if err != nil {
 		return
 	}
@@ -80,11 +79,10 @@ func setupChain(cmd *cobra.Command, args []string) (err error) {
 
 func deploy(cmd *cobra.Command, args []string) (err error) {
 	evt, err := lctrld.LoadEvent(settings, args[0])
-	c := lctrld.NewCommandRunner()
 	if err != nil {
 		return err
 	}
 	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
-	err = lctrld.DeployPayload(settings, evt, c, dmc)
+	err = lctrld.DeployPayload(settings, evt, lctrld.RunCommand, dmc)
 	return
 }
