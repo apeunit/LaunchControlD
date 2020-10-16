@@ -129,6 +129,10 @@ func TestProvision(t *testing.T) {
 				Instance: struct {
 					IPAddress   string "json:\"IPAddress\""
 					MachineName string "json:\"MachineName\""
+					SSHUser     string `json:"SSHUser"`
+					SSHPort     int    `json:"SSHPort"`
+					SSHKeyPath  string `json:"SSHKeyPath"`
+					StorePath   string `json:"StorePath"`
 				}{
 					IPAddress:   "1.2.3.4",
 					MachineName: "",
@@ -142,6 +146,10 @@ func TestProvision(t *testing.T) {
 				Instance: struct {
 					IPAddress   string "json:\"IPAddress\""
 					MachineName string "json:\"MachineName\""
+					SSHUser     string `json:"SSHUser"`
+					SSHPort     int    `json:"SSHPort"`
+					SSHKeyPath  string `json:"SSHKeyPath"`
+					StorePath   string `json:"StorePath"`
 				}{
 					IPAddress:   "1.2.3.4",
 					MachineName: "",
@@ -155,6 +163,10 @@ func TestProvision(t *testing.T) {
 				Instance: struct {
 					IPAddress   string "json:\"IPAddress\""
 					MachineName string "json:\"MachineName\""
+					SSHUser     string `json:"SSHUser"`
+					SSHPort     int    `json:"SSHPort"`
+					SSHKeyPath  string `json:"SSHKeyPath"`
+					StorePath   string `json:"StorePath"`
 				}{
 					IPAddress:   "1.2.3.4",
 					MachineName: "",
@@ -162,6 +174,5 @@ func TestProvision(t *testing.T) {
 			},
 		},
 	}
-	fmt.Printf("%+v\n", evt.State["second validator"])
 	assert.Equal(t, expectedEvt, evt)
 }

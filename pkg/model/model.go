@@ -128,6 +128,10 @@ type MachineConfig struct {
 	Instance         struct {
 		IPAddress   string `json:"IPAddress"`
 		MachineName string `json:"MachineName"`
+		SSHUser     string `json:"SSHUser"`
+		SSHPort     int    `json:"SSHPort"`
+		SSHKeyPath  string `json:"SSHKeyPath"`
+		StorePath   string `json:"StorePath"`
 	} `json:"Instance"`
 }
 
