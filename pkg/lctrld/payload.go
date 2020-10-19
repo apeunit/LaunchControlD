@@ -312,6 +312,7 @@ func EditConfigs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRu
 			break
 		}
 		t.SetPathWithComment([]string{"p2p", "persistent_peers"}, "persistent_peers has been automatically set by lctrld", false, strings.Join(persistentPeerList, ","))
+		t.SetPathWithComment([]string{"rpc", "laddr"}, "laddr has been automatically set by lctrld", false, fmt.Sprint("tcp://0.0.0.0:26657"))
 
 		w, err := os.Create(configPath)
 		if err != nil {
