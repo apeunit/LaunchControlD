@@ -198,6 +198,14 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandR
 			log.Fatalf("docker-machine %s failed with %s", args, err)
 			break
 		}
+
+		// docker-machine chmod -R 777 /home/docker/nodeconfig
+		args = []string{"ssh", state.ID(), "chmod", "-R", "777", "/home/docker/nodeconfig"}
+		_, err = cmdRunner(dmBin, args, envVars)
+		if err != nil {
+			log.Fatalf("docker-machine %s failed with %s", args, err)
+			break
+		}
 	}
 
 	log.Infof("Running docker pull %s on each provisioned machine", evt.DockerImage)
