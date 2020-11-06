@@ -237,7 +237,7 @@ func GenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRun
 
 // CollectGenesisTxs is run on every node's config directory from the single
 // directory where the genesis transactions were placed before. In the end, only
-// the first node's genesis.josn will be used.
+// the first node's genesis.json will be used.
 func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 

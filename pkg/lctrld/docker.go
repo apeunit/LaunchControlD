@@ -159,6 +159,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunne
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("Your event ID is %s", evt.ID());
 	return evt, nil
 }
 
