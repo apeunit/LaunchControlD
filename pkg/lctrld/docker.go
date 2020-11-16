@@ -252,5 +252,24 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandR
 			break
 		}
 	}
+
+	log.Infoln("Running the docker image on the first node to provide the Light Client Daemon")
+	emails, _ := evt.Validators()
+	firstNode := emails[0]
+	machineHomeDir := dmc.HomeDir(evt.State[firstNode].N)
+	envVars, err := dockerEnv(settings, evt)
+	if err != nil {
+		return
+	}
+	state := evt.State[firstNode]
+	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID()))
+	nodeAddr := fmt.Sprintf("tcp://%s:26657", state.Instance.IPAddress)
+	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr}
+	log.Debugf("Running docker %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
+	_, err = cmdRunner("docker", args, envVars)
+	if err != nil {
+		log.Fatalf("docker %s failed with %s", args, err)
+		return
+	}
 	return
 }
