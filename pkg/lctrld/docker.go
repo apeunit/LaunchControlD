@@ -11,7 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func dockerEnv(settings config.Schema, evt *model.EvtvzE) (env []string, err error) {
+// dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
+func dockerMachineEnv(settings config.Schema, evt *model.EvtvzE) (env []string, err error) {
 	// set the path to find executable
 	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
@@ -27,6 +28,12 @@ func dockerEnv(settings config.Schema, evt *model.EvtvzE) (env []string, err err
 	return
 }
 
+// dockerMachineNodeEnv recreates the output of docker-machine env evtx-d97517a3673688070aef-0, to run a command inside the docker-machine provisioned node.
+func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.MachineConfig) []string {
+	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", eventID, state.ID()))
+	return envVars
+}
+
 // InspectEvent inspect status of the infrastructure for an event
 func InspectEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
@@ -37,7 +44,7 @@ func InspectEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRu
 	}
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	_, validatorAccounts := evt.Validators()
 	for i := range validatorAccounts {
 		host := evt.NodeID(i)
@@ -76,7 +83,7 @@ func DestroyEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRu
 	// run the rm command for each validator
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return
 	}
@@ -112,7 +119,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunne
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return nil, err
 	}
@@ -170,9 +177,9 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandR
 
 	log.Infoln("Copying node configs to each provisioned machine")
 	for name, state := range evt.State {
-		envVars, err := dockerEnv(settings, evt)
+		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
-			log.Fatalf("dockerEnv() failed while generating envVars: %s", err)
+			log.Fatalf("dockerMachineEnv() failed while generating envVars: %s", err)
 			break
 		}
 
@@ -211,15 +218,14 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandR
 
 	log.Infof("Running docker pull %s on each provisioned machine", evt.DockerImage)
 	for email, state := range evt.State {
-		envVars, err := dockerEnv(settings, evt)
+		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
-			log.Fatalf("dockerEnv() failed while generating envVars: %s", err)
+			log.Fatalf("dockerMachineEnv() failed while generating envVars: %s", err)
 			break
 		}
 
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
-		machineHomeDir := dmc.HomeDir(state.N)
-		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID()))
+		envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(state.N), state)
 
 		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
 		args := []string{"pull", evt.DockerImage}
@@ -233,15 +239,14 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandR
 
 	log.Infoln("Running the docker image on the provisioned machines")
 	for email, state := range evt.State {
-		envVars, err := dockerEnv(settings, evt)
+		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
-			log.Fatalf("dockerEnv() failed while generating envVars: %s", err)
+			log.Fatalf("dockerMachineEnv() failed while generating envVars: %s", err)
 			break
 		}
 
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
-		machineHomeDir := dmc.HomeDir(state.N)
-		envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID()))
+		envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(state.N), state)
 
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
 		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "-p", "26658:26658", evt.DockerImage}
@@ -257,13 +262,13 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandR
 	emails, _ := evt.Validators()
 	firstNode := emails[0]
 	machineHomeDir := dmc.HomeDir(evt.State[firstNode].N)
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return
 	}
-	state := evt.State[firstNode]
-	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", evt.ID(), state.ID()))
-	nodeAddr := fmt.Sprintf("tcp://%s:26657", state.Instance.IPAddress)
+	envVars = dockerMachineNodeEnv(envVars, evt.ID(), machineHomeDir, evt.State[firstNode])
+
+	nodeAddr := fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress)
 	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr}
 	log.Debugf("Running docker %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
 	_, err = cmdRunner("docker", args, envVars)

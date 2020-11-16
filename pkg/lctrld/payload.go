@@ -77,7 +77,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.EvtvzE, runCommand
 func InitDaemon(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (*model.EvtvzE, error) {
 	log.Infoln("Initializing daemon configs for each node")
 
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func InitDaemon(settings config.Schema, evt *model.EvtvzE, runCommand CommandRun
 func GenerateKeys(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (*model.EvtvzE, error) {
 	log.Infoln("Generating keys for validator accounts")
 
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func GenerateKeys(settings config.Schema, evt *model.EvtvzE, runCommand CommandR
 func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
 
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return
 	}
@@ -206,7 +206,7 @@ func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, runCommand Co
 func GenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
 
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return
 	}
@@ -241,7 +241,7 @@ func GenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRun
 func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return
 	}
