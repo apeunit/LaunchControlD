@@ -304,6 +304,7 @@ func EditConfigs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRu
 	}
 
 	// Insert the persistent peer list into each node's config.toml
+	// Don't create blocks if there are no txs (to save space when chain is idle)
 	for name := range evt.State {
 		configPath := path.Join(evt.Accounts[name].ConfigLocation.DaemonConfigDir, "config/config.toml")
 		t, err := toml.LoadFile(configPath)
@@ -313,6 +314,7 @@ func EditConfigs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRu
 		}
 		t.SetPathWithComment([]string{"p2p", "persistent_peers"}, "persistent_peers has been automatically set by lctrld", false, strings.Join(persistentPeerList, ","))
 		t.SetPathWithComment([]string{"rpc", "laddr"}, "laddr has been automatically set by lctrld", false, fmt.Sprint("tcp://0.0.0.0:26657"))
+		t.SetPathWithComment([]string{"consensus", "create_empty_blocks"}, "Don't create blocks if there are no txs: automatically set by lctrld", false, false)
 
 		w, err := os.Create(configPath)
 		if err != nil {
