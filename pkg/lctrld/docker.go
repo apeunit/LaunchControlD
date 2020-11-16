@@ -269,7 +269,7 @@ func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandR
 	envVars = dockerMachineNodeEnv(envVars, evt.ID(), machineHomeDir, evt.State[firstNode])
 
 	nodeAddr := fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress)
-	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr}
+	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr, "--unsafe-cors"}
 	log.Debugf("Running docker %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
 	_, err = cmdRunner("docker", args, envVars)
 	if err != nil {
