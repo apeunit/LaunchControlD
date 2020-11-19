@@ -58,7 +58,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Preparing the environment")
 	start := time.Now()
 
-	event := model.NewEvtvzE(args[0], args[1], provider, settings.EventParams.DockerImage, settings.EventParams.GenesisAccounts)
+	event := model.NewEvent(args[0], args[1], provider, settings.EventRequest.DockerImage, settings.EventRequest.GenesisAccounts)
 
 	vc := event.ValidatorsCount()
 

@@ -52,7 +52,7 @@ func TestProvision(t *testing.T) {
 		},
 	}
 	settings := config.Schema{}
-	evt := model.NewEvtvzE("evtx", "owner", "virtualbox", "nonexistent/testimage", fakeGenesisAccounts)
+	evt := model.NewEvent("evtx", "owner", "virtualbox", "nonexistent/testimage", fakeGenesisAccounts)
 
 	wantCommandOutput := "1.2.3.4"
 	var mockCommandRunner = func(cmd string, args, envVars []string) (out string, err error) {
@@ -66,7 +66,7 @@ func TestProvision(t *testing.T) {
 	evt, err := Provision(settings, evt, mockCommandRunner, dmc)
 	assert.Nil(t, err)
 
-	expectedEvt := &model.EvtvzE{
+	expectedEvt := &model.Event{
 		TokenSymbol: "evtx",
 		Owner:       "owner",
 		Accounts: map[string]*model.Account{

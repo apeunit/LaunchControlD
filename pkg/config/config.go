@@ -4,7 +4,7 @@ package config
 type Schema struct {
 	Workspace     string        `mapstructure:"workspace"`
 	DockerMachine DockerMachine `mapstructure:"docker_machine"`
-	EventParams   EventParams   `mapstructure:"event_params"`
+	EventRequest   EventRequest   `mapstructure:"event_params"`
 }
 
 // DockerMachine describes the host's docker-machine binary
@@ -36,8 +36,8 @@ type LaunchPayload struct {
 	CLIPath    string `mapstructure:"cli_path"`
 }
 
-// EventParams specifies how the genesis.json should be setup
-type EventParams struct {
+// EventRequest specifies how the genesis.json should be setup
+type EventRequest struct {
 	LaunchPayload   LaunchPayload    `mapstructure:"launch_payload"`
 	DockerImage     string           `mapstructure:"docker_image"`
 	GenesisAccounts []GenesisAccount `mapstructure:"genesis_accounts"`

@@ -27,7 +27,7 @@ func TestDockerMachineConfig(t *testing.T) {
 				},
 			},
 		},
-		EventParams: config.EventParams{
+		EventRequest: config.EventRequest{
 			LaunchPayload: config.LaunchPayload{
 				BinaryURL:  "",
 				BinaryPath: "",

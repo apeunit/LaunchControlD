@@ -12,7 +12,7 @@ import (
 )
 
 // dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
-func dockerMachineEnv(settings config.Schema, evt *model.EvtvzE) (env []string, err error) {
+func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
 	// set the path to find executable
 	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
@@ -35,7 +35,7 @@ func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, stat
 }
 
 // InspectEvent inspect status of the infrastructure for an event
-func InspectEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunner) (err error) {
+func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -60,7 +60,7 @@ func InspectEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRu
 }
 
 // DestroyEvent destroy an existing event
-func DestroyEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunner) (err error) {
+func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -115,7 +115,7 @@ func DestroyEvent(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRu
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunner, dmc DockerMachineInterface) (*model.EvtvzE, error) {
+func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (*model.Event, error) {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
@@ -172,7 +172,7 @@ func Provision(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunne
 
 // DeployPayload tells the provisioned machines to run the configured docker
 // image
-func DeployPayload(settings config.Schema, evt *model.EvtvzE, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
+func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
 	dmBin := dmBin(settings)
 
 	log.Infoln("Copying node configs to each provisioned machine")

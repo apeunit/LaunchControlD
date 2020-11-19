@@ -46,14 +46,14 @@ func getExtraAccountConfigDir(settings config.Schema, eventID, name string) (fin
 
 // DownloadPayloadBinary downloads a copy of the payload binaries to the host
 // running lctrld to generate the config files for the provisioned machines
-func DownloadPayloadBinary(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
-	_, cliExistsErr := os.Stat(settings.EventParams.LaunchPayload.CLIPath)
-	_, daemonExistsErr := os.Stat(settings.EventParams.LaunchPayload.DaemonPath)
+func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+	_, cliExistsErr := os.Stat(settings.EventRequest.LaunchPayload.CLIPath)
+	_, daemonExistsErr := os.Stat(settings.EventRequest.LaunchPayload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
 		binFile := bin(settings, "payloadBinaries.zip")
-		log.Infof("downloading payload binaries from %s to %s", settings.EventParams.LaunchPayload.BinaryURL, binFile)
+		log.Infof("downloading payload binaries from %s to %s", settings.EventRequest.LaunchPayload.BinaryURL, binFile)
 		g := got.New()
-		err = g.Download(settings.EventParams.LaunchPayload.BinaryURL, binFile)
+		err = g.Download(settings.EventRequest.LaunchPayload.BinaryURL, binFile)
 		if err != nil {
 			return
 		}
@@ -74,7 +74,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.EvtvzE, runCommand
 // InitDaemon runs gaiad init burnerchain --home
 // state.DaemonConfigDir
 // and gaiad tendermint show-node-id
-func InitDaemon(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (*model.EvtvzE, error) {
+func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunner) (*model.Event, error) {
 	log.Infoln("Initializing daemon configs for each node")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -105,16 +105,16 @@ func InitDaemon(settings config.Schema, evt *model.EvtvzE, runCommand CommandRun
 		fmt.Println("machineConfig.ID", machineConfig.ID())
 
 		args := []string{"init", fmt.Sprintf("%s node %s", acc.Name, machineConfig.ID()), "--home", acc.ConfigLocation.DaemonConfigDir, "--chain-id", evt.ID()}
-		out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
+		out, err := runCommand(settings.EventRequest.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventRequest.LaunchPayload.DaemonPath, args, err, out)
 			return nil, err
 		}
 
 		args = []string{"tendermint", "show-node-id", "--home", acc.ConfigLocation.DaemonConfigDir}
-		out, err = runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
+		out, err = runCommand(settings.EventRequest.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventRequest.LaunchPayload.DaemonPath, args, err, out)
 		}
 		machineConfig.TendermintNodeID = strings.TrimSuffix(out, "\n")
 	}
@@ -125,7 +125,7 @@ func InitDaemon(settings config.Schema, evt *model.EvtvzE, runCommand CommandRun
 // GenerateKeys generates keys for each genesis account (this includes validator
 // accounts). The specific command is gaiacli keys add validatoremail/some other name -o json
 // --keyring-backend test --home.... for each node.
-func GenerateKeys(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (*model.EvtvzE, error) {
+func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRunner) (*model.Event, error) {
 	log.Infoln("Generating keys for validator accounts")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -136,9 +136,9 @@ func GenerateKeys(settings config.Schema, evt *model.EvtvzE, runCommand CommandR
 	_, validatorAccounts := evt.Validators()
 	for _, account := range validatorAccounts {
 		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", account.ConfigLocation.CLIConfigDir}
-		out, err := runCommand(settings.EventParams.LaunchPayload.CLIPath, args, envVars)
+		out, err := runCommand(settings.EventRequest.LaunchPayload.CLIPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventRequest.LaunchPayload.CLIPath, args, err, out)
 			break
 		}
 
@@ -159,9 +159,9 @@ func GenerateKeys(settings config.Schema, evt *model.EvtvzE, runCommand CommandR
 		}
 
 		args := []string{"keys", "add", acc.Name, "-o", "json", "--keyring-backend", "test", "--home", extraAccDir}
-		out, err := runCommand(settings.EventParams.LaunchPayload.CLIPath, args, envVars)
+		out, err := runCommand(settings.EventRequest.LaunchPayload.CLIPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.CLIPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventRequest.LaunchPayload.CLIPath, args, err, out)
 			break
 		}
 
@@ -178,7 +178,7 @@ func GenerateKeys(settings config.Schema, evt *model.EvtvzE, runCommand CommandR
 
 // AddGenesisAccounts runs gaiad add-genesis-account with the created addresses
 // and default initial balances
-func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
+func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -190,9 +190,9 @@ func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, runCommand Co
 		for _, account := range evt.Accounts {
 			fmt.Printf("%s %s %s\n", state.ID(), account.Name, account.Address)
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-			out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
+			out, err := runCommand(settings.EventRequest.LaunchPayload.DaemonPath, args, envVars)
 			if err != nil {
-				log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+				log.Fatalf("%s %s failed with %s, %s\n", settings.EventRequest.LaunchPayload.DaemonPath, args, err, out)
 				break
 			}
 		}
@@ -203,7 +203,7 @@ func AddGenesisAccounts(settings config.Schema, evt *model.EvtvzE, runCommand Co
 
 // GenesisTxs runs gentx to turn accounts into validator accounts and outputs
 // the genesis transactions into a single folder.
-func GenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
+func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -225,9 +225,9 @@ func GenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRun
 		// Here we assume that last part of genesis_balance is the # of stake tokens
 		// launchpayloadd gentx --name v1@email.com --amount 10000stake --home-client ... --keyring-backend test --home ... --output-document ...
 		args := []string{"gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", evt.Accounts[email].ConfigLocation.CLIConfigDir, "--keyring-backend", "test", "--home", evt.Accounts[email].ConfigLocation.DaemonConfigDir, "--output-document", outputDocument}
-		out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
+		out, err := runCommand(settings.EventRequest.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventRequest.LaunchPayload.DaemonPath, args, err, out)
 			break
 		}
 
@@ -238,7 +238,7 @@ func GenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRun
 // CollectGenesisTxs is run on every node's config directory from the single
 // directory where the genesis transactions were placed before. In the end, only
 // the first node's genesis.json will be used.
-func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
+func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -254,9 +254,9 @@ func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand Com
 
 	for name := range evt.State {
 		args := []string{"collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-		out, err := runCommand(settings.EventParams.LaunchPayload.DaemonPath, args, envVars)
+		out, err := runCommand(settings.EventRequest.LaunchPayload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", settings.EventParams.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", settings.EventRequest.LaunchPayload.DaemonPath, args, err, out)
 			break
 		}
 	}
@@ -264,7 +264,7 @@ func CollectGenesisTxs(settings config.Schema, evt *model.EvtvzE, runCommand Com
 }
 
 // EditConfigs edits the config.toml of every node to have the same persistent_peers.
-func EditConfigs(settings config.Schema, evt *model.EvtvzE, runCommand CommandRunner) (err error) {
+func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
 	log.Infoln("Copying node 0's genesis.json to others and setting up p2p.persistent_peers")
 
 	// Although we just generated the genesis.json for every node (makes it

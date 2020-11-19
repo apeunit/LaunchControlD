@@ -128,7 +128,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 }
 
 // CreateEvent creates the event home and the event descriptor
-func CreateEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
+func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
 	path, err := evts(settings, evt.ID())
 	if !utils.FileExists(path) {
 		err = os.MkdirAll(path, 0700)
@@ -141,7 +141,7 @@ func CreateEvent(settings config.Schema, evt *model.EvtvzE) (err error) {
 }
 
 // ListEvents list available events
-func ListEvents(settings config.Schema) (events []model.EvtvzE, err error) {
+func ListEvents(settings config.Schema) (events []model.Event, err error) {
 	evtsBase, err := evts(settings, "")
 	if err != nil {
 		log.Fatal("ListEvents failed:", err)
@@ -155,7 +155,7 @@ func ListEvents(settings config.Schema) (events []model.EvtvzE, err error) {
 		}
 		if info.Name() == evtDescriptorFile {
 			log.Debugln("Event found", info.Name())
-			evt, err := model.LoadEvtvzE(subPath)
+			evt, err := model.LoadEvent(subPath)
 			if err != nil {
 				log.Fatal("ListEvents failed:", err)
 				return err

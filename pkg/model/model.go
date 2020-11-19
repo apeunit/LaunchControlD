@@ -17,8 +17,8 @@ const (
 	DefaultProvider = "hetzner"
 )
 
-// EvtvzE maintain the status of an event
-type EvtvzE struct {
+// Event maintain the status of an event
+type Event struct {
 	TokenSymbol string                    `json:"token_symbol"` // token symbool
 	Owner       string                    `json:"owner"`        // email address of the owner
 	Accounts    map[string]*Account       `json:"accounts"`
@@ -30,13 +30,13 @@ type EvtvzE struct {
 	State       map[string]*MachineConfig `json:"state"`
 }
 
-// NewEvtvzE helper for a new event
-func NewEvtvzE(symbol, owner, provider, dockerImage string, genesisAccounts []config.GenesisAccount) (e *EvtvzE) {
+// NewEvent helper for a new event
+func NewEvent(symbol, owner, provider, dockerImage string, genesisAccounts []config.GenesisAccount) (e *Event) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
 		accounts[acc.Name] = NewAccount(acc.Name, "", "", acc.GenesisBalance, acc.Validator)
 	}
-	return &EvtvzE{
+	return &Event{
 		TokenSymbol: symbol,
 		Owner:       owner,
 		Accounts:    accounts,
@@ -49,34 +49,34 @@ func NewEvtvzE(symbol, owner, provider, dockerImage string, genesisAccounts []co
 	}
 }
 
-// LoadEvtvzE is a convenience function that ensures you don't have to manually
-// create an empty models.Evtvze{} struct and use NewEvtvzE() all the time
-func LoadEvtvzE(path string) (evt *EvtvzE, err error) {
+// LoadEvent is a convenience function that ensures you don't have to manually
+// create an empty models.Event{} struct and use NewEvent() all the time
+func LoadEvent(path string) (evt *Event, err error) {
 	err = utils.LoadJSON(path, &evt)
 	return
 }
 
 // FormatAmount print the amount in a human readable format
-func (e *EvtvzE) FormatAmount(a uint64) string {
+func (e *Event) FormatAmount(a uint64) string {
 	return fmt.Sprintf("%v%s", a, e.TokenSymbol)
 }
 
 // Hash Generate the event hash
-func (e *EvtvzE) Hash() string {
+func (e *Event) Hash() string {
 	return utils.ShortHash(e.TokenSymbol, e.Owner, e.Provider)
 }
 
 // ID generate a event identifier (determinitstic)
-func (e *EvtvzE) ID() string {
+func (e *Event) ID() string {
 	return slug.Make(fmt.Sprintf("%v %v", e.TokenSymbol, e.Hash()))
 }
 
 // NodeID generate a node identifier (determinitstic)
-func (e *EvtvzE) NodeID(n int) string {
+func (e *Event) NodeID(n int) string {
 	return slug.Make(fmt.Sprintf("%v %v %v", e.TokenSymbol, e.Hash(), n))
 }
 
-func (e *EvtvzE) sortedAccounts() (keys []string) {
+func (e *Event) sortedAccounts() (keys []string) {
 	// We need to return the accounts in a deterministic order, sorted by key
 	for k := range e.Accounts {
 		keys = append(keys, k)
@@ -86,7 +86,7 @@ func (e *EvtvzE) sortedAccounts() (keys []string) {
 }
 
 // Validators returns the names (emails) of the validators
-func (e *EvtvzE) Validators() (v []string, a []*Account) {
+func (e *Event) Validators() (v []string, a []*Account) {
 	for _, k := range e.sortedAccounts() {
 		if e.Accounts[k].Validator {
 			v = append(v, e.Accounts[k].Name)
@@ -97,13 +97,13 @@ func (e *EvtvzE) Validators() (v []string, a []*Account) {
 }
 
 // ValidatorsCount returns the number of validators
-func (e *EvtvzE) ValidatorsCount() int {
+func (e *Event) ValidatorsCount() int {
 	validatorNames, _ := e.Validators()
 	return len(validatorNames)
 }
 
-// ExtraAccounts returns EvtvzE.Accounts excluding accounts that are validators
-func (e *EvtvzE) ExtraAccounts() (a []*Account) {
+// ExtraAccounts returns Event.Accounts excluding accounts that are validators
+func (e *Event) ExtraAccounts() (a []*Account) {
 	for _, k := range e.sortedAccounts() {
 		if !e.Accounts[k].Validator {
 			a = append(a, e.Accounts[k])
