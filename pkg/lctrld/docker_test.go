@@ -52,7 +52,7 @@ func TestProvision(t *testing.T) {
 		},
 	}
 	settings := config.Schema{}
-	evt := model.NewEvent("evtx", "owner", "virtualbox", fakeGenesisAccounts, model.LaunchPayload{})
+	evt := model.NewEvent("evtx", "owner", "virtualbox", fakeGenesisAccounts, model.Payload{})
 
 	wantCommandOutput := "1.2.3.4"
 	var mockCommandRunner = func(cmd string, args, envVars []string) (out string, err error) {

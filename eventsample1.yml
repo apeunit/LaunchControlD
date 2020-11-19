@@ -1,7 +1,7 @@
 ---
 owner: "owner@email.com"
 token_symbol: "drop"
-launch_payload:
+payload:
   docker_image: "apeunit/launchpayload"
   binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
   binary_path: "/tmp/workspace/bin"

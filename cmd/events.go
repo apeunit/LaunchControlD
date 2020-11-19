@@ -64,7 +64,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	}
 	fmt.Printf("%#v\n", eq)
 
-	event := model.NewEvent(eq.TokenSymbol, eq.Owner, provider, eq.GenesisAccounts, eq.LaunchPayload)
+	event := model.NewEvent(eq.TokenSymbol, eq.Owner, provider, eq.GenesisAccounts, eq.Payload)
 
 	vc := event.ValidatorsCount()
 
