@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
 	"github.com/gosimple/slug"
 )
@@ -19,33 +18,35 @@ const (
 
 // Event maintain the status of an event
 type Event struct {
-	TokenSymbol string                    `json:"token_symbol"` // token symbool
-	Owner       string                    `json:"owner"`        // email address of the owner
-	Accounts    map[string]*Account       `json:"accounts"`
-	Provider    string                    `json:"provider"`     // provider for provisioning
-	DockerImage string                    `json:"docker_image"` // docker image payload to be deployed on the machines
-	CreatedOn   time.Time                 `json:"created_on"`
-	StartsOn    time.Time                 `json:"starts_on"`
-	EndsOn      time.Time                 `json:"ends_on"`
-	State       map[string]*MachineConfig `json:"state"`
+	TokenSymbol   string                    `json:"token_symbol"` // token symbool
+	Owner         string                    `json:"owner"`        // email address of the owner
+	Accounts      map[string]*Account       `json:"accounts"`
+	Provider      string                    `json:"provider"`     // provider for provisioning
+	DockerImage   string                    `json:"docker_image"` // docker image payload to be deployed on the machines
+	CreatedOn     time.Time                 `json:"created_on"`
+	StartsOn      time.Time                 `json:"starts_on"`
+	EndsOn        time.Time                 `json:"ends_on"`
+	State         map[string]*MachineConfig `json:"state"`
+	LaunchPayload LaunchPayload             `json:"launch_payload"`
 }
 
 // NewEvent helper for a new event
-func NewEvent(symbol, owner, provider, dockerImage string, genesisAccounts []config.GenesisAccount) (e *Event) {
+func NewEvent(symbol, owner, provider, dockerImage string, genesisAccounts []GenesisAccount, payload LaunchPayload) (e *Event) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
 		accounts[acc.Name] = NewAccount(acc.Name, "", "", acc.GenesisBalance, acc.Validator)
 	}
 	return &Event{
-		TokenSymbol: symbol,
-		Owner:       owner,
-		Accounts:    accounts,
-		Provider:    provider,
-		DockerImage: dockerImage,
-		CreatedOn:   time.Now(),
-		StartsOn:    time.Now(),
-		EndsOn:      time.Time{},
-		State:       make(map[string]*MachineConfig),
+		TokenSymbol:   symbol,
+		Owner:         owner,
+		Accounts:      accounts,
+		Provider:      provider,
+		DockerImage:   dockerImage,
+		CreatedOn:     time.Now(),
+		StartsOn:      time.Now(),
+		EndsOn:        time.Time{},
+		State:         make(map[string]*MachineConfig),
+		LaunchPayload: payload,
 	}
 }
 

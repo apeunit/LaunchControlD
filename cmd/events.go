@@ -47,10 +47,10 @@ var verbose bool
 
 // setupEventCmd represents the setupEvent command
 var setupEventCmd = &cobra.Command{
-	Use:   "new token_symbol owner_email",
+	Use:   "new <eventrequest YAML file>",
 	Short: "Setup a new event",
 	Long:  ``,
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE:  setupEvent,
 }
 
@@ -58,11 +58,17 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Preparing the environment")
 	start := time.Now()
 
-	event := model.NewEvent(args[0], args[1], provider, settings.EventRequest.DockerImage, settings.EventRequest.GenesisAccounts)
+	eq, err := model.LoadEventRequestFromFile(args[0])
+	if err != nil {
+		return
+	}
+	fmt.Printf("%#v\n", eq)
+
+	event := model.NewEvent(eq.TokenSymbol, eq.Owner, provider, eq.DockerImage, eq.GenesisAccounts, eq.LaunchPayload)
 
 	vc := event.ValidatorsCount()
 
-	fmt.Printf("%+v\n", event)
+	fmt.Printf("%#v\n", event)
 	fmt.Println("Summary:")
 	fmt.Printf("there are %v validators\n", vc)
 	_, validatorAccounts := event.Validators()

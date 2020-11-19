@@ -27,16 +27,6 @@ func TestDockerMachineConfig(t *testing.T) {
 				},
 			},
 		},
-		EventRequest: config.EventRequest{
-			LaunchPayload: config.LaunchPayload{
-				BinaryURL:  "",
-				BinaryPath: "",
-				DaemonPath: "",
-				CLIPath:    "",
-			},
-			DockerImage:     "",
-			GenesisAccounts: nil,
-		},
 	}
 	dmc := NewDockerMachineConfig(settings, "drop-28b10d4eff415a7b0b2c")
 	assert.Equal(t, "testdata/evts/drop-28b10d4eff415a7b0b2c/.docker/machine/machines/drop-28b10d4eff415a7b0b2c-0", dmc.HomeDir("0"))

@@ -29,7 +29,7 @@ func (m *mockDockerMachineConfig) ReadConfig(machineN string) (mc *model.Machine
 }
 
 func TestProvision(t *testing.T) {
-	fakeGenesisAccounts := []config.GenesisAccount{
+	fakeGenesisAccounts := []model.GenesisAccount{
 		{
 			Name:           "first validator",
 			GenesisBalance: "1000000stake",
@@ -52,7 +52,7 @@ func TestProvision(t *testing.T) {
 		},
 	}
 	settings := config.Schema{}
-	evt := model.NewEvent("evtx", "owner", "virtualbox", "nonexistent/testimage", fakeGenesisAccounts)
+	evt := model.NewEvent("evtx", "owner", "virtualbox", "nonexistent/testimage", fakeGenesisAccounts, model.LaunchPayload{})
 
 	wantCommandOutput := "1.2.3.4"
 	var mockCommandRunner = func(cmd string, args, envVars []string) (out string, err error) {
