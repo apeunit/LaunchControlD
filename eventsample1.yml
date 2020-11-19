@@ -1,0 +1,22 @@
+---
+event_params:
+  docker_image: "apeunit/launchpayload"
+  launch_payload:
+    binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
+    binary_path: "/tmp/workspace/bin"
+    daemon_path: "/tmp/workspace/bin/launchpayloadd"
+    cli_path: "/tmp/workspace/bin/launchpayloadcli"
+
+  genesis_accounts:
+    -
+      name: "alice@apeunit.com"
+      genesis_balance: "500drops,1000000evtx,100000000stake"
+      validator: true
+    -
+      name: "bob@apeunit.com"
+      genesis_balance: "500drops,1000000evtx,100000000stake"
+      validator: true
+    -
+      name: "dropgiver"
+      genesis_balance: "10000000000drops"
+      validator: false
