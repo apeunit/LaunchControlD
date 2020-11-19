@@ -47,13 +47,13 @@ func getExtraAccountConfigDir(settings config.Schema, eventID, name string) (fin
 // DownloadPayloadBinary downloads a copy of the payload binaries to the host
 // running lctrld to generate the config files for the provisioned machines
 func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
-	_, cliExistsErr := os.Stat(evt.LaunchPayload.CLIPath)
-	_, daemonExistsErr := os.Stat(evt.LaunchPayload.DaemonPath)
+	_, cliExistsErr := os.Stat(evt.Payload.CLIPath)
+	_, daemonExistsErr := os.Stat(evt.Payload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
 		binFile := bin(settings, "payloadBinaries.zip")
-		log.Infof("downloading payload binaries from %s to %s", evt.LaunchPayload.BinaryURL, binFile)
+		log.Infof("downloading payload binaries from %s to %s", evt.Payload.BinaryURL, binFile)
 		g := got.New()
-		err = g.Download(evt.LaunchPayload.BinaryURL, binFile)
+		err = g.Download(evt.Payload.BinaryURL, binFile)
 		if err != nil {
 			return
 		}
@@ -105,16 +105,16 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunn
 		fmt.Println("machineConfig.ID", machineConfig.ID())
 
 		args := []string{"init", fmt.Sprintf("%s node %s", acc.Name, machineConfig.ID()), "--home", acc.ConfigLocation.DaemonConfigDir, "--chain-id", evt.ID()}
-		out, err := runCommand(evt.LaunchPayload.DaemonPath, args, envVars)
+		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
 			return nil, err
 		}
 
 		args = []string{"tendermint", "show-node-id", "--home", acc.ConfigLocation.DaemonConfigDir}
-		out, err = runCommand(evt.LaunchPayload.DaemonPath, args, envVars)
+		out, err = runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
 		}
 		machineConfig.TendermintNodeID = strings.TrimSuffix(out, "\n")
 	}
@@ -136,9 +136,9 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 	_, validatorAccounts := evt.Validators()
 	for _, account := range validatorAccounts {
 		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", account.ConfigLocation.CLIConfigDir}
-		out, err := runCommand(evt.LaunchPayload.CLIPath, args, envVars)
+		out, err := runCommand(evt.Payload.CLIPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.LaunchPayload.CLIPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
 			break
 		}
 
@@ -159,9 +159,9 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 		}
 
 		args := []string{"keys", "add", acc.Name, "-o", "json", "--keyring-backend", "test", "--home", extraAccDir}
-		out, err := runCommand(evt.LaunchPayload.CLIPath, args, envVars)
+		out, err := runCommand(evt.Payload.CLIPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.LaunchPayload.CLIPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
 			break
 		}
 
@@ -190,9 +190,9 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand Com
 		for _, account := range evt.Accounts {
 			fmt.Printf("%s %s %s\n", state.ID(), account.Name, account.Address)
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-			out, err := runCommand(evt.LaunchPayload.DaemonPath, args, envVars)
+			out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 			if err != nil {
-				log.Fatalf("%s %s failed with %s, %s\n", evt.LaunchPayload.DaemonPath, args, err, out)
+				log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
 				break
 			}
 		}
@@ -225,9 +225,9 @@ func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunn
 		// Here we assume that last part of genesis_balance is the # of stake tokens
 		// launchpayloadd gentx --name v1@email.com --amount 10000stake --home-client ... --keyring-backend test --home ... --output-document ...
 		args := []string{"gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", evt.Accounts[email].ConfigLocation.CLIConfigDir, "--keyring-backend", "test", "--home", evt.Accounts[email].ConfigLocation.DaemonConfigDir, "--output-document", outputDocument}
-		out, err := runCommand(evt.LaunchPayload.DaemonPath, args, envVars)
+		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
 			break
 		}
 
@@ -254,9 +254,9 @@ func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand Comm
 
 	for name := range evt.State {
 		args := []string{"collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-		out, err := runCommand(evt.LaunchPayload.DaemonPath, args, envVars)
+		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.LaunchPayload.DaemonPath, args, err, out)
+			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
 			break
 		}
 	}

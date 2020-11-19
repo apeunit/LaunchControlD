@@ -52,7 +52,7 @@ func TestProvision(t *testing.T) {
 		},
 	}
 	settings := config.Schema{}
-	evt := model.NewEvent("evtx", "owner", "virtualbox", "nonexistent/testimage", fakeGenesisAccounts, model.LaunchPayload{})
+	evt := model.NewEvent("evtx", "owner", "virtualbox", fakeGenesisAccounts, model.LaunchPayload{})
 
 	wantCommandOutput := "1.2.3.4"
 	var mockCommandRunner = func(cmd string, args, envVars []string) (out string, err error) {
@@ -115,11 +115,10 @@ func TestProvision(t *testing.T) {
 				},
 			},
 		},
-		Provider:    "virtualbox",
-		DockerImage: "nonexistent/testimage",
-		CreatedOn:   evt.CreatedOn,
-		StartsOn:    evt.StartsOn,
-		EndsOn:      evt.EndsOn,
+		Provider:  "virtualbox",
+		CreatedOn: evt.CreatedOn,
+		StartsOn:  evt.StartsOn,
+		EndsOn:    evt.EndsOn,
 		State: map[string]*model.MachineConfig{
 			"first validator": {
 				N:                "0",

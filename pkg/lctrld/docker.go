@@ -166,7 +166,7 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("Your event ID is %s", evt.ID());
+	log.Infof("Your event ID is %s", evt.ID())
 	return evt, nil
 }
 
@@ -216,7 +216,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		}
 	}
 
-	log.Infof("Running docker pull %s on each provisioned machine", evt.DockerImage)
+	log.Infof("Running docker pull %s on each provisioned machine", evt.Payload.DockerImage)
 	for email, state := range evt.State {
 		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
@@ -228,7 +228,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(state.N), state)
 
 		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
-		args := []string{"pull", evt.DockerImage}
+		args := []string{"pull", evt.Payload.DockerImage}
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		_, err = cmdRunner("docker", args, envVars)
 		if err != nil {
@@ -249,7 +249,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(state.N), state)
 
 		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
-		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "-p", "26658:26658", evt.DockerImage}
+		args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "-p", "26658:26658", evt.Payload.DockerImage}
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		_, err = cmdRunner("docker", args, envVars)
 		if err != nil {
@@ -269,7 +269,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	envVars = dockerMachineNodeEnv(envVars, evt.ID(), machineHomeDir, evt.State[firstNode])
 
 	nodeAddr := fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress)
-	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr, "--unsafe-cors", "--chain-id", evt.ID(), "--home", "/payload/config/cli"}
+	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.Payload.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr, "--unsafe-cors", "--chain-id", evt.ID(), "--home", "/payload/config/cli"}
 	log.Debugf("Running docker %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
 	_, err = cmdRunner("docker", args, envVars)
 	if err != nil {
