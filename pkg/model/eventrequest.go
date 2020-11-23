@@ -6,7 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// EventRequest specifies how the genesis.json should be setup
+// EventRequest holds metadata about the event, including how the genesis.json should be setup
 type EventRequest struct {
 	Payload         Payload          `yaml:"payload"`
 	Owner           string           `yaml:"owner"`
