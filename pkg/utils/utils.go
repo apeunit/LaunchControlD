@@ -125,7 +125,7 @@ func ExtractGzip(filePath, outFolder string) (err error) {
 			}
 		default:
 			log.Fatalf(
-				"ExtractTarGz: uknown type: %s in %s",
+				"ExtractTarGz: unknown type: %v in %s",
 				header.Typeflag,
 				header.Name)
 		}

@@ -125,16 +125,13 @@ func TestProvision(t *testing.T) {
 				EventID:          "evtx-2189cd35d97b3f53cc89",
 				DriverName:       "",
 				TendermintNodeID: "",
-				Instance: struct {
-					IPAddress   string "json:\"IPAddress\""
-					MachineName string "json:\"MachineName\""
-					SSHUser     string `json:"SSHUser"`
-					SSHPort     int    `json:"SSHPort"`
-					SSHKeyPath  string `json:"SSHKeyPath"`
-					StorePath   string `json:"StorePath"`
-				}{
+				Instance: model.MachineConfigInstance{
 					IPAddress:   "1.2.3.4",
 					MachineName: "",
+					SSHUser:     "",
+					SSHPort:     0,
+					SSHKeyPath:  "",
+					StorePath:   "",
 				},
 			},
 			"second validator": {
@@ -142,16 +139,13 @@ func TestProvision(t *testing.T) {
 				EventID:          "evtx-2189cd35d97b3f53cc89",
 				DriverName:       "",
 				TendermintNodeID: "",
-				Instance: struct {
-					IPAddress   string "json:\"IPAddress\""
-					MachineName string "json:\"MachineName\""
-					SSHUser     string `json:"SSHUser"`
-					SSHPort     int    `json:"SSHPort"`
-					SSHKeyPath  string `json:"SSHKeyPath"`
-					StorePath   string `json:"StorePath"`
-				}{
+				Instance: model.MachineConfigInstance{
 					IPAddress:   "1.2.3.4",
 					MachineName: "",
+					SSHUser:     "",
+					SSHPort:     0,
+					SSHKeyPath:  "",
+					StorePath:   "",
 				},
 			},
 			"third validator": {
@@ -159,18 +153,22 @@ func TestProvision(t *testing.T) {
 				EventID:          "evtx-2189cd35d97b3f53cc89",
 				DriverName:       "",
 				TendermintNodeID: "",
-				Instance: struct {
-					IPAddress   string "json:\"IPAddress\""
-					MachineName string "json:\"MachineName\""
-					SSHUser     string `json:"SSHUser"`
-					SSHPort     int    `json:"SSHPort"`
-					SSHKeyPath  string `json:"SSHKeyPath"`
-					StorePath   string `json:"StorePath"`
-				}{
+				Instance: model.MachineConfigInstance{
 					IPAddress:   "1.2.3.4",
 					MachineName: "",
+					SSHUser:     "",
+					SSHPort:     0,
+					SSHKeyPath:  "",
+					StorePath:   "",
 				},
 			},
+		},
+		Payload: model.Payload{
+			DockerImage: "",
+			BinaryURL:   "",
+			BinaryPath:  "",
+			DaemonPath:  "",
+			CLIPath:     "",
 		},
 	}
 	assert.Equal(t, expectedEvt, evt)

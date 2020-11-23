@@ -38,14 +38,7 @@ func TestDockerMachineConfig(t *testing.T) {
 		EventID:          "drop-28b10d4eff415a7b0b2c",
 		DriverName:       "",
 		TendermintNodeID: "",
-		Instance: struct {
-			IPAddress   string "json:\"IPAddress\""
-			MachineName string "json:\"MachineName\""
-			SSHUser     string "json:\"SSHUser\""
-			SSHPort     int    "json:\"SSHPort\""
-			SSHKeyPath  string "json:\"SSHKeyPath\""
-			StorePath   string "json:\"StorePath\""
-		}{
+		Instance: model.MachineConfigInstance{
 			IPAddress:   "192.168.99.100",
 			MachineName: "drop-28b10d4eff415a7b0b2c-0",
 			SSHUser:     "docker",

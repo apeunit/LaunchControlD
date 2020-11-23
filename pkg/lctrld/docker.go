@@ -152,7 +152,7 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 			log.Fatal("Provision read machine config error:", err)
 			break
 		}
-
+		fmt.Printf("DOCKER MACHINE PROVISION: DO WE HAVE IP YET? %#v\n", mc)
 		ip, err := cmdRunner(dmBin, []string{"ip", host}, envVars)
 		if err != nil {
 			log.Fatal(err)
