@@ -54,10 +54,8 @@ func TestProvision(t *testing.T) {
 	settings := config.Schema{}
 	evt := model.NewEvent("evtx", "owner", "virtualbox", fakeGenesisAccounts, model.Payload{})
 
-	wantCommandOutput := "1.2.3.4"
 	var mockCommandRunner = func(cmd string, args, envVars []string) (out string, err error) {
-		fmt.Println("cmd", cmd, "args", args, "envVars", envVars)
-		return wantCommandOutput, nil
+		return "mockCommandRunner returns nothing", nil
 	}
 
 	dmc := &mockDockerMachineConfig{
@@ -126,7 +124,7 @@ func TestProvision(t *testing.T) {
 				DriverName:       "",
 				TendermintNodeID: "",
 				Instance: model.MachineConfigInstance{
-					IPAddress:   "1.2.3.4",
+					IPAddress:   "",
 					MachineName: "",
 					SSHUser:     "",
 					SSHPort:     0,
@@ -140,7 +138,7 @@ func TestProvision(t *testing.T) {
 				DriverName:       "",
 				TendermintNodeID: "",
 				Instance: model.MachineConfigInstance{
-					IPAddress:   "1.2.3.4",
+					IPAddress:   "",
 					MachineName: "",
 					SSHUser:     "",
 					SSHPort:     0,
@@ -154,7 +152,7 @@ func TestProvision(t *testing.T) {
 				DriverName:       "",
 				TendermintNodeID: "",
 				Instance: model.MachineConfigInstance{
-					IPAddress:   "1.2.3.4",
+					IPAddress:   "",
 					MachineName: "",
 					SSHUser:     "",
 					SSHPort:     0,
