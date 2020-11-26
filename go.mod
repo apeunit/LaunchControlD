@@ -3,6 +3,7 @@ module github.com/apeunit/LaunchControlD
 go 1.14
 
 require (
+	github.com/gorilla/mux v1.8.0
 	github.com/gosimple/slug v1.9.0
 	github.com/melbahja/got v0.4.0
 	github.com/pelletier/go-toml v1.6.0
