@@ -166,3 +166,22 @@ func ListEvents(settings config.Schema) (events []model.Event, err error) {
 	})
 	return
 }
+
+// GetEventByID retrieve an event by name
+func GetEventByID(settings config.Schema, ID string) (event model.Event, err error) {
+	// this is not very fast but it does the job for the moment
+	evts, err := ListEvents(settings)
+	if err != nil {
+		return
+	}
+	// search the one
+	for _, evt := range evts {
+		if evt.ID() == ID {
+			event = evt
+			return
+		}
+	}
+	// if we got here we haven't found it
+	err = fmt.Errorf("no event found with id %s", ID)
+	return
+}
