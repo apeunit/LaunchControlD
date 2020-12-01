@@ -30,7 +30,7 @@ func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, e
 
 // dockerMachineNodeEnv recreates the output of docker-machine env evtx-d97517a3673688070aef-0, to run a command inside the docker-machine provisioned node.
 func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.MachineConfig) []string {
-	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s-%s", eventID, state.ID()))
+	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s", state.ID()))
 	return envVars
 }
 
