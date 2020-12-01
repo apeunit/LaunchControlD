@@ -1,0 +1,6 @@
+alias lctrld='lctrld --config ~/source/work/LaunchControlD/config.yaml'
+alias quicknew='lctrld events new ~/source/work/LaunchControlD/eventsample1.yml --provider virtualbox'
+alias quicksetup='lctrld payload setup $EVTID'
+alias quickdeploy='lctrld payload deploy $EVTID'
+alias quickteardown='lctrld events teardown $EVTID && VBoxManage unregistervm $EVTID-0'
+alias quickssh='docker-machine -s /tmp/workspace/evts/$EVTID/.docker/machine ssh $EVTID-0'
