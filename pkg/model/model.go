@@ -33,7 +33,7 @@ type Event struct {
 func NewEvent(symbol, owner, provider string, genesisAccounts []GenesisAccount, payload Payload) (e *Event) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
-		accounts[acc.Name] = NewAccount(acc.Name, "", "", acc.GenesisBalance, acc.Validator)
+		accounts[acc.Name] = NewAccount(acc.Name, "", "", acc.GenesisBalance, acc.Faucet, acc.Validator)
 	}
 	return &Event{
 		TokenSymbol: symbol,
@@ -111,6 +111,16 @@ func (e *Event) ExtraAccounts() (a []*Account) {
 	return
 }
 
+// FaucetAccount returns the first Account found with Faucet = true
+func (e *Event) FaucetAccount() (a *Account) {
+	for _, k := range e.sortedAccounts() {
+		if e.Accounts[k].Faucet {
+			return e.Accounts[k]
+		}
+	}
+	return nil
+}
+
 // ConfigLocation holds the paths to the configuration files for the Cosmos-SDK
 // based node and CLI.
 type ConfigLocation struct {
@@ -156,17 +166,19 @@ type Account struct {
 	Mnemonic       string          `json:"mnemonic"`
 	GenesisBalance string          `json:"genesis_balance"`
 	Validator      bool            `json:"validator"`
+	Faucet         bool            `json:"faucet"`
 	ConfigLocation *ConfigLocation `json:"config_location"`
 }
 
 // NewAccount ensures that all Account fields are filled out
-func NewAccount(name, address, mnemonic, genesisBalance string, validator bool) *Account {
+func NewAccount(name, address, mnemonic, genesisBalance string, faucet, validator bool) *Account {
 	return &Account{
 		Name:           name,
 		Address:        address,
 		Mnemonic:       mnemonic,
 		GenesisBalance: genesisBalance,
 		Validator:      validator,
+		Faucet:         faucet,
 		ConfigLocation: &ConfigLocation{
 			CLIConfigDir:    "",
 			DaemonConfigDir: "",

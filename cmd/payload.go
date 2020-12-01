@@ -74,6 +74,10 @@ func setupChain(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return
 	}
+	err = lctrld.GenerateFaucetConfig(settings, evt)
+	if err != nil {
+		return
+	}
 	return
 }
 

@@ -29,6 +29,7 @@ type GenesisAccount struct {
 	Name           string `yaml:"name" json:"name"`
 	GenesisBalance string `yaml:"genesis_balance" json:"genesis_balance"`
 	Validator      bool   `yaml:"validator" json:"validator"`
+	Faucet         bool   `yaml:"faucet" json:"faucet"`
 }
 
 // LoadEventRequestFromFile is as convenience function to unmarshal a EventRequest from a YAML file

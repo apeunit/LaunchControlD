@@ -3,6 +3,7 @@ package lctrld
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
@@ -230,7 +231,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		}
 	}
 
-	log.Infoln("Running the docker image on the provisioned machines")
+	log.Infoln("Running the dockerized Cosmos daemons on the provisioned machines")
 	for email, state := range evt.State {
 		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
@@ -264,6 +265,38 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	nodeAddr := fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress)
 	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.Payload.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr, "--unsafe-cors", "--chain-id", evt.ID(), "--home", "/payload/config/cli"}
 	log.Debugf("Running docker %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
+	_, err = cmdRunner("docker", args, envVars)
+	if err != nil {
+		log.Fatalf("docker %s failed with %s", args, err)
+		return
+	}
+
+	log.Infoln("Copying the faucet account and configuration to the first validator machine")
+	faucetAccount := evt.FaucetAccount()
+	v, _ := evt.Validators()
+	args = []string{"scp", "-r", faucetAccount.ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig/faucet_account", evt.State[v[0]].ID())}
+	_, err = cmdRunner("docker-machine", args, envVars)
+	if err != nil {
+		log.Fatalf("docker-machine %s failed with %s", args, err)
+		return
+	}
+	evtDir, err := evts(settings, evt.ID())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	args = []string{"scp", "-r", filepath.Join(evtDir, "faucetconfig.yml"), fmt.Sprintf("%s:/home/docker/nodeconfig/", evt.State[v[0]].ID())}
+	_, err = cmdRunner("docker-machine", args, envVars)
+	if err != nil {
+		log.Fatalf("docker-machine %s failed with %s", args, err)
+		return
+	}
+
+	log.Infoln("Starting the faucet")
+	firstValidator := evt.State[v[0]]
+	envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(firstValidator.N), firstValidator)
+	args = []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "8000:8000", evt.Payload.DockerImage, "/payload/gofaucet", "/payload/config/faucetconfig.yml"}
+	log.Debugf("Running docker %s on %s; envVars %s\n", args, firstValidator.ID(), envVars)
 	_, err = cmdRunner("docker", args, envVars)
 	if err != nil {
 		log.Fatalf("docker %s failed with %s", args, err)

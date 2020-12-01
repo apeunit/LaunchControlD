@@ -2,14 +2,18 @@ package lctrld
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
+	"gopkg.in/yaml.v2"
 
 	"github.com/melbahja/got"
 	"github.com/pelletier/go-toml"
@@ -170,6 +174,7 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 
 		acc.Address = result["address"].(string)
 		acc.Mnemonic = result["mnemonic"].(string)
+		acc.ConfigLocation.CLIConfigDir = extraAccDir
 
 		log.Infof("%s -> %s\n", acc.Name, acc.Address)
 	}
@@ -327,5 +332,39 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 			break
 		}
 	}
+	return
+}
+
+func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) {
+	log.Infoln("Generating faucet configuration")
+
+	// Use the first ExtraAccount as a faucet account
+	faucetAccount := evt.FaucetAccount()
+	if faucetAccount == nil {
+		return errors.New("At this stage we expect every blockchain deployment to have a Faucet account!")
+	}
+	// The faucet should connect to one of the validator nodes
+	v, _ := evt.Validators()
+	fc := model.FaucetConfig{
+		ListenAddr:    "0.0.0.0:8000",
+		ChainID:       evt.ID(),
+		CliBinaryPath: "/payload/launchpayloadcli",
+		CliConfigPath: "/home/docker/nodeconfig/faucet_account",
+		FaucetAddr:    faucetAccount.Address,
+		Unit:          evt.TokenSymbol,
+		NodeAddr:      fmt.Sprintf("%s:26657", evt.State[v[0]].Instance.IPAddress),
+		Secret:        "abadjoke",
+	}
+
+	evtsDir, err := evts(settings, evt.ID())
+	if err != nil {
+		return
+	}
+	f := filepath.Join(evtsDir, "faucetconfig.yml")
+	fBytes, err := yaml.Marshal(fc)
+	if err != nil {
+		return
+	}
+	err = ioutil.WriteFile(f, fBytes, 0644)
 	return
 }
