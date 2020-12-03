@@ -341,7 +341,7 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) 
 	// Use the first ExtraAccount as a faucet account
 	faucetAccount := evt.FaucetAccount()
 	if faucetAccount == nil {
-		return errors.New("At this stage we expect every blockchain deployment to have a Faucet account!")
+		return errors.New("At this stage we expect every blockchain deployment to have a Faucet account")
 	}
 	// The faucet should connect to one of the validator nodes
 	v, _ := evt.Validators()
