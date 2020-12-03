@@ -26,11 +26,11 @@ type Event struct {
 	StartsOn    time.Time                 `json:"starts_on"`
 	EndsOn      time.Time                 `json:"ends_on"`
 	State       map[string]*MachineConfig `json:"state"`
-	Payload     Payload                   `json:"payload"`
+	Payload     PayloadLocation           `json:"payload"`
 }
 
 // NewEvent helper for a new event
-func NewEvent(symbol, owner, provider string, genesisAccounts []GenesisAccount, payload Payload) (e *Event) {
+func NewEvent(symbol, owner, provider string, genesisAccounts []GenesisAccount, payload PayloadLocation) (e *Event) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
 		accounts[acc.Name] = &Account{

@@ -52,7 +52,7 @@ func TestProvision(t *testing.T) {
 		},
 	}
 	settings := config.Schema{}
-	evt := model.NewEvent("evtx", "owner", "virtualbox", fakeGenesisAccounts, model.Payload{})
+	evt := model.NewEvent("evtx", "owner", "virtualbox", fakeGenesisAccounts, model.PayloadLocation{})
 
 	var mockCommandRunner = func(cmd string, args, envVars []string) (out string, err error) {
 		return "mockCommandRunner returns nothing", nil
@@ -161,7 +161,7 @@ func TestProvision(t *testing.T) {
 				},
 			},
 		},
-		Payload: model.Payload{
+		Payload: model.PayloadLocation{
 			DockerImage: "",
 			BinaryURL:   "",
 			BinaryPath:  "",

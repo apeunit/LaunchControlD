@@ -8,15 +8,15 @@ import (
 
 // EventRequest holds metadata about the event, including how the genesis.json should be setup
 type EventRequest struct {
-	Payload         Payload          `yaml:"payload" json:"payload"`
+	Payload         PayloadLocation  `yaml:"payload" json:"payload"`
 	Owner           string           `yaml:"owner" json:"owner"`
 	TokenSymbol     string           `yaml:"token_symbol" json:"token_symbol"`
 	GenesisAccounts []GenesisAccount `yaml:"genesis_accounts" json:"genesis_accounts"`
 }
 
-// Payload holds metadata about the copy of the launchpayload that is
+// PayloadLocation holds metadata about the copy of the launchpayload that is
 // stored on the machine running LaunchControlD
-type Payload struct {
+type PayloadLocation struct {
 	DockerImage string `yaml:"docker_image" json:"docker_image"`
 	BinaryURL   string `yaml:"binary_url" json:"binary_url"`
 	BinaryPath  string `yaml:"binary_path" json:"binary_path"`
