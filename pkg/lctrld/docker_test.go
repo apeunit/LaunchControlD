@@ -74,7 +74,7 @@ func TestProvision(t *testing.T) {
 				Mnemonic:       "",
 				GenesisBalance: "1000000stake",
 				Validator:      true,
-				ConfigLocation: &model.ConfigLocation{
+				ConfigLocation: model.ConfigLocation{
 					CLIConfigDir:    "",
 					DaemonConfigDir: "",
 				},
@@ -85,7 +85,7 @@ func TestProvision(t *testing.T) {
 				Mnemonic:       "",
 				GenesisBalance: "1000000stake",
 				Validator:      true,
-				ConfigLocation: &model.ConfigLocation{
+				ConfigLocation: model.ConfigLocation{
 					CLIConfigDir:    "",
 					DaemonConfigDir: "",
 				},
@@ -96,7 +96,7 @@ func TestProvision(t *testing.T) {
 				Mnemonic:       "",
 				GenesisBalance: "1000000stake",
 				Validator:      true,
-				ConfigLocation: &model.ConfigLocation{
+				ConfigLocation: model.ConfigLocation{
 					CLIConfigDir:    "",
 					DaemonConfigDir: "",
 				},
@@ -107,7 +107,7 @@ func TestProvision(t *testing.T) {
 				Mnemonic:       "",
 				GenesisBalance: "1000000drop,10stake",
 				Validator:      false,
-				ConfigLocation: &model.ConfigLocation{
+				ConfigLocation: model.ConfigLocation{
 					CLIConfigDir:    "",
 					DaemonConfigDir: "",
 				},

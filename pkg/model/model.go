@@ -33,7 +33,18 @@ type Event struct {
 func NewEvent(symbol, owner, provider string, genesisAccounts []GenesisAccount, payload Payload) (e *Event) {
 	accounts := make(map[string]*Account)
 	for _, acc := range genesisAccounts {
-		accounts[acc.Name] = NewAccount(acc.Name, "", "", acc.GenesisBalance, acc.Faucet, acc.Validator)
+		accounts[acc.Name] = &Account{
+			Name:           acc.Name,
+			Address:        "",
+			Mnemonic:       "",
+			GenesisBalance: acc.GenesisBalance,
+			Validator:      acc.Validator,
+			Faucet:         acc.Faucet,
+			ConfigLocation: ConfigLocation{
+				CLIConfigDir:    "",
+				DaemonConfigDir: "",
+			},
+		}
 	}
 	return &Event{
 		TokenSymbol: symbol,
@@ -161,27 +172,11 @@ type MachineConfigInstance struct {
 
 // Account represents an Account for a Event
 type Account struct {
-	Name           string          `json:"name"`
-	Address        string          `json:"address"`
-	Mnemonic       string          `json:"mnemonic"`
-	GenesisBalance string          `json:"genesis_balance"`
-	Validator      bool            `json:"validator"`
-	Faucet         bool            `json:"faucet"`
-	ConfigLocation *ConfigLocation `json:"config_location"`
-}
-
-// NewAccount ensures that all Account fields are filled out
-func NewAccount(name, address, mnemonic, genesisBalance string, faucet, validator bool) *Account {
-	return &Account{
-		Name:           name,
-		Address:        address,
-		Mnemonic:       mnemonic,
-		GenesisBalance: genesisBalance,
-		Validator:      validator,
-		Faucet:         faucet,
-		ConfigLocation: &ConfigLocation{
-			CLIConfigDir:    "",
-			DaemonConfigDir: "",
-		},
-	}
+	Name           string         `json:"name"`
+	Address        string         `json:"address"`
+	Mnemonic       string         `json:"mnemonic"`
+	GenesisBalance string         `json:"genesis_balance"`
+	Validator      bool           `json:"validator"`
+	Faucet         bool           `json:"faucet"`
+	ConfigLocation ConfigLocation `json:"config_location"`
 }
