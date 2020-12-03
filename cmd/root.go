@@ -79,7 +79,9 @@ func initConfig() {
 		fmt.Println("Error loading config file:", viper.ConfigFileUsed(), ":", err)
 	} else {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
-		viper.Unmarshal(&settings)
-		// log.Debug("Settings: ", settings)
+		settingsParseError := viper.UnmarshalExact(&settings)
+		if settingsParseError != nil {
+			log.Debugf("Errors encountered while parsing %s: %s", viper.ConfigFileUsed(), settingsParseError)
+		}
 	}
 }

@@ -42,7 +42,7 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	var e model.EventRequest
 	json.NewDecoder(r.Body).Decode(&e)
 	log.Printf("%#v\n", e)
-	event := model.NewEvent(e.TokenSymbol, e.Owner, "virtualbox", e.GenesisAccounts, e.Payload)
+	event := model.NewEvent(e.TokenSymbol, e.Owner, "virtualbox", e.GenesisAccounts, e.PayloadLocation)
 	err := lctrld.CreateEvent(settings, event)
 	log.Printf("Creating event %#v\n", event)
 	if err != nil {

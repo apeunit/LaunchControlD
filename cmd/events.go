@@ -62,13 +62,16 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return
 	}
-	fmt.Printf("%#v\n", eq)
+	eq.PayloadLocation = settings.DefaultPayloadLocation
+	fmt.Printf("%#v\n\n", settings)
 
-	event := model.NewEvent(eq.TokenSymbol, eq.Owner, provider, eq.GenesisAccounts, eq.Payload)
+	fmt.Printf("%#v\n\n", eq)
+
+	event := model.NewEvent(eq.TokenSymbol, eq.Owner, provider, eq.GenesisAccounts, eq.PayloadLocation)
 
 	vc := event.ValidatorsCount()
 
-	fmt.Printf("%#v\n", event)
+	fmt.Printf("%#v\n\n", event)
 	fmt.Println("Summary:")
 	fmt.Printf("there are %v validators\n", vc)
 	_, validatorAccounts := event.Validators()

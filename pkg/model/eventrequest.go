@@ -8,7 +8,7 @@ import (
 
 // EventRequest holds metadata about the event, including how the genesis.json should be setup
 type EventRequest struct {
-	Payload         PayloadLocation  `yaml:"payload" json:"payload"`
+	PayloadLocation PayloadLocation  `yaml:"payload_location" json:"payload"`
 	Owner           string           `yaml:"owner" json:"owner"`
 	TokenSymbol     string           `yaml:"token_symbol" json:"token_symbol"`
 	GenesisAccounts []GenesisAccount `yaml:"genesis_accounts" json:"genesis_accounts"`
@@ -17,11 +17,11 @@ type EventRequest struct {
 // PayloadLocation holds metadata about the copy of the launchpayload that is
 // stored on the machine running LaunchControlD
 type PayloadLocation struct {
-	DockerImage string `yaml:"docker_image" json:"docker_image"`
-	BinaryURL   string `yaml:"binary_url" json:"binary_url"`
-	BinaryPath  string `yaml:"binary_path" json:"binary_path"`
-	DaemonPath  string `yaml:"daemon_path" json:"daemon_path"`
-	CLIPath     string `yaml:"cli_path" json:"cli_path"`
+	DockerImage string `mapstructure:"docker_image" yaml:"docker_image" json:"docker_image"`
+	BinaryURL   string `mapstructure:"binary_url" yaml:"binary_url" json:"binary_url"`
+	BinaryPath  string `mapstructure:"binary_path" yaml:"binary_path" json:"binary_path"`
+	DaemonPath  string `mapstructure:"daemon_path" yaml:"daemon_path" json:"daemon_path"`
+	CLIPath     string `mapstructure:"cli_path" yaml:"cli_path" json:"cli_path"`
 }
 
 // GenesisAccount is the configuration of accounts present in the genesis block

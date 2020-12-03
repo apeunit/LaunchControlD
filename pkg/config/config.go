@@ -1,9 +1,12 @@
 package config
 
+import "github.com/apeunit/LaunchControlD/pkg/model"
+
 // Schema describes the layout of config.yaml
 type Schema struct {
-	Workspace     string        `mapstructure:"workspace"`
-	DockerMachine DockerMachine `mapstructure:"docker_machine"`
+	Workspace              string                `mapstructure:"workspace"`
+	DockerMachine          DockerMachine         `mapstructure:"docker_machine"`
+	DefaultPayloadLocation model.PayloadLocation `mapstructure:"default_payload_location"`
 }
 
 // DockerMachine describes the host's docker-machine binary
