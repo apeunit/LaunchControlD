@@ -1,6 +1,4 @@
-@hostname = api.example.com
-@port = 8080
-@host = {{hostname}}:{{port}}
+@host = http://localhost:2012
 
 
 ### Create an event
