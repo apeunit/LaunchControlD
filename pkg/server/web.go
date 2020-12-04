@@ -63,16 +63,32 @@ func ServeHTTP(settings config.Schema) (err error) {
 		})
 	})
 	// DELETE
-	v1.Delete("/event", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Hello World",
-		})
+	v1.Delete("/event/:eventID/deploy", func(c *fiber.Ctx) error {
+		//eventID := c.Params("eventID")
+		return c.JSON(fiber.ErrTeapot)
+	})
+	// DELETE
+	v1.Delete("/event/:eventID", func(c *fiber.Ctx) error {
+		eventID := c.Params("eventID")
+		evt, err := lctrld.GetEventByID(settings, eventID)
+		if err != nil {
+			c.JSON(fiber.ErrNotFound)
+		}
+		err = lctrld.DestroyEvent(settings, &evt, lctrld.RunCommand)
+		if err != nil {
+			c.JSON(fiber.ErrInternalServerError)
+		}
+		return c.JSON(evt)
 	})
 	// GET
-	v1.Get("event", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Hello World",
-		})
+	v1.Get("/event/:eventID", func(c *fiber.Ctx) error {
+		eventID := c.Params("eventID")
+
+		evt, err := lctrld.GetEventByID(settings, eventID)
+		if err != nil {
+			c.JSON(fiber.ErrNotFound)
+		}
+		return c.JSON(evt)
 	})
 	// LIST
 	v1.Get("/events", func(c *fiber.Ctx) error {
@@ -82,7 +98,7 @@ func ServeHTTP(settings config.Schema) (err error) {
 		}
 		return c.JSON(events)
 	})
-
+	// run the web server
 	err = app.Listen(settings.Web.ListenAddress)
 	return
 }
