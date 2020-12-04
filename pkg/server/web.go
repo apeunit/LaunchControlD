@@ -28,11 +28,16 @@ func ServeHTTP(settings config.Schema) (err error) {
 	// CREATE
 	v1.Post("/event", func(c *fiber.Ctx) error {
 
-		var e model.EventRequest
+		e, err := model.ParseEventRequest(c.Body(), settings.DefaultPayloadLocation, settings.Web.DefaultProvider)
+		if err != nil {
+			c.JSON(fiber.Map{
+				"error": err,
+			})
+		}
 
 		log.Debug("%#v\n", e)
 		event := model.NewEvent(e.TokenSymbol, e.Owner, "virtualbox", e.GenesisAccounts, e.PayloadLocation)
-		err := lctrld.CreateEvent(settings, event)
+		err = lctrld.CreateEvent(settings, event)
 		log.Debug("Creating event %#v\n", event)
 		if err != nil {
 			c.JSON(fiber.Map{
