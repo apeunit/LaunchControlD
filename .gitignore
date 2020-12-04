@@ -5,3 +5,4 @@ workspace
 config.yaml
 go.sum
 .vscode/
+private
