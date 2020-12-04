@@ -1,6 +1,9 @@
 package server
 
 import (
+	"github.com/apeunit/LaunchControlD/pkg/config"
+	"github.com/apeunit/LaunchControlD/pkg/lctrld"
+	"github.com/apeunit/LaunchControlD/pkg/model"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,7 +12,7 @@ import (
 )
 
 // ServeHTTP starts the http service
-func ServeHTTP() (err error) {
+func ServeHTTP(settings config.Schema) (err error) {
 	log.Info("starting http")
 
 	app := fiber.New()
@@ -24,8 +27,34 @@ func ServeHTTP() (err error) {
 	// define the api
 	// CREATE
 	v1.Post("/event", func(c *fiber.Ctx) error {
+
+		var e model.EventRequest
+
+		log.Debug("%#v\n", e)
+		event := model.NewEvent(e.TokenSymbol, e.Owner, "virtualbox", e.GenesisAccounts, e.PayloadLocation)
+		err := lctrld.CreateEvent(settings, event)
+		log.Debug("Creating event %#v\n", event)
+		if err != nil {
+			c.JSON(fiber.Map{
+				"error": err,
+			})
+		}
+
+		dmc := lctrld.NewDockerMachineConfig(settings, event.ID())
+		event, err = lctrld.Provision(settings, event, lctrld.RunCommand, dmc)
+		if err != nil {
+			c.JSON(fiber.Map{
+				"error": err,
+			})
+		}
+		if err = lctrld.StoreEvent(settings, event); err != nil {
+			c.JSON(fiber.Map{
+				"error": err,
+			})
+		}
+		// happy ending
 		return c.JSON(fiber.Map{
-			"message": "Hello World",
+			"id": event.ID(),
 		})
 	})
 	// DELETE
@@ -42,11 +71,13 @@ func ServeHTTP() (err error) {
 	})
 	// LIST
 	v1.Get("/events", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Hello World",
-		})
+		events, err := lctrld.ListEvents(settings)
+		if err != nil {
+			c.JSON(fiber.ErrInternalServerError)
+		}
+		return c.JSON(events)
 	})
 
-	err = app.Listen(":3000")
+	err = app.Listen(settings.Web.ListenAddress)
 	return
 }

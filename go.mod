@@ -4,7 +4,6 @@ go 1.15
 
 require (
 	github.com/gofiber/fiber/v2 v2.2.3
-	github.com/gorilla/mux v1.8.0
 	github.com/gosimple/slug v1.9.0
 	github.com/melbahja/got v0.5.0
 	github.com/pelletier/go-toml v1.8.1
