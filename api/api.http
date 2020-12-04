@@ -1,0 +1,32 @@
+@hostname = api.example.com
+@port = 8080
+@host = {{hostname}}:{{port}}
+
+
+### Create an event
+@eventID = x
+POST {{host}}/api/v1/event
+Content-Type: application/json
+
+{
+    "owner": "andrea@apeunit.com",
+    "token": "CO3",
+    "accounts": [
+        {
+            "name": "Martha Pistacho",
+        },
+        {
+            "name": "Johny Pistacho",
+        }
+    ]
+}
+
+### List events
+GET {{host}}/api/v1/events
+
+### Get single event
+@eventID = x
+GET {{host}}/api/v1/event/{{eventID}}
+
+### Delete an Event
+DELETE {{host}}/api/v1/event/{{eventID}}
