@@ -132,13 +132,6 @@ func (e *Event) FaucetAccount() (a *Account) {
 	return nil
 }
 
-// ConfigLocation holds the paths to the configuration files for the Cosmos-SDK
-// based node and CLI.
-type ConfigLocation struct {
-	CLIConfigDir    string `json:"CLIConfigDir"`
-	DaemonConfigDir string `json:"DaemonConfigDir"`
-}
-
 // MachineConfig holds the configuration of a Machine
 type MachineConfig struct {
 	N                string                `json:"N"`
@@ -179,4 +172,11 @@ type Account struct {
 	Validator      bool           `json:"validator"`
 	Faucet         bool           `json:"faucet"`
 	ConfigLocation ConfigLocation `json:"config_location"`
+}
+
+// ConfigLocation holds the paths to the configuration files for the Cosmos-SDK
+// based node and CLI.
+type ConfigLocation struct {
+	CLIConfigDir    string `json:"CLIConfigDir"`
+	DaemonConfigDir string `json:"DaemonConfigDir"`
 }
