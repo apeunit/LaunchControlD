@@ -5,6 +5,12 @@ alias quickdeploy='lctrld payload deploy $EVTID'
 alias quickteardown='lctrld events teardown $EVTID && VBoxManage unregistervm $EVTID-0'
 alias quickssh='docker-machine -s /tmp/workspace/evts/$EVTID/.docker/machine ssh $EVTID-0'
 
+function reenv() {
+    export EVTID=$1
+    export EVTDIR=/tmp/workspace/evts/$EVTID
+    export MACHINE_STORAGE_PATH=$EVTDIR/.docker/machine/
+}
+
 function testsendworks() {
     export EVT=$EVTDIR/event.json
     export ALICE=`jq -r '.accounts."alice@apeunit.com".address' $EVT`
