@@ -280,6 +280,13 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		log.Fatalf("docker-machine %s failed with %s", args, err)
 		return
 	}
+	// docker-machine chmod -R 777 /home/docker/nodeconfig AGAIN - what a mess!
+	args = []string{"ssh", evt.State[v[0]].ID(), "chmod", "-R", "777", "/home/docker/nodeconfig"}
+	_, err = cmdRunner(dmBin, args, envVars)
+	if err != nil {
+		log.Fatalf("docker-machine %s failed with %s", args, err)
+	}
+
 	evtDir, err := evts(settings, evt.ID())
 	if err != nil {
 		log.Fatal(err)
