@@ -168,6 +168,7 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 // image
 func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
 	dmBin := dmBin(settings)
+	var args []string
 
 	log.Infoln("Copying node configs to each provisioned machine")
 	for name, state := range evt.State {
@@ -252,7 +253,8 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		}
 	}
 
-	log.Infoln("Running the docker image on the first node to provide the Light Client Daemon")
+	// https://forum.cosmos.network/t/what-could-cause-sync-mutex-lock-to-have-a-nil-pointer-dereference/4194
+	log.Infoln("Running the CLI to provide the Light Client Daemon")
 	emails, _ := evt.Validators()
 	firstNode := emails[0]
 	machineHomeDir := dmc.HomeDir(evt.State[firstNode].N)
@@ -262,14 +264,23 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	}
 	envVars = dockerMachineNodeEnv(envVars, evt.ID(), machineHomeDir, evt.State[firstNode])
 
-	nodeAddr := fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress)
-	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.Payload.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr, "--unsafe-cors", "--chain-id", evt.ID(), "--home", "/payload/config/cli"}
-	log.Debugf("Running docker %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
-	_, err = cmdRunner("docker", args, envVars)
+	args = []string{"ssh", evt.State[firstNode].ID(), "docker", "run", "-d", "--volume=/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", "apeunit/launchpayload", "/payload/runlightclient.sh", evt.State[firstNode].Instance.IPAddress, evt.ID()}
+	// args = []string{"scp", evt.Payload.CLIPath, fmt.Sprintf("%s:/home/docker", evt.State[firstNode].ID())}
+	log.Debugf("Running docker-machine %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
+	o, err := cmdRunner(dmBin, args, envVars)
+	log.Infoln(o)
 	if err != nil {
-		log.Fatalf("docker %s failed with %s", args, err)
+		log.Fatal(err)
 		return
 	}
+
+	// args = []string{"ssh", evt.State[firstNode].ID(), "/home/docker/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress), "--unsafe-cors", "--chain-id", evt.ID(), "--home", "/home/docker/nodeconfig/cli", "&"}
+	// o, err = cmdRunner(dmBin, args, envVars)
+	// log.Infoln(o)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	return
+	// }
 
 	log.Infoln("Copying the faucet account and configuration to the first validator machine")
 	faucetAccount := evt.FaucetAccount()
