@@ -162,8 +162,22 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 	return evt, nil
 }
 
-// DeployPayload tells the provisioned machines to run the configured docker
-// image
+// RereadDockerMachineInfo is useful when docker-machine failed during 'create',
+// and a human fixed the problem, and wants to continue
+func RereadDockerMachineInfo(settings config.Schema, evt *model.Event, dmc DockerMachineInterface) (event *model.Event, err error) {
+	_, validatorAccounts := evt.Validators()
+	for i, v := range validatorAccounts {
+		mc, err := dmc.ReadConfig(fmt.Sprint(i))
+		if err != nil {
+			log.Fatal("Provision read machine config error:", err)
+			break
+		}
+		evt.State[v.Name] = mc
+	}
+	return evt, err
+}
+
+// DeployPayload tells the provisioned machines to run the configured docker image
 func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
 	dmBin := dmBin(settings)
 	var args []string

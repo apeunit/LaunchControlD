@@ -41,6 +41,8 @@ func init() {
 	// ******************
 	eventsCmd.AddCommand(listEventCmd)
 	listEventCmd.Flags().BoolVar(&verbose, "verbose", false, "Print more details")
+
+	eventsCmd.AddCommand(retryEventCmd)
 }
 
 var verbose bool
@@ -161,4 +163,33 @@ func listEvent(cmd *cobra.Command, args []string) {
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))
+}
+
+// listEventCmd represents the tearDownEvent command
+var retryEventCmd = &cobra.Command{
+	Use:   "retry",
+	Short: "rereads docker-machine's .docker/machine/machines/<name>/config.json into event.json, in case a human fixed whatever went wrong",
+	Long:  "rereads docker-machine's .docker/machine/machines/<name>/config.json into event.json, in case a human fixed whatever went wrong",
+	Args:  cobra.ExactArgs(1),
+	RunE:  retryEvent,
+}
+
+func retryEvent(cmd *cobra.Command, args []string) (err error) {
+	evt, err := lctrld.LoadEvent(settings, args[0])
+	if err != nil {
+		return
+	}
+	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	evt2, err := lctrld.RereadDockerMachineInfo(settings, evt, dmc)
+	err = lctrld.StoreEvent(settings, evt2)
+
+	validatorNames, _ := evt2.Validators()
+	for _, v := range validatorNames {
+		log.Infof("Updated info for %s: %#v\n", v, evt2.State[v])
+	}
+	if err != nil {
+		log.Fatal("There was a problem saving the updated Event", err)
+		return
+	}
+	return
 }
