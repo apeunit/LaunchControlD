@@ -153,8 +153,6 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 			log.Fatal("Provision read machine config error:", err)
 			break
 		}
-		mc.N = fmt.Sprint(i)
-		mc.EventID = evt.ID()
 		evt.State[v.Name] = mc
 	}
 	if err != nil {
