@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
