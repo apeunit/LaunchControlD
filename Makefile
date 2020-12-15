@@ -61,6 +61,11 @@ clean:
 	rm -rf $(OUTPUTFOLDER)
 	@echo done
 
+doc:
+	@echo generate the documentation 
+	swag init -g pkg/server/web.go -o api
+	@echo done
+
 docker: docker-build
 
 docker-build:

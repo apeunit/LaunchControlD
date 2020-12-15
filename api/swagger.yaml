@@ -1,0 +1,228 @@
+basePath: /api/v1
+definitions:
+  model.Account:
+    properties:
+      address:
+        type: string
+      config_location:
+        $ref: '#/definitions/model.ConfigLocation'
+      faucet:
+        type: boolean
+      genesis_balance:
+        type: string
+      mnemonic:
+        type: string
+      name:
+        type: string
+      validator:
+        type: boolean
+    type: object
+  model.ConfigLocation:
+    properties:
+      CLIConfigDir:
+        type: string
+      DaemonConfigDir:
+        type: string
+    type: object
+  model.Event:
+    properties:
+      accounts:
+        additionalProperties:
+          $ref: '#/definitions/model.Account'
+        type: object
+      created_on:
+        type: string
+      ends_on:
+        type: string
+      owner:
+        description: email address of the owner
+        type: string
+      payload:
+        $ref: '#/definitions/model.PayloadLocation'
+      provider:
+        description: provider for provisioning
+        type: string
+      starts_on:
+        type: string
+      state:
+        additionalProperties:
+          $ref: '#/definitions/model.MachineConfig'
+        type: object
+      token_symbol:
+        description: token symbool
+        type: string
+    type: object
+  model.EventRequest:
+    properties:
+      genesis_accounts:
+        items:
+          $ref: '#/definitions/model.GenesisAccount'
+        type: array
+      owner:
+        type: string
+      payload:
+        $ref: '#/definitions/model.PayloadLocation'
+      provider:
+        type: string
+      token_symbol:
+        type: string
+    type: object
+  model.GenesisAccount:
+    properties:
+      faucet:
+        type: boolean
+      genesis_balance:
+        type: string
+      name:
+        type: string
+      validator:
+        type: boolean
+    type: object
+  model.MachineConfig:
+    properties:
+      DriverName:
+        type: string
+      EventID:
+        type: string
+      Instance:
+        $ref: '#/definitions/model.MachineConfigInstance'
+      "N":
+        type: string
+      TendermintNodeID:
+        type: string
+    type: object
+  model.MachineConfigInstance:
+    properties:
+      IPAddress:
+        type: string
+      MachineName:
+        type: string
+      SSHKeyPath:
+        type: string
+      SSHPort:
+        type: integer
+      SSHUser:
+        type: string
+      StorePath:
+        type: string
+    type: object
+  model.PayloadLocation:
+    properties:
+      binary_path:
+        type: string
+      binary_url:
+        type: string
+      cli_path:
+        type: string
+      daemon_path:
+        type: string
+      docker_image:
+        type: string
+    type: object
+host: localhost:2012
+info:
+  contact:
+    email: u2467@apeunit.com
+    name: API Support
+  description: This are the documentation for the LaunchControlD REST API
+  license:
+    name: MIT
+  title: LaunchControlD REST API
+  version: "1.0"
+paths:
+  /events:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Event'
+            type: array
+      summary: Retrieve a list of events
+      tags:
+      - event
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event Request
+        in: body
+        name: '-'
+        required: true
+        schema:
+          $ref: '#/definitions/model.EventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Event'
+      summary: Create an event
+      tags:
+      - event
+  /events/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Event'
+      summary: Destroy an event and associated resources
+      tags:
+      - event
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Event'
+      summary: Retrieve an event
+      tags:
+      - event
+  /events/{id}/deploy:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Event'
+      summary: Provision the insfrastructure and deploy the event
+      tags:
+      - event
+swagger: "2.0"
