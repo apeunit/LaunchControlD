@@ -4,36 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
-
-// dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
-func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
-	// set the path to find executable
-	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
-	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
-	// set the home path for the command
-	home, err := evts(settings, evt.ID()) // this gives you the relative path to the event home
-	if err != nil {
-		return
-	}
-	envHome := fmt.Sprintf("HOME=%s", home)
-	// get the env var from the driver
-	env = settings.DockerMachine.Drivers[evt.Provider].Env
-	env = append(env, envHome, envPath)
-	return
-}
-
-// dockerMachineNodeEnv recreates the output of docker-machine env evtx-d97517a3673688070aef-0, to run a command inside the docker-machine provisioned node.
-func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.MachineConfig) []string {
-	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s", state.ID()))
-	return envVars
-}
 
 // InspectEvent inspect status of the infrastructure for an event
 func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
