@@ -119,6 +119,20 @@ definitions:
       docker_image:
         type: string
     type: object
+  server.APIReply:
+    properties:
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  server.UserCredentials:
+    properties:
+      email:
+        type: string
+      pass:
+        type: string
+    type: object
 host: localhost:2012
 info:
   contact:
@@ -130,6 +144,65 @@ info:
   title: LaunchControlD REST API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login credentials
+        in: body
+        name: '-'
+        required: true
+        schema:
+          $ref: '#/definitions/server.UserCredentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API Reply
+          schema:
+            $ref: '#/definitions/server.APIReply'
+      summary: Login to the API
+      tags:
+      - auth
+      - session
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Logout from the system
+      tags:
+      - auth
+      - session
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration credentials
+        in: body
+        name: '-'
+        required: true
+        schema:
+          $ref: '#/definitions/server.UserCredentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Register an API account
+      tags:
+      - auth
+      - session
   /events:
     get:
       consumes:

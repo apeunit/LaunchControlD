@@ -4,16 +4,21 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
+	cache "github.com/patrickmn/go-cache"
 
 	normalizer "github.com/dimuska139/go-email-normalizer"
+	log "github.com/sirupsen/logrus"
 )
 
+// error definitions
 var (
 	ErrorDuplicatedUser  = errors.New("duplicated user")
 	ErrorEmptyEmailOrPwd = errors.New("username and password should not be empty")
+	ErrorUnauthorized    = errors.New("user not authorized")
 )
 
 // User a user in the user database
@@ -22,24 +27,29 @@ type User struct {
 	PasswordHash string
 }
 
-// UserDb keep the users database
+// UsersDB keep the users database
 type UsersDB struct {
 	dbPath    string
 	users     map[string]User
+	tokens    *cache.Cache
 	emailNorm *normalizer.Normalizer
 	sync.RWMutex
 }
 
+// NewUserDB create or read an existing database from a path
 func NewUserDB(dbPath string) (db *UsersDB, err error) {
+	log.Debug("initialize new db at: ", dbPath)
 	db = &UsersDB{
 		dbPath:    dbPath,
 		users:     make(map[string]User),
+		tokens:    cache.New(12*time.Hour, 1*time.Hour),
 		emailNorm: normalizer.NewNormalizer(),
 	}
-	err = db.Load()
+	err = db.load()
 	return
 }
 
+// RegisterUser register a new user into the user database
 func (db *UsersDB) RegisterUser(email, pass string) (err error) {
 	// basic length check
 	if len(strings.TrimSpace(email)) == 0 || len(strings.TrimSpace(pass)) == 0 {
@@ -56,8 +66,10 @@ func (db *UsersDB) RegisterUser(email, pass string) (err error) {
 		err = ErrorDuplicatedUser
 		return
 	}
+	log.Debug("start hashing")
 	// otherwise calculate the argon2id hash
 	pwdH, err := argon2id.CreateHash(pass, argon2id.DefaultParams)
+	log.Debug("hashing completed")
 	if err != nil {
 		return
 	}
@@ -67,12 +79,13 @@ func (db *UsersDB) RegisterUser(email, pass string) (err error) {
 		PasswordHash: pwdH,
 	}
 	// save the db to a file
-	err = db.Store()
+	err = db.store()
 	return
 }
 
-// IsAuthorized verify if a use is authorized
-func (db *UsersDB) IsAuthorized(email, pass string) bool {
+// IsAuthorized verify if a use is authorized,
+// if so, register a user token and returns it
+func (db *UsersDB) IsAuthorized(email, pass string) (token string, err error) {
 	db.RLock()
 	defer db.RUnlock()
 	// normalize the email
@@ -81,30 +94,67 @@ func (db *UsersDB) IsAuthorized(email, pass string) bool {
 	u, xs := db.users[emailH]
 	// if doesn't exists is not authorized
 	if !xs {
-		return false
+		err = ErrorUnauthorized
+		return
 	}
 	// verify the password, if there is an error the user is not Authorized anyway
-	match, _ := argon2id.ComparePasswordAndHash(pass, u.PasswordHash)
-	return match
+	match, err := argon2id.ComparePasswordAndHash(pass, u.PasswordHash)
+	if err != nil {
+		log.Error("error authorizing: ", err)
+		err = ErrorUnauthorized
+		return
+	}
+	if !match {
+		err = ErrorUnauthorized
+		return
+	}
+	// if all is good generate a token
+	token, err = utils.GenerateRandomHash()
+	if err != nil {
+		log.Error("randome geneation failed (check os): ", err)
+		err = ErrorUnauthorized
+		return
+	}
+	db.tokens.Set(token, emailH, cache.DefaultExpiration)
+	return
+}
+
+// IsTokenAuthorized check whenever the token exists and returns the associated email
+// otherwise returns error
+func (db *UsersDB) IsTokenAuthorized(token string) (email string, err error) {
+	emailHI, found := db.tokens.Get(token)
+	if !found {
+		err = ErrorUnauthorized
+		return
+	}
+	user, found := db.users[emailHI.(string)]
+	// if it is not found the db is inconsistent
+	if !found {
+		err = ErrorUnauthorized
+		return
+	}
+	email = user.Email
+	return
+}
+
+// DropToken deletes a token
+func (db *UsersDB) DropToken(token string) {
+	db.tokens.Delete(token)
 }
 
 // Store store the db user on file
-func (db *UsersDB) Store() (err error) {
-	db.Lock()
-	defer db.Unlock()
+func (db *UsersDB) store() (err error) {
 	err = utils.StoreJSON(db.dbPath, db.users)
 	return
 }
 
 // Load load the user db from file or get an empty db if the
 // file does not exists
-func (db *UsersDB) Load() (err error) {
-	db.Lock()
-	defer db.Unlock()
+func (db *UsersDB) load() (err error) {
 	// if does not exists there is nothing to load
 	if !utils.FileExists(db.dbPath) {
 		return
 	}
-	err = utils.LoadJSON(db.dbPath, db.users)
+	err = utils.LoadJSON(db.dbPath, &db.users)
 	return
 }

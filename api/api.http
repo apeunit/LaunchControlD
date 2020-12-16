@@ -1,10 +1,11 @@
 @host = http://localhost:2012
-
+@token = 24ad662c1ea32c76caa11e8b25d8f50d35683216268f044d3c2152455081a59f
 
 ### Create an event
 @eventID = x
 POST {{host}}/api/v1/event
 Content-Type: application/json
+X-Lctrld-Token: {{token}}
 
 {
     "owner": "andrea@apeunit.com",
@@ -21,10 +22,40 @@ Content-Type: application/json
 
 ### List events
 GET {{host}}/api/v1/events
+X-Lctrld-Token: {{token}}
 
 ### Get single event
 @eventID = x
 GET {{host}}/api/v1/event/{{eventID}}
+X-Lctrld-Token: {{token}}
 
 ### Delete an Event
 DELETE {{host}}/api/v1/event/{{eventID}}
+X-Lctrld-Token: {{token}}
+
+
+### USER MANAGEMENT
+@email = no.andreo@gmail.com
+@pass = whatever
+
+### Register a user 
+POST {{host}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "pass" : "{{pass}}"
+}
+
+### Login 
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "pass" : "{{pass}}"
+}
+
+### Logout 
+POST {{host}}/api/v1/auth/logout
+Content-Type: application/json

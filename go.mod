@@ -6,11 +6,12 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alexedwards/argon2id v0.0.0-20200802152012-2464efd3196b
 	github.com/arsmn/fiber-swagger/v2 v2.2.0
-	github.com/dimuska139/go-email-normalizer v1.1.6 // indirect
+	github.com/dimuska139/go-email-normalizer v1.1.6
 	github.com/go-openapi/spec v0.20.0 // indirect
 	github.com/gofiber/fiber/v2 v2.2.3
 	github.com/gosimple/slug v1.9.0
 	github.com/melbahja/got v0.5.0
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1

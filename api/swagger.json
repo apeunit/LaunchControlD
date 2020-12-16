@@ -15,6 +15,97 @@
     "host": "localhost:2012",
     "basePath": "/api/v1",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth",
+                    "session"
+                ],
+                "summary": "Login to the API",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "-",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/server.UserCredentials"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API Reply",
+                        "schema": {
+                            "$ref": "#/definitions/server.APIReply"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth",
+                    "session"
+                ],
+                "summary": "Logout from the system",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth",
+                    "session"
+                ],
+                "summary": "Register an API account",
+                "parameters": [
+                    {
+                        "description": "Registration credentials",
+                        "name": "-",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/server.UserCredentials"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/events": {
             "get": {
                 "consumes": [
@@ -341,6 +432,28 @@
                     "type": "string"
                 },
                 "docker_image": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.APIReply": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "server.UserCredentials": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "pass": {
                     "type": "string"
                 }
             }

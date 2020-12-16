@@ -17,6 +17,7 @@ type Schema struct {
 type WebSchema struct {
 	ListenAddress   string `mapstructure:"listen_address"`
 	DefaultProvider string `mapstructure:"default_provider"`
+	UsersDbFile     string `mapstructure:"users_db_file"`
 }
 
 // DockerMachine describes the host's docker-machine binary
@@ -43,6 +44,7 @@ type DockerMachineDriver struct {
 func Defaults() {
 	// web
 	viper.SetDefault("web.listen_address", ":2002")
+	viper.SetDefault("web.users_db_file", "users.json")
 	viper.SetDefault("web.default_provider", "virtualbox")
 	// services
 	viper.SetDefault("services.sentry_dsn", "")
