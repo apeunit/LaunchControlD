@@ -53,8 +53,8 @@ func evts(settings config.Schema, dir string) (string, error) {
 	return _absPath(_path(settings.Workspace, evtsDir, dir))
 }
 
-// evtDescriptor returns the absolute path to the event descriptor file
-func evtDescriptor(settings config.Schema, evtID string) (path string, err error) {
+// evtFile returns "/tmp/workspace/evts/<EVTID>/event.json", i.e. the absolute path to the event descriptor file
+func evtFile(settings config.Schema, evtID string) (path string, err error) {
 	path, err = evts(settings, evtID)
 	if err != nil {
 		return

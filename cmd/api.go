@@ -17,14 +17,14 @@ var apiCmd = &cobra.Command{
 	Use:   "api",
 	Short: "HTTP REST API to remotely control lctrld",
 	Long:  ``,
-	RunE:  runApi,
+	RunE:  runAPI,
 }
 
 func init() {
 	rootCmd.AddCommand(apiCmd)
 }
 
-func runApi(cmd *cobra.Command, args []string) (err error) {
+func runAPI(cmd *cobra.Command, args []string) (err error) {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/events", listEvents).Methods("GET")
