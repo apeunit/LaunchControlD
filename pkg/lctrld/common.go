@@ -21,19 +21,22 @@ const (
 	dockerHome        = ".docker"
 )
 
+// bin returns /tmp/workspace/bin
 func bin(settings config.Schema, file string) string {
 	return _path(settings.Workspace, binDir, file)
 }
 
+// tmp returns /tmp/workspace/tmp
 func tmp(settings config.Schema) (string, error) {
 	return ioutil.TempDir(_path(settings.Workspace, tmpDir), "")
 }
 
+// evts returns /tmp/workspace/evts/<EVTID>
 func evts(settings config.Schema, dir string) (string, error) {
 	return _absPath(_path(settings.Workspace, evtsDir, dir))
 }
 
-// DockerMachineInterface is sa mocking interface for functions that need to
+// DockerMachineInterface is a mocking interface for functions that need to
 // read docker-machine config files
 type DockerMachineInterface interface {
 	HomeDir(string) string
@@ -55,7 +58,7 @@ func NewDockerMachineConfig(settings config.Schema, eventID string) *DockerMachi
 	}
 }
 
-// HomeDir get the path of a docker-machine instance home, e.g.
+// HomeDir returns the path of a docker-machine instance home, e.g.
 // /tmp/workspace/evts/drop-xxx/.docker/machine/machines/drop-xxx-0/
 func (dmc *DockerMachineConfig) HomeDir(machineN string) string {
 	return _path(dmc.Settings.Workspace, evtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dmc.EventID, machineN))
