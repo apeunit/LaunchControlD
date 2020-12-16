@@ -134,7 +134,7 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 
 		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
-		p := []string{"create", "--driver", evt.Provider}
+		p := []string{"--debug", "create", "--driver", evt.Provider}
 		p = append(p, driver.Params...)
 		p = append(p, host)
 
