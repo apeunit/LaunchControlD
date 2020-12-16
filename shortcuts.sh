@@ -4,7 +4,6 @@ alias quicksetup='lctrld payload setup $EVTID'
 alias quickdeploy='lctrld payload deploy $EVTID'
 alias quickteardown='lctrld events teardown $EVTID && VBoxManage unregistervm $EVTID-0'
 alias quickssh='docker-machine -s /tmp/workspace/evts/$EVTID/.docker/machine ssh $EVTID-0'
-# alias quickundeploy='docker-machine -s /tmp/workspace/evts/$EVTID/.docker/machine ssh $EVTID-0 rm -rf /home/docker/nodeconfig && docker rm -f $(docker ps -aq)'
 
 function quickundeploy {
     docker-machine -s /tmp/workspace/evts/$EVTID/.docker/machine ssh $EVTID-0 rm -rf /home/docker/nodeconfig
