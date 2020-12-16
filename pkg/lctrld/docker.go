@@ -279,8 +279,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	args = []string{"ssh", evt.State[firstNode].ID(), "docker", "run", "-d", "--volume=/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", "apeunit/launchpayload", "/payload/runlightclient.sh", evt.State[firstNode].Instance.IPAddress, evt.ID()}
 	// args = []string{"scp", evt.Payload.CLIPath, fmt.Sprintf("%s:/home/docker", evt.State[firstNode].ID())}
 	log.Debugf("Running docker-machine %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
-	o, err := cmdRunner(dmBin, args, envVars)
-	log.Infoln(o)
+	_, err = cmdRunner(dmBin, args, envVars)
 	if err != nil {
 		log.Fatal(err)
 		return

@@ -191,9 +191,8 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand Com
 		return
 	}
 
-	for name, state := range evt.State {
+	for name := range evt.State {
 		for _, account := range evt.Accounts {
-			fmt.Printf("%s %s %s\n", state.ID(), account.Name, account.Address)
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
 			out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 			if err != nil {
