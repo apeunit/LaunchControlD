@@ -52,7 +52,7 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dmc := lctrld.NewDockerMachineConfig(settings, event.ID())
-	event, err = lctrld.Provision(settings, event, lctrld.RunCommand, dmc)
+	err = lctrld.Provision(settings, event, lctrld.RunCommand, dmc)
 	if err != nil {
 		errMsg := fmt.Sprintf("{\"error\": \"%s\"}", err)
 		w.Write([]byte(errMsg))

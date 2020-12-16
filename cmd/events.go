@@ -91,12 +91,12 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	dmc := lctrld.NewDockerMachineConfig(settings, event.ID())
-	evt, err := lctrld.Provision(settings, event, lctrld.RunCommand, dmc)
+	err = lctrld.Provision(settings, event, lctrld.RunCommand, dmc)
 	if err != nil {
 		log.Fatal("There was an error, run the command with --debug for more info:", err)
 		return err
 	}
-	err = lctrld.StoreEvent(settings, evt)
+	err = lctrld.StoreEvent(settings, event)
 	if err != nil {
 		log.Fatal("There was a problem saving the updated Event", err)
 		return err

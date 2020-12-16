@@ -92,13 +92,13 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (*model.Event, error) {
+func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) error {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
 	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// init docker nodes map
 	evt.State = make(map[string]*model.MachineConfig)
@@ -132,10 +132,10 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 		evt.State[v.Name] = mc
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 	log.Infof("Your event ID is %s", evt.ID())
-	return evt, nil
+	return nil
 }
 
 // RereadDockerMachineInfo is useful when docker-machine failed during 'create',
