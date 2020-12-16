@@ -165,7 +165,6 @@ paths:
       summary: Login to the API
       tags:
       - auth
-      - session
   /auth/logout:
     post:
       consumes:
@@ -180,7 +179,6 @@ paths:
       summary: Logout from the system
       tags:
       - auth
-      - session
   /auth/register:
     post:
       consumes:
@@ -202,7 +200,6 @@ paths:
       summary: Register an API account
       tags:
       - auth
-      - session
   /events:
     get:
       consumes:

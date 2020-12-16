@@ -114,7 +114,7 @@ func isLoggedIn(s *session.Session) bool {
 }
 
 // @Summary Login to the API
-// @Tags auth, session
+// @Tags auth
 // @Accept  json
 // @Produce  json
 // @Param - body UserCredentials true "Login credentials"
@@ -139,7 +139,7 @@ func login(c *fiber.Ctx) error {
 }
 
 // @Summary Logout from the system
-// @Tags auth, session
+// @Tags auth
 // @Accept  json
 // @Produce  json
 // @Success 200 {string} string "ok"
@@ -151,7 +151,7 @@ func logout(c *fiber.Ctx) error {
 }
 
 // @Summary Register an API account
-// @Tags auth, session
+// @Tags auth
 // @Accept  json
 // @Produce  json
 // @Param - body UserCredentials true "Registration credentials"

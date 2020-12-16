@@ -39,8 +39,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth",
-                    "session"
+                    "auth"
                 ],
                 "summary": "Login to the API",
                 "parameters": [
@@ -73,8 +72,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth",
-                    "session"
+                    "auth"
                 ],
                 "summary": "Logout from the system",
                 "responses": {
@@ -96,8 +94,7 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth",
-                    "session"
+                    "auth"
                 ],
                 "summary": "Register an API account",
                 "parameters": [

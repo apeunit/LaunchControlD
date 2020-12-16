@@ -1,9 +1,10 @@
-@host = http://localhost:2012
-@token = 24ad662c1ea32c76caa11e8b25d8f50d35683216268f044d3c2152455081a59f
+//@host = http://localhost:2012
+@host = https://api.launch-control.eventivize.co
+@token = 830a3553a5570debd59e5224ff84df03454621a6218c237a3b852debaa3cbf0b
 
 ### Create an event
 @eventID = x
-POST {{host}}/api/v1/event
+POST {{host}}/api/v1/events
 Content-Type: application/json
 X-Lctrld-Token: {{token}}
 
@@ -26,11 +27,11 @@ X-Lctrld-Token: {{token}}
 
 ### Get single event
 @eventID = x
-GET {{host}}/api/v1/event/{{eventID}}
+GET {{host}}/api/v1/events/{{eventID}}
 X-Lctrld-Token: {{token}}
 
 ### Delete an Event
-DELETE {{host}}/api/v1/event/{{eventID}}
+DELETE {{host}}/api/v1/events/{{eventID}}
 X-Lctrld-Token: {{token}}
 
 

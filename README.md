@@ -145,3 +145,27 @@ Error loading config file:  : Config File "config" Not Found in "[/home/andrea/D
 # References
 1. [Create a docker image programmatically](https://docs.docker.com/engine/api/sdk/examples/)
 2. [Docker machine](https://docs.docker.com/machine)
+
+
+# REST API
+
+The LaunchControlD provides a set of API to control it's behavior. To run the LaunchControlD API run the command:
+
+```
+lctrld serve [--config /path/to/config]
+```
+
+once the API are started, the documentation is accessible at the URL:
+
+```
+$HOST/swagger/
+```
+
+where `$HOST` is the address where you run the API
+
+### Authentication 
+
+The API provide a simple authentication mechanism that is token based. To be able to use the API first it is required to register using email/password. 
+
+Once registered the API require to make  login call to obtain a temporary token, the 
+token is exchanged via the header named `X-Lctrld-Token` and it is valid for 12h. 
