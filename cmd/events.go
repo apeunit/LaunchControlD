@@ -24,21 +24,12 @@ var provider string
 
 func init() {
 	rootCmd.AddCommand(eventsCmd)
-	// ******************
-	// SETUP
-	// ******************
+
 	eventsCmd.AddCommand(setupEventCmd)
-	// provisioning
 	setupEventCmd.Flags().StringVar(&provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
 
-	// ******************
-	// TEARDOWN
-	// ******************
 	eventsCmd.AddCommand(tearDownEventCmd)
 
-	// ******************
-	// LIST
-	// ******************
 	eventsCmd.AddCommand(listEventCmd)
 	listEventCmd.Flags().BoolVar(&verbose, "verbose", false, "Print more details")
 
