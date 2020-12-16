@@ -1,0 +1,12 @@
+[Unit]
+Description=Launch Control Daemon
+
+[Service]
+User=www-data
+Group=www-data
+Type=simple
+ExecStart=/usr/local/bin/lctrld serve --config /etc/lctrld/config.json
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
