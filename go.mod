@@ -4,7 +4,9 @@ go 1.15
 
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
+	github.com/alexedwards/argon2id v0.0.0-20200802152012-2464efd3196b
 	github.com/arsmn/fiber-swagger/v2 v2.2.0
+	github.com/dimuska139/go-email-normalizer v1.1.6 // indirect
 	github.com/go-openapi/spec v0.20.0 // indirect
 	github.com/gofiber/fiber/v2 v2.2.3
 	github.com/gosimple/slug v1.9.0
