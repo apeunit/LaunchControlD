@@ -133,6 +133,21 @@ func getAuthEmail(c *fiber.Ctx) (email string, err error) {
 	return
 }
 
+// isCurrentEventOwner tells whenever the logged in user is the
+// owner of an event
+func isCurrentEventOwner(c *fiber.Ctx, event *model.Event) bool {
+	// retrieve the owner email
+	ownerEmail, err := getAuthEmail(c)
+	if err != nil {
+		return false
+	}
+	// return not found if the owner mismatch
+	if ownerEmail != event.Owner {
+		return false
+	}
+	return true
+}
+
 // @Summary Healthcheck and version endpoint
 // @Tags health
 // @Produce  json
@@ -273,7 +288,11 @@ func eventDeploy(c *fiber.Ctx) error {
 	if err != nil {
 		return c.JSON(fiber.ErrNotFound)
 	}
-
+	// if it is not owned than hide it
+	if !isCurrentEventOwner(c, &event) {
+		return c.JSON(fiber.ErrNotFound)
+	}
+	/// deploy
 	dmc := lctrld.NewDockerMachineConfig(appSettings, event.ID())
 	_, err = lctrld.Provision(appSettings, &event, lctrld.RunCommand, dmc)
 	if err != nil {
@@ -291,15 +310,20 @@ func eventDeploy(c *fiber.Ctx) error {
 // @Router /v1/events/{id} [delete]
 func deleteEvent(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
-	evt, err := lctrld.GetEventByID(appSettings, eventID)
+	event, err := lctrld.GetEventByID(appSettings, eventID)
 	if err != nil {
 		return c.JSON(fiber.ErrNotFound)
 	}
-	err = lctrld.DestroyEvent(appSettings, &evt, lctrld.RunCommand)
+	// if it is not owned than hide it
+	if !isCurrentEventOwner(c, &event) {
+		return c.JSON(fiber.ErrNotFound)
+	}
+	// destroy
+	err = lctrld.DestroyEvent(appSettings, &event, lctrld.RunCommand)
 	if err != nil {
 		return c.JSON(fiber.ErrInternalServerError)
 	}
-	return c.JSON(evt)
+	return c.JSON(event)
 }
 
 // @Summary Retrieve an event
@@ -311,11 +335,16 @@ func deleteEvent(c *fiber.Ctx) error {
 // @Router /v1/events/{id} [get]
 func getEvent(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
-	evt, err := lctrld.GetEventByID(appSettings, eventID)
+	event, err := lctrld.GetEventByID(appSettings, eventID)
 	if err != nil {
 		return c.JSON(fiber.ErrNotFound)
 	}
-	return c.JSON(evt)
+	// if it is not owned than hide it
+	if !isCurrentEventOwner(c, &event) {
+		return c.JSON(fiber.ErrNotFound)
+	}
+	// happy path
+	return c.JSON(event)
 }
 
 // @Summary Retrieve a list of events
@@ -325,9 +354,21 @@ func getEvent(c *fiber.Ctx) error {
 // @Success 200 {array} model.Event
 // @Router /v1/events [get]
 func listEvents(c *fiber.Ctx) error {
+	// retrieve the list of all events
 	events, err := lctrld.ListEvents(appSettings)
+	// retrieve the owner email
+	ownerEmail, err := getAuthEmail(c)
 	if err != nil {
-		return c.JSON(fiber.ErrInternalServerError)
+		// this should never happen (the auth middleware shall fail first)
+		return c.JSON(fiber.ErrUnauthorized)
 	}
-	return c.JSON(events)
+	//	make an empty list of events
+	userEvents := make([]model.Event, 0)
+	// filter events that are from the owner
+	for _, e := range events {
+		if e.Owner == ownerEmail {
+			userEvents = append(userEvents, e)
+		}
+	}
+	return c.JSON(userEvents)
 }
