@@ -198,13 +198,11 @@ func register(c *fiber.Ctx) error {
 		log.Error(err)
 		return c.JSON(fiber.ErrBadRequest)
 	}
-	log.Info("credentials are", credentials)
 	// register the new user
 	err = usersDb.RegisterUser(credentials.Email, credentials.Pass)
 	if err != nil {
 		return c.JSON(fiber.ErrExpectationFailed)
 	}
-	log.Info("ready to go")
 	return c.JSON(APIReplyOK("ok"))
 }
 

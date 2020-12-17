@@ -53,7 +53,7 @@ func NewUserDB(dbPath string) (db *UsersDB, err error) {
 
 // RegisterUser register a new user into the user database
 func (db *UsersDB) RegisterUser(email, pass string) (err error) {
-	log.Debugln("usersDb: register user", email, "records")
+	log.Debugln("usersDb: register user", email)
 	// basic length check
 	if len(strings.TrimSpace(email)) == 0 || len(strings.TrimSpace(pass)) == 0 {
 		err = ErrorEmptyEmailOrPwd
