@@ -73,7 +73,7 @@ func (e *Event) FormatAmount(a uint64) string {
 
 // Hash Generate the event hash
 func (e *Event) Hash() string {
-	return utils.ShortHash(e.TokenSymbol, e.Owner, e.Provider)
+	return utils.ShortHash(e.TokenSymbol, e.Owner)
 }
 
 // ID generate a event identifier (determinitstic)

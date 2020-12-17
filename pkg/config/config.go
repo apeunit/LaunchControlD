@@ -48,9 +48,9 @@ type DockerMachineDriver struct {
 // Defaults configure defaults for the configuration
 func Defaults() {
 	// web
-	viper.SetDefault("web.listen_address", ":2002")
+	viper.SetDefault("web.listen_address", ":2012")
 	viper.SetDefault("web.users_db_file", "users.json")
 	viper.SetDefault("web.default_provider", "virtualbox")
 	// services
-	viper.SetDefault("services.sentry_dsn", "")
+	// viper.SetDefault("services.sentry_dsn", "")
 }

@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
@@ -16,7 +18,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/session"
 )
 
 const (
@@ -37,7 +38,7 @@ type UserCredentials struct {
 
 // APIReply a reply from the API
 type APIReply struct {
-	Status  int    `json:"status"`
+	Status  int    `json:"code"`
 	Message string `json:"message"`
 }
 
@@ -51,7 +52,15 @@ type APIStatus struct {
 // APIReplyOK returns an 200 reply
 func APIReplyOK(m string) APIReply {
 	return APIReply{
-		Status:  fiber.StatusOK,
+		Status:  http.StatusOK,
+		Message: m,
+	}
+}
+
+// APIReplyErr error reply
+func APIReplyErr(code int, m string) APIReply {
+	return APIReply{
+		Status:  code,
 		Message: m,
 	}
 }
@@ -79,7 +88,6 @@ func ServeHTTP(settings config.Schema) (err error) {
 	app.Use(cors.New())
 	// TODO: use logrus for logging
 	app.Use(logger.New())
-	// session management
 
 	// root url
 	app.Get("/", func(c *fiber.Ctx) error { return c.JSON(fiber.ErrTeapot) })
@@ -119,11 +127,12 @@ func auth(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-func isLoggedIn(s *session.Session) bool {
-	if s.Get(sessionKeyUserHash) == nil {
-		return false
-	}
-	return true
+// retrieve the email of the authenticated user
+func getAuthEmail(c *fiber.Ctx) (email string, err error) {
+	email, err = usersDb.GetEmailFromToken(c.Get(headerAuthToken))
+	return
+}
+
 // @Summary Healthcheck and version endpoint
 // @Tags health
 // @Produce  json
@@ -208,18 +217,31 @@ func register(c *fiber.Ctx) error {
 // @Success 200 {object} model.Event
 // @Router /events [post]
 func eventCreate(c *fiber.Ctx) error {
-
-	er, err := model.ParseEventRequest(c.Body(),
-		appSettings.DefaultPayloadLocation,
-		//TODO: provide a better way to set defaults
-		appSettings.Web.DefaultProvider,
-	)
-	if err != nil {
-		c.JSON(fiber.Map{
-			"error": err,
-		})
+	// retrieve the owner email
+	ownerEmail, err := getAuthEmail(c)
+	//parse the event requests
+	var er model.EventRequest
+	c.BodyParser(&er)
+	log.Debugf("REST: event request %#v", er)
+	// TODO: find a better way for defaults
+	er.Provider = appSettings.Web.DefaultProvider
+	er.PayloadLocation = appSettings.DefaultPayloadLocation
+	// override the owner
+	er.Owner = ownerEmail
+	// validate the event request
+	if strings.TrimSpace(er.TokenSymbol) == "" {
+		return c.JSON(fiber.ErrBadRequest)
 	}
-	log.Debug("event request: %#v\n", er)
+	// count the number of accounts
+	if len(er.GenesisAccounts) == 0 {
+		return c.JSON(fiber.ErrBadRequest)
+	}
+	// check that the names are set
+	for _, g := range er.GenesisAccounts {
+		if strings.TrimSpace(g.Name) == "" {
+			return c.JSON(fiber.ErrBadRequest)
+		}
+	}
 	// now create a new event
 	event := model.NewEvent(er.TokenSymbol,
 		er.Owner,
@@ -230,15 +252,11 @@ func eventCreate(c *fiber.Ctx) error {
 	err = lctrld.CreateEvent(appSettings, event)
 	log.Debug("Creating event %#v\n", event)
 	if err != nil {
-		c.JSON(fiber.Map{
-			"error": err,
-		})
+		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
 	// store event
 	if err = lctrld.StoreEvent(appSettings, event); err != nil {
-		c.JSON(fiber.Map{
-			"error": err,
-		})
+		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
 	// happy ending
 	return c.JSON(APIReplyOK(event.ID()))
@@ -261,9 +279,7 @@ func eventDeploy(c *fiber.Ctx) error {
 	dmc := lctrld.NewDockerMachineConfig(appSettings, event.ID())
 	_, err = lctrld.Provision(appSettings, &event, lctrld.RunCommand, dmc)
 	if err != nil {
-		return c.JSON(fiber.Map{
-			"error": err,
-		})
+		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
 	return c.JSON(fiber.ErrTeapot)
 }

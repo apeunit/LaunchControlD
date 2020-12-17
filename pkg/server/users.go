@@ -19,6 +19,7 @@ var (
 	ErrorDuplicatedUser  = errors.New("duplicated user")
 	ErrorEmptyEmailOrPwd = errors.New("username and password should not be empty")
 	ErrorUnauthorized    = errors.New("user not authorized")
+	ErrorTokenNotFound   = errors.New("token not found")
 )
 
 // User a user in the user database
@@ -38,7 +39,7 @@ type UsersDB struct {
 
 // NewUserDB create or read an existing database from a path
 func NewUserDB(dbPath string) (db *UsersDB, err error) {
-	log.Debug("initialize new db at: ", dbPath)
+	log.Debug("usersDb: initialize new db at: ", dbPath)
 	db = &UsersDB{
 		dbPath:    dbPath,
 		users:     make(map[string]User),
@@ -46,11 +47,13 @@ func NewUserDB(dbPath string) (db *UsersDB, err error) {
 		emailNorm: normalizer.NewNormalizer(),
 	}
 	err = db.load()
+	log.Debugln("usersDb: db loaded with", len(db.users), "records")
 	return
 }
 
 // RegisterUser register a new user into the user database
 func (db *UsersDB) RegisterUser(email, pass string) (err error) {
+	log.Debugln("usersDb: register user", email, "records")
 	// basic length check
 	if len(strings.TrimSpace(email)) == 0 || len(strings.TrimSpace(pass)) == 0 {
 		err = ErrorEmptyEmailOrPwd
@@ -66,10 +69,8 @@ func (db *UsersDB) RegisterUser(email, pass string) (err error) {
 		err = ErrorDuplicatedUser
 		return
 	}
-	log.Debug("start hashing")
 	// otherwise calculate the argon2id hash
 	pwdH, err := argon2id.CreateHash(pass, argon2id.DefaultParams)
-	log.Debug("hashing completed")
 	if err != nil {
 		return
 	}
@@ -122,15 +123,24 @@ func (db *UsersDB) IsAuthorized(email, pass string) (token string, err error) {
 // IsTokenAuthorized check whenever the token exists and returns the associated email
 // otherwise returns error
 func (db *UsersDB) IsTokenAuthorized(token string) (email string, err error) {
+	email, err = db.GetEmailFromToken(token)
+	if err != nil {
+		err = ErrorUnauthorized
+	}
+	return
+}
+
+// GetEmailFromToken retrieve the email associated to a token
+func (db *UsersDB) GetEmailFromToken(token string) (email string, err error) {
 	emailHI, found := db.tokens.Get(token)
 	if !found {
-		err = ErrorUnauthorized
+		err = ErrorTokenNotFound
 		return
 	}
 	user, found := db.users[emailHI.(string)]
 	// if it is not found the db is inconsistent
 	if !found {
-		err = ErrorUnauthorized
+		err = ErrorTokenNotFound
 		return
 	}
 	email = user.Email

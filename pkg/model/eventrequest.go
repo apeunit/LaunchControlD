@@ -1,7 +1,6 @@
 package model
 
 import (
-	"encoding/json"
 	"io/ioutil"
 
 	"gopkg.in/yaml.v2"
@@ -9,11 +8,11 @@ import (
 
 // EventRequest holds metadata about the event, including how the genesis.json should be setup
 type EventRequest struct {
-	PayloadLocation PayloadLocation  `yaml:"payload_location" json:"payload"`
-	Owner           string           `yaml:"owner" json:"owner"`
 	TokenSymbol     string           `yaml:"token_symbol" json:"token_symbol"`
 	GenesisAccounts []GenesisAccount `yaml:"genesis_accounts" json:"genesis_accounts"`
-	Provider        string           `yaml:"provider" json:"provider"`
+	PayloadLocation PayloadLocation  `yaml:"payload_location" json:"payload,omitempty"`
+	Owner           string           `yaml:"owner" json:"owner,omitempty"`
+	Provider        string           `yaml:"provider" json:"provider,omitempty"`
 }
 
 // PayloadLocation holds metadata about the copy of the launchpayload that is
@@ -32,19 +31,6 @@ type GenesisAccount struct {
 	GenesisBalance string `yaml:"genesis_balance" json:"genesis_balance"`
 	Validator      bool   `yaml:"validator" json:"validator"`
 	Faucet         bool   `yaml:"faucet" json:"faucet"`
-}
-
-// ParseEventRequest from a json object
-func ParseEventRequest(jsonData []byte, pl PayloadLocation, provider string) (er EventRequest, err error) {
-	err = json.Unmarshal(jsonData, &er)
-	if err != nil {
-		return
-	}
-	// set the default PayloadLocation
-	er.PayloadLocation = pl
-	// set the default provider
-	er.Provider = provider
-	return
 }
 
 // LoadEventRequestFromFile is as convenience function to unmarshal a EventRequest from a YAML file
