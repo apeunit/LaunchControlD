@@ -1,22 +1,28 @@
-//@host = http://localhost:2012
-@host = https://api.launch-control.eventivize.co
-@token = 830a3553a5570debd59e5224ff84df03454621a6218c237a3b852debaa3cbf0b
+@host = http://localhost:2012
+//@host = https://api.launch-control.eventivize.co
+@token = 8d0a2f8305a8ce41947b166b1ab46c77c4945e5269dc393301e94f1cf0595b7b
+@eventID = co3-91851c78f1f03d2943a0
+
+### general routes
+GET {{host}}/
+
+### api status
+GET {{host}}/api/status
 
 ### Create an event
-@eventID = x
 POST {{host}}/api/v1/events
 Content-Type: application/json
 X-Lctrld-Token: {{token}}
 
 {
-    "owner": "andrea@apeunit.com",
-    "token": "CO3",
-    "accounts": [
+    "token_symbol": "CO3",
+    "genesis_accounts": [
         {
             "name": "Martha Pistacho",
+            "genesis_balance": "20"
         },
         {
-            "name": "Johny Pistacho",
+            "name": "Johny Pistacho"
         }
     ]
 }
@@ -26,7 +32,6 @@ GET {{host}}/api/v1/events
 X-Lctrld-Token: {{token}}
 
 ### Get single event
-@eventID = x
 GET {{host}}/api/v1/events/{{eventID}}
 X-Lctrld-Token: {{token}}
 
@@ -34,9 +39,8 @@ X-Lctrld-Token: {{token}}
 DELETE {{host}}/api/v1/events/{{eventID}}
 X-Lctrld-Token: {{token}}
 
-
 ### USER MANAGEMENT
-@email = no.andreo@gmail.com
+@email = no.andrea@gmail.com
 @pass = whatever
 
 ### Register a user 

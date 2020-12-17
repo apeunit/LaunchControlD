@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/spf13/viper"
 )
@@ -11,6 +13,9 @@ type Schema struct {
 	DockerMachine          DockerMachine         `mapstructure:"docker_machine"`
 	DefaultPayloadLocation model.PayloadLocation `mapstructure:"default_payload_location"`
 	Web                    WebSchema             `mapstructure:"web"`
+	// the following are used at runtime
+	RuntimeStartedAt time.Time `mapstructure:"-"`
+	RuntimeVersion   string    `mapstructure:"-"`
 }
 
 // WebSchema configuration for web

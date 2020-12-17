@@ -4,6 +4,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	log "github.com/sirupsen/logrus"
@@ -84,4 +85,7 @@ func initConfig() {
 			log.Debugf("Errors encountered while parsing %s: %s", viper.ConfigFileUsed(), settingsParseError)
 		}
 	}
+	// set runtime data
+	settings.RuntimeVersion = rootCmd.Version
+	settings.RuntimeStartedAt = time.Now()
 }

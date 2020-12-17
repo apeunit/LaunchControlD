@@ -15,6 +15,25 @@
     "host": "localhost:2012",
     "basePath": "/api/v1",
     "paths": {
+        "/api/status": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Healthcheck and version endpoint",
+                "responses": {
+                    "200": {
+                        "description": "API Status",
+                        "schema": {
+                            "$ref": "#/definitions/server.APIStatus"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "consumes": [
@@ -436,11 +455,25 @@
         "server.APIReply": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer"
+                },
                 "message": {
                     "type": "string"
-                },
+                }
+            }
+        },
+        "server.APIStatus": {
+            "type": "object",
+            "properties": {
                 "status": {
-                    "type": "integer"
+                    "type": "string"
+                },
+                "uptime": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },

@@ -121,10 +121,19 @@ definitions:
     type: object
   server.APIReply:
     properties:
+      code:
+        type: integer
       message:
         type: string
+    type: object
+  server.APIStatus:
+    properties:
       status:
-        type: integer
+        type: string
+      uptime:
+        type: string
+      version:
+        type: string
     type: object
   server.UserCredentials:
     properties:
@@ -144,6 +153,18 @@ info:
   title: LaunchControlD REST API
   version: "1.0"
 paths:
+  /api/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API Status
+          schema:
+            $ref: '#/definitions/server.APIStatus'
+      summary: Healthcheck and version endpoint
+      tags:
+      - health
   /auth/login:
     post:
       consumes:

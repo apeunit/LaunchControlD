@@ -30,6 +30,25 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/status": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Healthcheck and version endpoint",
+                "responses": {
+                    "200": {
+                        "description": "API Status",
+                        "schema": {
+                            "$ref": "#/definitions/server.APIStatus"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "consumes": [
@@ -451,11 +470,25 @@ var doc = `{
         "server.APIReply": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "integer"
+                },
                 "message": {
                     "type": "string"
-                },
+                }
+            }
+        },
+        "server.APIStatus": {
+            "type": "object",
+            "properties": {
                 "status": {
-                    "type": "integer"
+                    "type": "string"
+                },
+                "uptime": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },

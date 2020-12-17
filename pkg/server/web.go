@@ -1,6 +1,9 @@
 package server
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
@@ -38,6 +41,13 @@ type APIReply struct {
 	Message string `json:"message"`
 }
 
+// APIStatus hold the status of the API
+type APIStatus struct {
+	Status  string `json:"status,omitempty"`
+	Version string `json:"version,omitempty"`
+	Uptime  string `json:"uptime,omitempty"`
+}
+
 // APIReplyOK returns an 200 reply
 func APIReplyOK(m string) APIReply {
 	return APIReply{
@@ -71,10 +81,13 @@ func ServeHTTP(settings config.Schema) (err error) {
 	app.Use(logger.New())
 	// session management
 
+	// root url
+	app.Get("/", func(c *fiber.Ctx) error { return c.JSON(fiber.ErrTeapot) })
 	// handle swagger routes
 	app.Get("/swagger/*", swagger.Handler) // default
 	// API group
 	api := app.Group("/api")
+	api.Get("/status", status)
 	v1 := api.Group("/v1")
 	// define the api
 	v1.Post("/auth/login", login)
@@ -111,6 +124,17 @@ func isLoggedIn(s *session.Session) bool {
 		return false
 	}
 	return true
+// @Summary Healthcheck and version endpoint
+// @Tags health
+// @Produce  json
+// @Success 200 {object} APIStatus "API Status"
+// @Router /api/status [get]
+func status(c *fiber.Ctx) error {
+	return c.JSON(APIStatus{
+		Status:  "OK",
+		Version: appSettings.RuntimeVersion,
+		Uptime:  fmt.Sprint(time.Since(appSettings.RuntimeStartedAt)),
+	})
 }
 
 // @Summary Login to the API
