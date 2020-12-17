@@ -72,8 +72,8 @@ func APIReplyErr(code int, m string) APIReply {
 // @contact.name API Support
 // @contact.email u2467@apeunit.com
 // @license.name MIT
-// @host localhost:2012
-// @BasePath /api/v1
+// @host api.launch-control.eventivize.co
+// @BasePath /api
 func ServeHTTP(settings config.Schema) (err error) {
 	log.Info("starting http")
 	// make settings available to the other functions
@@ -137,7 +137,7 @@ func getAuthEmail(c *fiber.Ctx) (email string, err error) {
 // @Tags health
 // @Produce  json
 // @Success 200 {object} APIStatus "API Status"
-// @Router /api/status [get]
+// @Router /status [get]
 func status(c *fiber.Ctx) error {
 	return c.JSON(APIStatus{
 		Status:  "OK",
@@ -152,7 +152,7 @@ func status(c *fiber.Ctx) error {
 // @Produce  json
 // @Param - body UserCredentials true "Login credentials"
 // @Success 200 {object} APIReply "API Reply"
-// @Router /auth/login [post]
+// @Router /v1/auth/login [post]
 func login(c *fiber.Ctx) error {
 	// retrieve the credentials
 	var credentials UserCredentials
@@ -176,7 +176,7 @@ func login(c *fiber.Ctx) error {
 // @Accept  json
 // @Produce  json
 // @Success 200 {string} string "ok"
-// @Router /auth/logout [post]
+// @Router /v1/auth/logout [post]
 func logout(c *fiber.Ctx) error {
 	// get session from storage
 	usersDb.DropToken(c.Get(headerAuthToken))
@@ -189,7 +189,7 @@ func logout(c *fiber.Ctx) error {
 // @Produce  json
 // @Param - body UserCredentials true "Registration credentials"
 // @Success 200 {string} string "ok"
-// @Router /auth/register [post]
+// @Router /v1/auth/register [post]
 func register(c *fiber.Ctx) error {
 	// retrieve the credentials
 	var credentials UserCredentials
@@ -215,7 +215,7 @@ func register(c *fiber.Ctx) error {
 // @Produce  json
 // @Param - body model.EventRequest true "Event Request"
 // @Success 200 {object} model.Event
-// @Router /events [post]
+// @Router /v1/events [post]
 func eventCreate(c *fiber.Ctx) error {
 	// retrieve the owner email
 	ownerEmail, err := getAuthEmail(c)
@@ -268,7 +268,7 @@ func eventCreate(c *fiber.Ctx) error {
 // @Produce  json
 // @Param id path string true "Event ID"
 // @Success 200 {object} model.Event
-// @Router /events/{id}/deploy [put]
+// @Router /v1/events/{id}/deploy [put]
 func eventDeploy(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
 	event, err := lctrld.GetEventByID(appSettings, eventID)
@@ -290,7 +290,7 @@ func eventDeploy(c *fiber.Ctx) error {
 // @Produce  json
 // @Param id path string true "Event ID"
 // @Success 200 {object} model.Event
-// @Router /events/{id} [delete]
+// @Router /v1/events/{id} [delete]
 func deleteEvent(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
 	evt, err := lctrld.GetEventByID(appSettings, eventID)
@@ -310,7 +310,7 @@ func deleteEvent(c *fiber.Ctx) error {
 // @Produce  json
 // @Param id path string true "Event ID"
 // @Success 200 {object} model.Event
-// @Router /events/{id} [get]
+// @Router /v1/events/{id} [get]
 func getEvent(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
 	evt, err := lctrld.GetEventByID(appSettings, eventID)
@@ -325,7 +325,7 @@ func getEvent(c *fiber.Ctx) error {
 // @Accept  json
 // @Produce  json
 // @Success 200 {array} model.Event
-// @Router /events [get]
+// @Router /v1/events [get]
 func listEvents(c *fiber.Ctx) error {
 	events, err := lctrld.ListEvents(appSettings)
 	if err != nil {

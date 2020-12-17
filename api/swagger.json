@@ -12,10 +12,10 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:2012",
-    "basePath": "/api/v1",
+    "host": "api.launch-control.eventivize.co",
+    "basePath": "/api",
     "paths": {
-        "/api/status": {
+        "/status": {
             "get": {
                 "produces": [
                     "application/json"
@@ -34,7 +34,7 @@
                 }
             }
         },
-        "/auth/login": {
+        "/v1/auth/login": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -67,7 +67,7 @@
                 }
             }
         },
-        "/auth/logout": {
+        "/v1/auth/logout": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -89,7 +89,7 @@
                 }
             }
         },
-        "/auth/register": {
+        "/v1/auth/register": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -122,7 +122,7 @@
                 }
             }
         },
-        "/events": {
+        "/v1/events": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -178,7 +178,7 @@
                 }
             }
         },
-        "/events/{id}": {
+        "/v1/events/{id}": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -238,7 +238,7 @@
                 }
             }
         },
-        "/events/{id}/deploy": {
+        "/v1/events/{id}/deploy": {
             "put": {
                 "consumes": [
                     "application/json"

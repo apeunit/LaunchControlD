@@ -30,7 +30,7 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/status": {
+        "/status": {
             "get": {
                 "produces": [
                     "application/json"
@@ -49,7 +49,7 @@ var doc = `{
                 }
             }
         },
-        "/auth/login": {
+        "/v1/auth/login": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -82,7 +82,7 @@ var doc = `{
                 }
             }
         },
-        "/auth/logout": {
+        "/v1/auth/logout": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -104,7 +104,7 @@ var doc = `{
                 }
             }
         },
-        "/auth/register": {
+        "/v1/auth/register": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -137,7 +137,7 @@ var doc = `{
                 }
             }
         },
-        "/events": {
+        "/v1/events": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -193,7 +193,7 @@ var doc = `{
                 }
             }
         },
-        "/events/{id}": {
+        "/v1/events/{id}": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -253,7 +253,7 @@ var doc = `{
                 }
             }
         },
-        "/events/{id}/deploy": {
+        "/v1/events/{id}/deploy": {
             "put": {
                 "consumes": [
                     "application/json"
@@ -518,8 +518,8 @@ type swaggerInfo struct {
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
 	Version:     "1.0",
-	Host:        "localhost:2012",
-	BasePath:    "/api/v1",
+	Host:        "api.launch-control.eventivize.co",
+	BasePath:    "/api",
 	Schemes:     []string{},
 	Title:       "LaunchControlD REST API",
 	Description: "This are the documentation for the LaunchControlD REST API",
