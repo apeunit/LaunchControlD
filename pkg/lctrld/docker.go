@@ -50,7 +50,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 		return
 	}
 	// load the descriptor
-	p, err := evtDescriptor(settings, evt.ID())
+	p, err := evtFile(settings, evt.ID())
 	log.Debug("DestroyEvent event descriptor:", p)
 	if err != nil {
 		log.Fatal("DestroyEvent failed:", err)
