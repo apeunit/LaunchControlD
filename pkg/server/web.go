@@ -30,41 +30,6 @@ var (
 	usersDb     *UsersDB
 )
 
-// UserCredentials the input user credential for authentication
-type UserCredentials struct {
-	Email string `json:"email,omitempty"`
-	Pass  string `json:"pass,omitempty"`
-}
-
-// APIReply a reply from the API
-type APIReply struct {
-	Status  int    `json:"code"`
-	Message string `json:"message"`
-}
-
-// APIStatus hold the status of the API
-type APIStatus struct {
-	Status  string `json:"status,omitempty"`
-	Version string `json:"version,omitempty"`
-	Uptime  string `json:"uptime,omitempty"`
-}
-
-// APIReplyOK returns an 200 reply
-func APIReplyOK(m string) APIReply {
-	return APIReply{
-		Status:  http.StatusOK,
-		Message: m,
-	}
-}
-
-// APIReplyErr error reply
-func APIReplyErr(code int, m string) APIReply {
-	return APIReply{
-		Status:  code,
-		Message: m,
-	}
-}
-
 // ServeHTTP starts the http service
 // @title LaunchControlD REST API
 // @version 1.0
@@ -190,7 +155,7 @@ func login(c *fiber.Ctx) error {
 // @Tags auth
 // @Accept  json
 // @Produce  json
-// @Success 200 {string} string "ok"
+// @Success 200 {object} APIReply "API Reply"
 // @Router /v1/auth/logout [post]
 func logout(c *fiber.Ctx) error {
 	// get session from storage
@@ -203,7 +168,7 @@ func logout(c *fiber.Ctx) error {
 // @Accept  json
 // @Produce  json
 // @Param - body UserCredentials true "Registration credentials"
-// @Success 200 {string} string "ok"
+// @Success 200 {object} APIReply "API Reply"
 // @Router /v1/auth/register [post]
 func register(c *fiber.Ctx) error {
 	// retrieve the credentials
@@ -227,7 +192,7 @@ func register(c *fiber.Ctx) error {
 // @Accept  json
 // @Produce  json
 // @Param - body model.EventRequest true "Event Request"
-// @Success 200 {object} model.Event
+// @Success 200 {object} APIReply "API Reply"
 // @Router /v1/events [post]
 func eventCreate(c *fiber.Ctx) error {
 	// retrieve the owner email
@@ -280,7 +245,7 @@ func eventCreate(c *fiber.Ctx) error {
 // @Accept  json
 // @Produce  json
 // @Param id path string true "Event ID"
-// @Success 200 {object} model.Event
+// @Success 200 {object} APIEvent
 // @Router /v1/events/{id}/deploy [put]
 func eventDeploy(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
@@ -298,7 +263,7 @@ func eventDeploy(c *fiber.Ctx) error {
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
-	return c.JSON(fiber.ErrTeapot)
+	return c.JSON(ToAPIEvent(&event))
 }
 
 // @Summary Destroy an event and associated resources
@@ -306,7 +271,7 @@ func eventDeploy(c *fiber.Ctx) error {
 // @Accept  json
 // @Produce  json
 // @Param id path string true "Event ID"
-// @Success 200 {object} model.Event
+// @Success 200 {object} APIEvent
 // @Router /v1/events/{id} [delete]
 func deleteEvent(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
@@ -323,7 +288,7 @@ func deleteEvent(c *fiber.Ctx) error {
 	if err != nil {
 		return c.JSON(fiber.ErrInternalServerError)
 	}
-	return c.JSON(event)
+	return c.JSON(ToAPIEvent(&event))
 }
 
 // @Summary Retrieve an event
@@ -331,7 +296,7 @@ func deleteEvent(c *fiber.Ctx) error {
 // @Accept  json
 // @Produce  json
 // @Param id path string true "Event ID"
-// @Success 200 {object} model.Event
+// @Success 200 {object} APIEvent
 // @Router /v1/events/{id} [get]
 func getEvent(c *fiber.Ctx) error {
 	eventID := c.Params("eventID")
@@ -344,14 +309,14 @@ func getEvent(c *fiber.Ctx) error {
 		return c.JSON(fiber.ErrNotFound)
 	}
 	// happy path
-	return c.JSON(event)
+	return c.JSON(ToAPIEvent(&event))
 }
 
 // @Summary Retrieve a list of events
 // @Tags event
 // @Accept  json
 // @Produce  json
-// @Success 200 {array} model.Event
+// @Success 200 {array} APIEvent
 // @Router /v1/events [get]
 func listEvents(c *fiber.Ctx) error {
 	// retrieve the list of all events
@@ -363,11 +328,11 @@ func listEvents(c *fiber.Ctx) error {
 		return c.JSON(fiber.ErrUnauthorized)
 	}
 	//	make an empty list of events
-	userEvents := make([]model.Event, 0)
+	userEvents := make([]APIEvent, 0)
 	// filter events that are from the owner
 	for _, e := range events {
 		if e.Owner == ownerEmail {
-			userEvents = append(userEvents, e)
+			userEvents = append(userEvents, ToAPIEvent(&e))
 		}
 	}
 	return c.JSON(userEvents)

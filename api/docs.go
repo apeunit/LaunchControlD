@@ -96,9 +96,9 @@ var doc = `{
                 "summary": "Logout from the system",
                 "responses": {
                     "200": {
-                        "description": "ok",
+                        "description": "API Reply",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/server.APIReply"
                         }
                     }
                 }
@@ -129,9 +129,9 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "ok",
+                        "description": "API Reply",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/server.APIReply"
                         }
                     }
                 }
@@ -155,7 +155,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.Event"
+                                "$ref": "#/definitions/server.APIEvent"
                             }
                         }
                     }
@@ -185,9 +185,9 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "API Reply",
                         "schema": {
-                            "$ref": "#/definitions/model.Event"
+                            "$ref": "#/definitions/server.APIReply"
                         }
                     }
                 }
@@ -218,7 +218,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Event"
+                            "$ref": "#/definitions/server.APIEvent"
                         }
                     }
                 }
@@ -247,7 +247,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Event"
+                            "$ref": "#/definitions/server.APIEvent"
                         }
                     }
                 }
@@ -278,7 +278,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Event"
+                            "$ref": "#/definitions/server.APIEvent"
                         }
                     }
                 }
@@ -286,84 +286,6 @@ var doc = `{
         }
     },
     "definitions": {
-        "model.Account": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "config_location": {
-                    "$ref": "#/definitions/model.ConfigLocation"
-                },
-                "faucet": {
-                    "type": "boolean"
-                },
-                "genesis_balance": {
-                    "type": "string"
-                },
-                "mnemonic": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "validator": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "model.ConfigLocation": {
-            "type": "object",
-            "properties": {
-                "CLIConfigDir": {
-                    "type": "string"
-                },
-                "DaemonConfigDir": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.Event": {
-            "type": "object",
-            "properties": {
-                "accounts": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.Account"
-                    }
-                },
-                "created_on": {
-                    "type": "string"
-                },
-                "ends_on": {
-                    "type": "string"
-                },
-                "owner": {
-                    "description": "email address of the owner",
-                    "type": "string"
-                },
-                "payload": {
-                    "$ref": "#/definitions/model.PayloadLocation"
-                },
-                "provider": {
-                    "description": "provider for provisioning",
-                    "type": "string"
-                },
-                "starts_on": {
-                    "type": "string"
-                },
-                "state": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.MachineConfig"
-                    }
-                },
-                "token_symbol": {
-                    "description": "token symbool",
-                    "type": "string"
-                }
-            }
-        },
         "model.EventRequest": {
             "type": "object",
             "properties": {
@@ -404,49 +326,6 @@ var doc = `{
                 }
             }
         },
-        "model.MachineConfig": {
-            "type": "object",
-            "properties": {
-                "DriverName": {
-                    "type": "string"
-                },
-                "EventID": {
-                    "type": "string"
-                },
-                "Instance": {
-                    "$ref": "#/definitions/model.MachineConfigInstance"
-                },
-                "N": {
-                    "type": "string"
-                },
-                "TendermintNodeID": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.MachineConfigInstance": {
-            "type": "object",
-            "properties": {
-                "IPAddress": {
-                    "type": "string"
-                },
-                "MachineName": {
-                    "type": "string"
-                },
-                "SSHKeyPath": {
-                    "type": "string"
-                },
-                "SSHPort": {
-                    "type": "integer"
-                },
-                "SSHUser": {
-                    "type": "string"
-                },
-                "StorePath": {
-                    "type": "string"
-                }
-            }
-        },
         "model.PayloadLocation": {
             "type": "object",
             "properties": {
@@ -463,6 +342,81 @@ var doc = `{
                     "type": "string"
                 },
                 "docker_image": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.APIAccount": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "faucet": {
+                    "type": "boolean"
+                },
+                "genesis_balance": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "validator": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "server.APIEvent": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/server.APIAccount"
+                    }
+                },
+                "created_on": {
+                    "type": "string"
+                },
+                "ends_on": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "email address of the owner",
+                    "type": "string"
+                },
+                "provider": {
+                    "description": "provider for provisioning",
+                    "type": "string"
+                },
+                "starts_on": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/server.APIMachineConfig"
+                    }
+                },
+                "token_symbol": {
+                    "description": "token symbool",
+                    "type": "string"
+                }
+            }
+        },
+        "server.APIMachineConfig": {
+            "type": "object",
+            "properties": {
+                "IPAddress": {
+                    "type": "string"
+                },
+                "MachineName": {
+                    "type": "string"
+                },
+                "tendermint_node_id": {
                     "type": "string"
                 }
             }

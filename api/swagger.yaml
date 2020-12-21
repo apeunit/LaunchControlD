@@ -1,57 +1,5 @@
 basePath: /api
 definitions:
-  model.Account:
-    properties:
-      address:
-        type: string
-      config_location:
-        $ref: '#/definitions/model.ConfigLocation'
-      faucet:
-        type: boolean
-      genesis_balance:
-        type: string
-      mnemonic:
-        type: string
-      name:
-        type: string
-      validator:
-        type: boolean
-    type: object
-  model.ConfigLocation:
-    properties:
-      CLIConfigDir:
-        type: string
-      DaemonConfigDir:
-        type: string
-    type: object
-  model.Event:
-    properties:
-      accounts:
-        additionalProperties:
-          $ref: '#/definitions/model.Account'
-        type: object
-      created_on:
-        type: string
-      ends_on:
-        type: string
-      owner:
-        description: email address of the owner
-        type: string
-      payload:
-        $ref: '#/definitions/model.PayloadLocation'
-      provider:
-        description: provider for provisioning
-        type: string
-      starts_on:
-        type: string
-      state:
-        additionalProperties:
-          $ref: '#/definitions/model.MachineConfig'
-        type: object
-      token_symbol:
-        description: token symbool
-        type: string
-    type: object
   model.EventRequest:
     properties:
       genesis_accounts:
@@ -78,34 +26,6 @@ definitions:
       validator:
         type: boolean
     type: object
-  model.MachineConfig:
-    properties:
-      DriverName:
-        type: string
-      EventID:
-        type: string
-      Instance:
-        $ref: '#/definitions/model.MachineConfigInstance'
-      "N":
-        type: string
-      TendermintNodeID:
-        type: string
-    type: object
-  model.MachineConfigInstance:
-    properties:
-      IPAddress:
-        type: string
-      MachineName:
-        type: string
-      SSHKeyPath:
-        type: string
-      SSHPort:
-        type: integer
-      SSHUser:
-        type: string
-      StorePath:
-        type: string
-    type: object
   model.PayloadLocation:
     properties:
       binary_path:
@@ -117,6 +37,56 @@ definitions:
       daemon_path:
         type: string
       docker_image:
+        type: string
+    type: object
+  server.APIAccount:
+    properties:
+      address:
+        type: string
+      faucet:
+        type: boolean
+      genesis_balance:
+        type: string
+      name:
+        type: string
+      validator:
+        type: boolean
+    type: object
+  server.APIEvent:
+    properties:
+      accounts:
+        additionalProperties:
+          $ref: '#/definitions/server.APIAccount'
+        type: object
+      created_on:
+        type: string
+      ends_on:
+        type: string
+      id:
+        type: string
+      owner:
+        description: email address of the owner
+        type: string
+      provider:
+        description: provider for provisioning
+        type: string
+      starts_on:
+        type: string
+      state:
+        additionalProperties:
+          $ref: '#/definitions/server.APIMachineConfig'
+        type: object
+      token_symbol:
+        description: token symbool
+        type: string
+    type: object
+  server.APIMachineConfig:
+    properties:
+      IPAddress:
+        type: string
+      MachineName:
+        type: string
+      tendermint_node_id:
         type: string
     type: object
   server.APIReply:
@@ -194,9 +164,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: ok
+          description: API Reply
           schema:
-            type: string
+            $ref: '#/definitions/server.APIReply'
       summary: Logout from the system
       tags:
       - auth
@@ -215,9 +185,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: ok
+          description: API Reply
           schema:
-            type: string
+            $ref: '#/definitions/server.APIReply'
       summary: Register an API account
       tags:
       - auth
@@ -232,7 +202,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Event'
+              $ref: '#/definitions/server.APIEvent'
             type: array
       summary: Retrieve a list of events
       tags:
@@ -251,9 +221,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: API Reply
           schema:
-            $ref: '#/definitions/model.Event'
+            $ref: '#/definitions/server.APIReply'
       summary: Create an event
       tags:
       - event
@@ -273,7 +243,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Event'
+            $ref: '#/definitions/server.APIEvent'
       summary: Destroy an event and associated resources
       tags:
       - event
@@ -292,7 +262,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Event'
+            $ref: '#/definitions/server.APIEvent'
       summary: Retrieve an event
       tags:
       - event
@@ -312,7 +282,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Event'
+            $ref: '#/definitions/server.APIEvent'
       summary: Provision the insfrastructure and deploy the event
       tags:
       - event

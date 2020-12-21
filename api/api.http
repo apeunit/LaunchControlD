@@ -1,6 +1,6 @@
 @host = http://localhost:2012
 //@host = https://api.launch-control.eventivize.co
-@token = 8d0a2f8305a8ce41947b166b1ab46c77c4945e5269dc393301e94f1cf0595b7b
+@token = f3bb545c4581200099de9d7db94fb4576067780bb5681811424e6f0530fa612a
 @eventID = co3-91851c78f1f03d2943a0
 
 ### general routes
