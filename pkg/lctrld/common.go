@@ -33,11 +33,6 @@ func dmBin(settings config.Schema) string {
 	return bin(settings, settings.DockerMachine.Binary)
 }
 
-// dmDriverBin returns /tmp/workspace/bin/docker-machine-driver-<DRIVER>
-func dmDriverBin(settings config.Schema, driverName string) string {
-	return bin(settings, settings.DockerMachine.Drivers[driverName].Binary)
-}
-
 // bin returns /tmp/workspace/bin
 func bin(settings config.Schema, file string) string {
 	return _path(settings.Workspace, binDir, file)

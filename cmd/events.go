@@ -165,8 +165,13 @@ func retryEvent(cmd *cobra.Command, args []string) (err error) {
 	}
 	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
 	evt2, err := lctrld.RereadDockerMachineInfo(settings, evt, dmc)
+	if err != nil {
+		return
+	}
 	err = lctrld.StoreEvent(settings, evt2)
-
+	if err != nil {
+		return
+	}
 	validatorNames, _ := evt2.Validators()
 	for _, v := range validatorNames {
 		log.Infof("Updated info for %s: %#v\n", v, evt2.State[v])

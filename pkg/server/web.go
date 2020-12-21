@@ -17,7 +17,6 @@ import (
 	_ "github.com/apeunit/LaunchControlD/api"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 const (
@@ -51,8 +50,19 @@ func ServeHTTP(settings config.Schema) (err error) {
 	app := fiber.New()
 	// enable cors
 	app.Use(cors.New())
-	// TODO: use logrus for logging
-	app.Use(logger.New())
+	// use logrus for logging
+	app.Use(func(c *fiber.Ctx) (err error) {
+		s := time.Now()
+		// Go to next middleware
+		err = c.Next()
+		if err != nil {
+			// Log each request
+			log.Errorf("%-6s %-20s [%-9s] %d - %s: %v", c.Method(), c.Path(), time.Since(s), c.Response().StatusCode(), c.IP(), err.Error())
+			return
+		}
+		log.Infof("%-6s %-20s [%-9s] %d - %s", c.Method(), c.Path(), time.Since(s), c.Response().StatusCode(), c.IP())
+		return
+	})
 
 	// root url
 	app.Get("/", func(c *fiber.Ctx) error { return c.JSON(fiber.ErrTeapot) })
@@ -197,6 +207,9 @@ func register(c *fiber.Ctx) error {
 func eventCreate(c *fiber.Ctx) error {
 	// retrieve the owner email
 	ownerEmail, err := getAuthEmail(c)
+	if err != nil {
+		return c.JSON(fiber.ErrUnauthorized)
+	}
 	//parse the event requests
 	var er model.EventRequest
 	c.BodyParser(&er)
@@ -319,13 +332,17 @@ func getEvent(c *fiber.Ctx) error {
 // @Success 200 {array} APIEvent
 // @Router /v1/events [get]
 func listEvents(c *fiber.Ctx) error {
-	// retrieve the list of all events
-	events, err := lctrld.ListEvents(appSettings)
 	// retrieve the owner email
 	ownerEmail, err := getAuthEmail(c)
 	if err != nil {
 		// this should never happen (the auth middleware shall fail first)
 		return c.JSON(fiber.ErrUnauthorized)
+	}
+	// retrieve the list of all events
+	events, err := lctrld.ListEvents(appSettings)
+	if err != nil {
+		// this should never happen (the auth middleware shall fail first)
+		return c.JSON(fiber.ErrInternalServerError)
 	}
 	//	make an empty list of events
 	userEvents := make([]APIEvent, 0)
