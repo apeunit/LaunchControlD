@@ -1,0 +1,289 @@
+basePath: /api
+definitions:
+  model.EventRequest:
+    properties:
+      genesis_accounts:
+        items:
+          $ref: '#/definitions/model.GenesisAccount'
+        type: array
+      owner:
+        type: string
+      payload:
+        $ref: '#/definitions/model.PayloadLocation'
+      provider:
+        type: string
+      token_symbol:
+        type: string
+    type: object
+  model.GenesisAccount:
+    properties:
+      faucet:
+        type: boolean
+      genesis_balance:
+        type: string
+      name:
+        type: string
+      validator:
+        type: boolean
+    type: object
+  model.PayloadLocation:
+    properties:
+      binary_path:
+        type: string
+      binary_url:
+        type: string
+      cli_path:
+        type: string
+      daemon_path:
+        type: string
+      docker_image:
+        type: string
+    type: object
+  server.APIAccount:
+    properties:
+      address:
+        type: string
+      faucet:
+        type: boolean
+      genesis_balance:
+        type: string
+      name:
+        type: string
+      validator:
+        type: boolean
+    type: object
+  server.APIEvent:
+    properties:
+      accounts:
+        additionalProperties:
+          $ref: '#/definitions/server.APIAccount'
+        type: object
+      created_on:
+        type: string
+      ends_on:
+        type: string
+      id:
+        type: string
+      owner:
+        description: email address of the owner
+        type: string
+      provider:
+        description: provider for provisioning
+        type: string
+      starts_on:
+        type: string
+      state:
+        additionalProperties:
+          $ref: '#/definitions/server.APIMachineConfig'
+        type: object
+      token_symbol:
+        description: token symbool
+        type: string
+    type: object
+  server.APIMachineConfig:
+    properties:
+      IPAddress:
+        type: string
+      MachineName:
+        type: string
+      tendermint_node_id:
+        type: string
+    type: object
+  server.APIReply:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  server.APIStatus:
+    properties:
+      status:
+        type: string
+      uptime:
+        type: string
+      version:
+        type: string
+    type: object
+  server.UserCredentials:
+    properties:
+      email:
+        type: string
+      pass:
+        type: string
+    type: object
+host: api.launch-control.eventivize.co
+info:
+  contact:
+    email: u2467@apeunit.com
+    name: API Support
+  description: This are the documentation for the LaunchControlD REST API
+  license:
+    name: MIT
+  title: LaunchControlD REST API
+  version: "1.0"
+paths:
+  /status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API Status
+          schema:
+            $ref: '#/definitions/server.APIStatus'
+      summary: Healthcheck and version endpoint
+      tags:
+      - health
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Login credentials
+        in: body
+        name: '-'
+        required: true
+        schema:
+          $ref: '#/definitions/server.UserCredentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API Reply
+          schema:
+            $ref: '#/definitions/server.APIReply'
+      summary: Login to the API
+      tags:
+      - auth
+  /v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API Reply
+          schema:
+            $ref: '#/definitions/server.APIReply'
+      summary: Logout from the system
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration credentials
+        in: body
+        name: '-'
+        required: true
+        schema:
+          $ref: '#/definitions/server.UserCredentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API Reply
+          schema:
+            $ref: '#/definitions/server.APIReply'
+      summary: Register an API account
+      tags:
+      - auth
+  /v1/events:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/server.APIEvent'
+            type: array
+      summary: Retrieve a list of events
+      tags:
+      - event
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event Request
+        in: body
+        name: '-'
+        required: true
+        schema:
+          $ref: '#/definitions/model.EventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API Reply
+          schema:
+            $ref: '#/definitions/server.APIReply'
+      summary: Create an event
+      tags:
+      - event
+  /v1/events/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.APIEvent'
+      summary: Destroy an event and associated resources
+      tags:
+      - event
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.APIEvent'
+      summary: Retrieve an event
+      tags:
+      - event
+  /v1/events/{id}/deploy:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Event ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.APIEvent'
+      summary: Provision the insfrastructure and deploy the event
+      tags:
+      - event
+swagger: "2.0"

@@ -142,9 +142,10 @@ func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
 
 // ListEvents list available events
 func ListEvents(settings config.Schema) (events []model.Event, err error) {
+	events = make([]model.Event, 0)
 	evtsBase, err := evts(settings, "")
 	if err != nil {
-		log.Fatal("ListEvents failed:", err)
+		log.Error("ListEvents failed:", err)
 		return
 	}
 	filepath.Walk(evtsBase, func(subPath string, info os.FileInfo, err error) error {

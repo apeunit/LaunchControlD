@@ -8,10 +8,11 @@ import (
 
 // EventRequest holds metadata about the event, including how the genesis.json should be setup
 type EventRequest struct {
-	PayloadLocation PayloadLocation  `yaml:"payload_location" json:"payload"`
-	Owner           string           `yaml:"owner" json:"owner"`
 	TokenSymbol     string           `yaml:"token_symbol" json:"token_symbol"`
 	GenesisAccounts []GenesisAccount `yaml:"genesis_accounts" json:"genesis_accounts"`
+	PayloadLocation PayloadLocation  `yaml:"payload_location" json:"payload,omitempty"`
+	Owner           string           `yaml:"owner" json:"owner,omitempty"`
+	Provider        string           `yaml:"provider" json:"provider,omitempty"`
 }
 
 // PayloadLocation holds metadata about the copy of the launchpayload that is

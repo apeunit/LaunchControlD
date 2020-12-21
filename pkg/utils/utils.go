@@ -3,6 +3,7 @@ package utils
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -56,7 +57,8 @@ func StoreJSON(filePath string, v interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	err = ioutil.WriteFile(filePath, data, 0700)
+	// default json permission to rw- --- ---
+	err = ioutil.WriteFile(filePath, data, 0600)
 	return
 }
 
@@ -161,5 +163,25 @@ func SearchAndMove(root, file, targetPath string) (err error) {
 	if !found {
 		err = fmt.Errorf("file %s was not found in %s", file, root)
 	}
+	return
+}
+
+// GetPath build the path to a file
+func GetPath(pieces ...string) string {
+	return filepath.Join(pieces...)
+}
+
+// GenerateRandomHash returns securely generated random bytes.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func GenerateRandomHash() (h string, err error) {
+	b := make([]byte, 512)
+	_, err = rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return
+	}
+	h = Hash(b)
 	return
 }
