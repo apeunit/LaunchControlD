@@ -58,7 +58,8 @@ bench-all:
 lint: lint-all
 
 lint-all:
-	@golint -set_exit_status $(GOPACKAGES)
+	golint -set_exit_status $(GOPACKAGES)
+	staticcheck $(GOPACKAGES)
 
 clean:
 	@echo remove $(OUTPUTFOLDER) folder
