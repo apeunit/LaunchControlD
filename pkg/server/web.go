@@ -17,7 +17,6 @@ import (
 	_ "github.com/apeunit/LaunchControlD/api"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 const (
@@ -51,8 +50,19 @@ func ServeHTTP(settings config.Schema) (err error) {
 	app := fiber.New()
 	// enable cors
 	app.Use(cors.New())
-	// TODO: use logrus for logging
-	app.Use(logger.New())
+	// use logrus for logging
+	app.Use(func(c *fiber.Ctx) (err error) {
+		s := time.Now()
+		// Go to next middleware
+		err = c.Next()
+		if err != nil {
+			// Log each request
+			log.Errorf("%-6s %-20s [%-9s] %d - %s: %v", c.Method(), c.Path(), time.Since(s), c.Response().StatusCode(), c.IP(), err.Error())
+			return
+		}
+		log.Infof("%-6s %-20s [%-9s] %d - %s", c.Method(), c.Path(), time.Since(s), c.Response().StatusCode(), c.IP())
+		return
+	})
 
 	// root url
 	app.Get("/", func(c *fiber.Ctx) error { return c.JSON(fiber.ErrTeapot) })
