@@ -4,36 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
-
-// dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
-func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
-	// set the path to find executable
-	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
-	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
-	// set the home path for the command
-	home, err := evts(settings, evt.ID()) // this gives you the relative path to the event home
-	if err != nil {
-		return
-	}
-	envHome := fmt.Sprintf("HOME=%s", home)
-	// get the env var from the driver
-	env = settings.DockerMachine.Drivers[evt.Provider].Env
-	env = append(env, envHome, envPath)
-	return
-}
-
-// dockerMachineNodeEnv recreates the output of docker-machine env evtx-d97517a3673688070aef-0, to run a command inside the docker-machine provisioned node.
-func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.MachineConfig) []string {
-	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s", state.ID()))
-	return envVars
-}
 
 // InspectEvent inspect status of the infrastructure for an event
 func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
@@ -74,7 +50,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 		return
 	}
 	// load the descriptor
-	p, err := evtDescriptor(settings, evt.ID())
+	p, err := evtFile(settings, evt.ID())
 	log.Debug("DestroyEvent event descriptor:", p)
 	if err != nil {
 		log.Fatal("DestroyEvent failed:", err)
@@ -116,13 +92,13 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (*model.Event, error) {
+func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) error {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
 	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// init docker nodes map
 	evt.State = make(map[string]*model.MachineConfig)
@@ -134,7 +110,7 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 
 		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
-		p := []string{"create", "--driver", evt.Provider}
+		p := []string{"--debug", "create", "--driver", evt.Provider}
 		p = append(p, driver.Params...)
 		p = append(p, host)
 
@@ -153,21 +129,34 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 			log.Fatal("Provision read machine config error:", err)
 			break
 		}
-		mc.N = fmt.Sprint(i)
-		mc.EventID = evt.ID()
 		evt.State[v.Name] = mc
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 	log.Infof("Your event ID is %s", evt.ID())
-	return evt, nil
+	return nil
 }
 
-// DeployPayload tells the provisioned machines to run the configured docker
-// image
+// RereadDockerMachineInfo is useful when docker-machine failed during 'create',
+// and a human fixed the problem, and wants to continue
+func RereadDockerMachineInfo(settings config.Schema, evt *model.Event, dmc DockerMachineInterface) (event *model.Event, err error) {
+	_, validatorAccounts := evt.Validators()
+	for i, v := range validatorAccounts {
+		mc, err := dmc.ReadConfig(fmt.Sprint(i))
+		if err != nil {
+			log.Fatal("Provision read machine config error:", err)
+			break
+		}
+		evt.State[v.Name] = mc
+	}
+	return evt, err
+}
+
+// DeployPayload tells the provisioned machines to run the configured docker image
 func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
 	dmBin := dmBin(settings)
+	var args []string
 
 	log.Infoln("Copying node configs to each provisioned machine")
 	for name, state := range evt.State {
@@ -252,7 +241,8 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		}
 	}
 
-	log.Infoln("Running the docker image on the first node to provide the Light Client Daemon")
+	// https://forum.cosmos.network/t/what-could-cause-sync-mutex-lock-to-have-a-nil-pointer-dereference/4194
+	log.Infoln("Running the CLI to provide the Light Client Daemon")
 	emails, _ := evt.Validators()
 	firstNode := emails[0]
 	machineHomeDir := dmc.HomeDir(evt.State[firstNode].N)
@@ -262,14 +252,22 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	}
 	envVars = dockerMachineNodeEnv(envVars, evt.ID(), machineHomeDir, evt.State[firstNode])
 
-	nodeAddr := fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress)
-	args := []string{"run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.Payload.DockerImage, "/payload/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", nodeAddr, "--unsafe-cors", "--chain-id", evt.ID(), "--home", "/payload/config/cli"}
-	log.Debugf("Running docker %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
-	_, err = cmdRunner("docker", args, envVars)
+	args = []string{"ssh", evt.State[firstNode].ID(), "docker", "run", "-d", "--volume=/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", "apeunit/launchpayload", "/payload/runlightclient.sh", evt.State[firstNode].Instance.IPAddress, evt.ID()}
+	// args = []string{"scp", evt.Payload.CLIPath, fmt.Sprintf("%s:/home/docker", evt.State[firstNode].ID())}
+	log.Debugf("Running docker-machine %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
+	_, err = cmdRunner(dmBin, args, envVars)
 	if err != nil {
-		log.Fatalf("docker %s failed with %s", args, err)
+		log.Fatal(err)
 		return
 	}
+
+	// args = []string{"ssh", evt.State[firstNode].ID(), "/home/docker/launchpayloadcli", "rest-server", "--laddr", "tcp://0.0.0.0:1317", "--node", fmt.Sprintf("tcp://%s:26657", evt.State[firstNode].Instance.IPAddress), "--unsafe-cors", "--chain-id", evt.ID(), "--home", "/home/docker/nodeconfig/cli", "&"}
+	// o, err = cmdRunner(dmBin, args, envVars)
+	// log.Infoln(o)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	return
+	// }
 
 	log.Infoln("Copying the faucet account and configuration to the first validator machine")
 	faucetAccount := evt.FaucetAccount()
@@ -280,6 +278,13 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		log.Fatalf("docker-machine %s failed with %s", args, err)
 		return
 	}
+	// docker-machine chmod -R 777 /home/docker/nodeconfig AGAIN - what a mess!
+	args = []string{"ssh", evt.State[v[0]].ID(), "chmod", "-R", "777", "/home/docker/nodeconfig"}
+	_, err = cmdRunner(dmBin, args, envVars)
+	if err != nil {
+		log.Fatalf("docker-machine %s failed with %s", args, err)
+	}
+
 	evtDir, err := evts(settings, evt.ID())
 	if err != nil {
 		log.Fatal(err)

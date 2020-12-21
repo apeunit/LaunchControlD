@@ -61,7 +61,7 @@ func TestProvision(t *testing.T) {
 	dmc := &mockDockerMachineConfig{
 		WantError: false,
 	}
-	evt, err := Provision(settings, evt, mockCommandRunner, dmc)
+	err := Provision(settings, evt, mockCommandRunner, dmc)
 	assert.Nil(t, err)
 
 	expectedEvt := &model.Event{

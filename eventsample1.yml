@@ -5,11 +5,11 @@ token_symbol: "drop"
 genesis_accounts:
   -
     name: "alice@apeunit.com"
-    genesis_balance: "500drops,1000000evtx,100000000stake"
+    genesis_balance: "500drop,1000000evtx,100000000stake"
     validator: true
     faucet: false
   -
     name: "dropgiver"
-    genesis_balance: "10000000000drops,10000000000evtx"
+    genesis_balance: "10000000000drop,10000000000evtx"
     validator: false
     faucet: true

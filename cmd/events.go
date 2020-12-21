@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -16,31 +16,21 @@ var eventsCmd = &cobra.Command{
 	Use:   "events",
 	Short: "Manage events",
 	Long:  ``,
-	// Run: func(cmd *cobra.Command, args []string) {
-	// 	fmt.Println("events called")
-	// },
 }
 var provider string
 
 func init() {
 	rootCmd.AddCommand(eventsCmd)
-	// ******************
-	// SETUP
-	// ******************
+
 	eventsCmd.AddCommand(setupEventCmd)
-	// provisioning
 	setupEventCmd.Flags().StringVar(&provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
 
-	// ******************
-	// TEARDOWN
-	// ******************
 	eventsCmd.AddCommand(tearDownEventCmd)
 
-	// ******************
-	// LIST
-	// ******************
 	eventsCmd.AddCommand(listEventCmd)
 	listEventCmd.Flags().BoolVar(&verbose, "verbose", false, "Print more details")
+
+	eventsCmd.AddCommand(retryEventCmd)
 }
 
 var verbose bool
@@ -55,34 +45,30 @@ var setupEventCmd = &cobra.Command{
 }
 
 func setupEvent(cmd *cobra.Command, args []string) (err error) {
-	fmt.Println("Preparing the environment")
 	start := time.Now()
 
-	eq, err := model.LoadEventRequestFromFile(args[0])
+	evtRequest, err := model.LoadEventRequestFromFile(args[0])
 	if err != nil {
 		return
 	}
-	eq.PayloadLocation = settings.DefaultPayloadLocation
-	fmt.Printf("%#v\n\n", settings)
+	evtRequest.PayloadLocation = settings.DefaultPayloadLocation
 
-	fmt.Printf("%#v\n\n", eq)
+	evt := model.NewEvent(evtRequest.TokenSymbol, evtRequest.Owner, provider, evtRequest.GenesisAccounts, evtRequest.PayloadLocation)
+	vc := evt.ValidatorsCount()
 
-	event := model.NewEvent(eq.TokenSymbol, eq.Owner, provider, eq.GenesisAccounts, eq.PayloadLocation)
-
-	vc := event.ValidatorsCount()
-
-	fmt.Printf("%#v\n\n", event)
+	log.Debugf("%#v\n", settings)
+	log.Debugf("%#v\n", evtRequest)
+	log.Debugf("%#v\n", evt)
 	fmt.Println("Summary:")
-	fmt.Printf("there are %v validators\n", vc)
-	_, validatorAccounts := event.Validators()
+	_, validatorAccounts := evt.Validators()
 	for _, acc := range validatorAccounts {
 		fmt.Printf("Validator %s has initial balance of %+v\n", acc.Name, acc.GenesisBalance)
 	}
 	fmt.Printf("Including other accounts, the genesis account state is:\n")
-	for k, v := range event.Accounts {
+	for k, v := range evt.Accounts {
 		fmt.Printf("%s: %+v\n", k, v)
 	}
-	fmt.Printf("Finally will be deploying %v servers+nodes (1 for each validators) on %s\n", vc, event.Provider)
+	fmt.Printf("Finally will be deploying %v servers+nodes (1 for each validators) on %s\n", vc, evt.Provider)
 	fmt.Print("Shall we proceed? [Y/n]:")
 	proceed := "Y"
 	fmt.Scanln(&proceed)
@@ -91,14 +77,14 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 		return
 	}
 	fmt.Println("Here we go!!")
-	err = lctrld.CreateEvent(settings, event)
+	err = lctrld.CreateEvent(settings, evt)
 	if err != nil {
 		log.Fatal("There was an error, run the command with --debug for more info:", err)
 		return err
 	}
 
-	dmc := lctrld.NewDockerMachineConfig(settings, event.ID())
-	evt, err := lctrld.Provision(settings, event, lctrld.RunCommand, dmc)
+	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	err = lctrld.Provision(settings, evt, lctrld.RunCommand, dmc)
 	if err != nil {
 		log.Fatal("There was an error, run the command with --debug for more info:", err)
 		return err
@@ -161,4 +147,33 @@ func listEvent(cmd *cobra.Command, args []string) {
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))
+}
+
+// listEventCmd represents the tearDownEvent command
+var retryEventCmd = &cobra.Command{
+	Use:   "retry",
+	Short: "rereads docker-machine's .docker/machine/machines/<name>/config.json into event.json, in case a human fixed whatever went wrong",
+	Long:  "rereads docker-machine's .docker/machine/machines/<name>/config.json into event.json, in case a human fixed whatever went wrong",
+	Args:  cobra.ExactArgs(1),
+	RunE:  retryEvent,
+}
+
+func retryEvent(cmd *cobra.Command, args []string) (err error) {
+	evt, err := lctrld.LoadEvent(settings, args[0])
+	if err != nil {
+		return
+	}
+	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	evt2, err := lctrld.RereadDockerMachineInfo(settings, evt, dmc)
+	err = lctrld.StoreEvent(settings, evt2)
+
+	validatorNames, _ := evt2.Validators()
+	for _, v := range validatorNames {
+		log.Infof("Updated info for %s: %#v\n", v, evt2.State[v])
+	}
+	if err != nil {
+		log.Fatal("There was a problem saving the updated Event", err)
+		return
+	}
+	return
 }

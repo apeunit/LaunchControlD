@@ -105,9 +105,6 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunn
 			acc.ConfigLocation.CLIConfigDir = extraAccDir
 		}
 
-		fmt.Printf("%+v\n", machineConfig)
-		fmt.Println("machineConfig.ID", machineConfig.ID())
-
 		args := []string{"init", fmt.Sprintf("%s node %s", acc.Name, machineConfig.ID()), "--home", acc.ConfigLocation.DaemonConfigDir, "--chain-id", evt.ID()}
 		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
@@ -191,9 +188,8 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand Com
 		return
 	}
 
-	for name, state := range evt.State {
+	for name := range evt.State {
 		for _, account := range evt.Accounts {
-			fmt.Printf("%s %s %s\n", state.ID(), account.Name, account.Address)
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
 			out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 			if err != nil {
@@ -335,6 +331,7 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 	return
 }
 
+// GenerateFaucetConfig generates a configuration for the faucet given what it knows about the event
 func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) {
 	log.Infoln("Generating faucet configuration")
 
