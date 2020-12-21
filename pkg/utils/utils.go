@@ -57,7 +57,8 @@ func StoreJSON(filePath string, v interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	err = ioutil.WriteFile(filePath, data, 0700)
+	// default json permission to rw- --- ---
+	err = ioutil.WriteFile(filePath, data, 0600)
 	return
 }
 
