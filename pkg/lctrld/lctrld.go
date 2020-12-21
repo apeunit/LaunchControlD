@@ -130,6 +130,9 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 // CreateEvent creates the event home and the event descriptor
 func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
 	path, err := evts(settings, evt.ID())
+	if err != nil {
+		return
+	}
 	if !utils.FileExists(path) {
 		err = os.MkdirAll(path, 0700)
 		if err != nil {

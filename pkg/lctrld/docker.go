@@ -31,6 +31,9 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 		}
 		fmt.Println(host, "status:", out)
 		out, err = cmdRunner(dmBin, []string{"ip", host}, envVars)
+		if err != nil {
+			break
+		}
 		fmt.Println(host, "IP:", out)
 	}
 	return
@@ -39,21 +42,23 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 // DestroyEvent destroy an existing event
 func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
-	log.Debugln("DestroyEvent event", evt.ID(), "home:", path)
+	log.Debugln("op DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
-		log.Fatal("DestroyEvent failed:", err)
+		// TODO: this is going to crash the program
+		log.Error("DestroyEvent failed:", err)
 		return
 	}
 	if !utils.FileExists(path) {
-		err = fmt.Errorf("Event ID %s not found", evt.ID())
-		log.Fatal("DestroyEvent failed:", err)
+		err = fmt.Errorf("event ID %s not found", evt.ID())
+		log.Error("op DestroyEvent failed:", err)
 		return
 	}
 	// load the descriptor
 	p, err := evtFile(settings, evt.ID())
-	log.Debug("DestroyEvent event descriptor:", p)
+	log.Debug("op DestroyEvent event descriptor:", p)
 	if err != nil {
-		log.Fatal("DestroyEvent failed:", err)
+		// TODO: this is going to crash the program
+		log.Error("op DestroyEvent failed:", err)
 		return
 	}
 
@@ -73,14 +78,18 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 		// create the parameters
 		out, err := cmdRunner(dmBin, []string{"stop", host}, envVars)
 		if err != nil {
+			// TODO: preferr logging over printing to stdout
 			fmt.Println(err)
 		}
+		// TODO: prefer logging over printing on stdout
 		fmt.Println(host, "stop:", out)
 
 		out, err = cmdRunner(dmBin, []string{"rm", host}, envVars)
 		if err != nil {
+			// TODO: prefer logging over printing to stdout
 			fmt.Println(err)
 		}
+		// TODO: preferr logging over printing to stdout
 		fmt.Println(host, "rm:", out)
 
 	}

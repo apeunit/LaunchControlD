@@ -197,6 +197,9 @@ func register(c *fiber.Ctx) error {
 func eventCreate(c *fiber.Ctx) error {
 	// retrieve the owner email
 	ownerEmail, err := getAuthEmail(c)
+	if err != nil {
+		return c.JSON(fiber.ErrUnauthorized)
+	}
 	//parse the event requests
 	var er model.EventRequest
 	c.BodyParser(&er)
@@ -319,13 +322,17 @@ func getEvent(c *fiber.Ctx) error {
 // @Success 200 {array} APIEvent
 // @Router /v1/events [get]
 func listEvents(c *fiber.Ctx) error {
-	// retrieve the list of all events
-	events, err := lctrld.ListEvents(appSettings)
 	// retrieve the owner email
 	ownerEmail, err := getAuthEmail(c)
 	if err != nil {
 		// this should never happen (the auth middleware shall fail first)
 		return c.JSON(fiber.ErrUnauthorized)
+	}
+	// retrieve the list of all events
+	events, err := lctrld.ListEvents(appSettings)
+	if err != nil {
+		// this should never happen (the auth middleware shall fail first)
+		return c.JSON(fiber.ErrInternalServerError)
 	}
 	//	make an empty list of events
 	userEvents := make([]APIEvent, 0)

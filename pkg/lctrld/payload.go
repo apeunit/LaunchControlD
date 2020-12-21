@@ -275,6 +275,10 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 	pathToNode0Genesis := path.Join(valAccounts[0].ConfigLocation.DaemonConfigDir, "config/genesis.json")
 	for _, valAcc := range valAccounts[1:] {
 		node0Genesis, err := os.Open(pathToNode0Genesis)
+		if err != nil {
+			log.Errorf("cannot open file genesis descriptor: %s: %v", pathToNode0Genesis, err)
+			break
+		}
 		otherGenesis := path.Join(valAcc.ConfigLocation.DaemonConfigDir, "config/genesis.json")
 		log.Infof("otherGenesis: %s\n", otherGenesis)
 		err = os.Remove(otherGenesis)
@@ -314,7 +318,7 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 			break
 		}
 		t.SetPathWithComment([]string{"p2p", "persistent_peers"}, "persistent_peers has been automatically set by lctrld", false, strings.Join(persistentPeerList, ","))
-		t.SetPathWithComment([]string{"rpc", "laddr"}, "laddr has been automatically set by lctrld", false, fmt.Sprint("tcp://0.0.0.0:26657"))
+		t.SetPathWithComment([]string{"rpc", "laddr"}, "laddr has been automatically set by lctrld", false, "tcp://0.0.0.0:26657")
 		t.SetPathWithComment([]string{"consensus", "create_empty_blocks"}, "Don't create blocks if there are no txs: automatically set by lctrld", false, false)
 
 		w, err := os.Create(configPath)
@@ -338,7 +342,7 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) 
 	// Use the first ExtraAccount as a faucet account
 	faucetAccount := evt.FaucetAccount()
 	if faucetAccount == nil {
-		return errors.New("At this stage we expect every blockchain deployment to have a Faucet account")
+		return errors.New("at this stage we expect every blockchain deployment to have a Faucet account")
 	}
 	// The faucet should connect to one of the validator nodes
 	v, _ := evt.Validators()
