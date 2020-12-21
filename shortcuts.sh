@@ -23,7 +23,7 @@ function send() {
     export EVT=$EVTDIR/event.json
     export ALICE=`jq -r '.accounts."alice@apeunit.com".address' $EVT`
     export FAUCET=`jq -r '.accounts.dropgiver.address' $EVT`
-    TXHASH=`launchpayloadcli tx send $FAUCET $ALICE 1drop --keyring-backend test --home /tmp/workspace/evts/$EVTID/nodeconfig/extra_accounts/dropgiver/ --node tcp://192.168.99.100:26657 --chain-id $EVTID -y -o json | jq -r '.txhash'`
+    TXHASH=`launchpayloadcli tx send $FAUCET $ALICE 1drop --keyring-backend test --home /tmp/workspace/evts/$EVTID/nodeconfig/extra_accounts/dropgiver/ --node tcp://$EVTIP:26657 --chain-id $EVTID -y -o json | jq -r '.txhash'`
     echo $TXHASH
 
     sleep 5
