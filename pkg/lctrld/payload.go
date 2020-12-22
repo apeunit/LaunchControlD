@@ -370,3 +370,49 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) 
 	err = ioutil.WriteFile(f, fBytes, 0644)
 	return
 }
+
+// ConfigurePayload is a wrapper function that runs all the needed steps to
+// generate a payload's configuration and fills out the evt object with said information.
+func ConfigurePayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
+	err = DownloadPayloadBinary(settings, evt, cmdRunner)
+	if err != nil {
+		return
+	}
+	evt, err = InitDaemon(settings, evt, cmdRunner)
+	if err != nil {
+		return
+	}
+	err = StoreEvent(settings, evt)
+	if err != nil {
+		return
+	}
+	evt, err = GenerateKeys(settings, evt, cmdRunner)
+	if err != nil {
+		return
+	}
+	err = StoreEvent(settings, evt)
+	if err != nil {
+		return
+	}
+	err = AddGenesisAccounts(settings, evt, cmdRunner)
+	if err != nil {
+		return
+	}
+	err = GenesisTxs(settings, evt, cmdRunner)
+	if err != nil {
+		return
+	}
+	err = CollectGenesisTxs(settings, evt, cmdRunner)
+	if err != nil {
+		return
+	}
+	err = EditConfigs(settings, evt, cmdRunner)
+	if err != nil {
+		return
+	}
+	err = GenerateFaucetConfig(settings, evt)
+	if err != nil {
+		return
+	}
+	return
+}

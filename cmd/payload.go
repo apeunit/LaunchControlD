@@ -38,47 +38,7 @@ func setupChain(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	err = lctrld.DownloadPayloadBinary(settings, evt, lctrld.RunCommand)
-	if err != nil {
-		return
-	}
-	evt, err = lctrld.InitDaemon(settings, evt, lctrld.RunCommand)
-	if err != nil {
-		return
-	}
-	err = lctrld.StoreEvent(settings, evt)
-	if err != nil {
-		return
-	}
-	evt, err = lctrld.GenerateKeys(settings, evt, lctrld.RunCommand)
-	if err != nil {
-		return
-	}
-	err = lctrld.StoreEvent(settings, evt)
-	if err != nil {
-		return
-	}
-	err = lctrld.AddGenesisAccounts(settings, evt, lctrld.RunCommand)
-	if err != nil {
-		return
-	}
-	err = lctrld.GenesisTxs(settings, evt, lctrld.RunCommand)
-	if err != nil {
-		return
-	}
-	err = lctrld.CollectGenesisTxs(settings, evt, lctrld.RunCommand)
-	if err != nil {
-		return
-	}
-	err = lctrld.EditConfigs(settings, evt, lctrld.RunCommand)
-	if err != nil {
-		return
-	}
-	err = lctrld.GenerateFaucetConfig(settings, evt)
-	if err != nil {
-		return
-	}
-	return
+	return lctrld.ConfigurePayload(settings, evt, lctrld.RunCommand)
 }
 
 func deploy(cmd *cobra.Command, args []string) (err error) {
