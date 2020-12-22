@@ -91,6 +91,14 @@ func ServeHTTP(settings config.Schema) (err error) {
 	return
 }
 
+// handlePanic catch any panic and return error
+func handlePanic(c *fiber.Ctx) {
+	if r := recover(); r != nil {
+		log.Warn("recovered from panic", r)
+		c.JSON(APIReplyErr(http.StatusInternalServerError, "operation failed"))
+	}
+}
+
 // auth is a middleware specific for the events
 func auth(c *fiber.Ctx) error {
 	//	TODO: sadly we cannot easily propagate the email
@@ -205,6 +213,9 @@ func register(c *fiber.Ctx) error {
 // @Success 200 {object} APIReply "API Reply"
 // @Router /v1/events [post]
 func eventCreate(c *fiber.Ctx) error {
+	// TODO: workaround to handle log.Fatal in lib
+	defer handlePanic(c)
+
 	// retrieve the owner email
 	ownerEmail, err := getAuthEmail(c)
 	if err != nil {
@@ -261,6 +272,9 @@ func eventCreate(c *fiber.Ctx) error {
 // @Success 200 {object} APIEvent
 // @Router /v1/events/{id}/deploy [put]
 func eventDeploy(c *fiber.Ctx) error {
+	// TODO: workaround to handle log.Fatal in lib
+	defer handlePanic(c)
+
 	eventID := c.Params("eventID")
 	event, err := lctrld.GetEventByID(appSettings, eventID)
 	if err != nil {
@@ -287,6 +301,9 @@ func eventDeploy(c *fiber.Ctx) error {
 // @Success 200 {object} APIEvent
 // @Router /v1/events/{id} [delete]
 func deleteEvent(c *fiber.Ctx) error {
+	// TODO: workaround to handle log.Fatal in lib
+	defer handlePanic(c)
+
 	eventID := c.Params("eventID")
 	event, err := lctrld.GetEventByID(appSettings, eventID)
 	if err != nil {
@@ -312,6 +329,9 @@ func deleteEvent(c *fiber.Ctx) error {
 // @Success 200 {object} APIEvent
 // @Router /v1/events/{id} [get]
 func getEvent(c *fiber.Ctx) error {
+	// TODO: workaround to handle log.Fatal in lib
+	defer handlePanic(c)
+
 	eventID := c.Params("eventID")
 	event, err := lctrld.GetEventByID(appSettings, eventID)
 	if err != nil {
@@ -332,6 +352,9 @@ func getEvent(c *fiber.Ctx) error {
 // @Success 200 {array} APIEvent
 // @Router /v1/events [get]
 func listEvents(c *fiber.Ctx) error {
+	// TODO: workaround to handle log.Fatal in lib
+	defer handlePanic(c)
+
 	// retrieve the owner email
 	ownerEmail, err := getAuthEmail(c)
 	if err != nil {
