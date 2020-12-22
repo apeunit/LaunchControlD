@@ -16,7 +16,7 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
-		log.Fatal("Inspect failed:", err)
+		log.Error("Inspect failed:", err)
 		return
 	}
 	dmBin := dmBin(settings)
@@ -156,8 +156,8 @@ func RereadDockerMachineInfo(settings config.Schema, evt *model.Event, dmc Docke
 	for i, v := range validatorAccounts {
 		mc, err := dmc.ReadConfig(fmt.Sprint(i))
 		if err != nil {
-			log.Fatal("Provision read machine config error:", err)
-			break
+			log.Error("Provision read machine config error:", err)
+			return nil, err
 		}
 		evt.State[v.Name] = mc
 	}
@@ -173,40 +173,40 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	for name, state := range evt.State {
 		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
-			log.Fatalf("dockerMachineEnv() failed while generating envVars: %s", err)
-			break
+			log.Errorf("dockerMachineEnv() failed while generating envVars: %s", err)
+			return err
 		}
 
 		// docker-machine ssh mkdir -p /home/docker/nodeconfig
 		args := []string{"ssh", state.ID(), "mkdir", "-p", "/home/docker/nodeconfig"}
 		_, err = cmdRunner(dmBin, args, envVars)
 		if err != nil {
-			log.Fatalf("docker-machine %s failed with %s", args, err)
-			break
+			log.Errorf("docker-machine %s failed with %s", args, err)
+			return err
 		}
 
 		// docker-machine scp -r pathDaemon evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
 		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.DaemonConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID())}
 		_, err = cmdRunner(dmBin, args, envVars)
 		if err != nil {
-			log.Fatalf("docker-machine %s failed with %s", args, err)
-			break
+			log.Errorf("docker-machine %s failed with %s", args, err)
+			return err
 		}
 
 		// docker-machine scp -r pathCLI evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
 		args = []string{"scp", "-r", evt.Accounts[name].ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID())}
 		_, err = cmdRunner(dmBin, args, envVars)
 		if err != nil {
-			log.Fatalf("docker-machine %s failed with %s", args, err)
-			break
+			log.Errorf("docker-machine %s failed with %s", args, err)
+			return err
 		}
 
 		// docker-machine chmod -R 777 /home/docker/nodeconfig
 		args = []string{"ssh", state.ID(), "chmod", "-R", "777", "/home/docker/nodeconfig"}
 		_, err = cmdRunner(dmBin, args, envVars)
 		if err != nil {
-			log.Fatalf("docker-machine %s failed with %s", args, err)
-			break
+			log.Errorf("docker-machine %s failed with %s", args, err)
+			return err
 		}
 	}
 
@@ -214,8 +214,8 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	for email, state := range evt.State {
 		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
-			log.Fatalf("dockerMachineEnv() failed while generating envVars: %s", err)
-			break
+			log.Errorf("dockerMachineEnv() failed while generating envVars: %s", err)
+			return err
 		}
 
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
@@ -226,8 +226,8 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		_, err = cmdRunner("docker", args, envVars)
 		if err != nil {
-			log.Fatalf("docker %s failed with %s", args, err)
-			break
+			log.Errorf("docker %s failed with %s", args, err)
+			return err
 		}
 	}
 
@@ -235,8 +235,8 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	for email, state := range evt.State {
 		envVars, err := dockerMachineEnv(settings, evt)
 		if err != nil {
-			log.Fatalf("dockerMachineEnv() failed while generating envVars: %s", err)
-			break
+			log.Errorf("dockerMachineEnv() failed while generating envVars: %s", err)
+			return err
 		}
 
 		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
@@ -247,8 +247,8 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", args, email, envVars)
 		_, err = cmdRunner("docker", args, envVars)
 		if err != nil {
-			log.Fatalf("docker %s failed with %s", args, err)
-			break
+			log.Errorf("docker %s failed with %s", args, err)
+			return err
 		}
 	}
 
@@ -268,7 +268,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	log.Debugf("Running docker-machine %s on validator %s machine; envVars %s\n", args, firstNode, envVars)
 	_, err = cmdRunner(dmBin, args, envVars)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 		return
 	}
 
@@ -276,7 +276,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	// o, err = cmdRunner(dmBin, args, envVars)
 	// log.Infoln(o)
 	// if err != nil {
-	// 	log.Fatal(err)
+	// 	log.Error(err)
 	// 	return
 	// }
 
@@ -286,25 +286,27 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	args = []string{"scp", "-r", faucetAccount.ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig/faucet_account", evt.State[v[0]].ID())}
 	_, err = cmdRunner("docker-machine", args, envVars)
 	if err != nil {
-		log.Fatalf("docker-machine %s failed with %s", args, err)
+		log.Errorf("docker-machine %s failed with %s", args, err)
 		return
 	}
 	// docker-machine chmod -R 777 /home/docker/nodeconfig AGAIN - what a mess!
 	args = []string{"ssh", evt.State[v[0]].ID(), "chmod", "-R", "777", "/home/docker/nodeconfig"}
 	_, err = cmdRunner(dmBin, args, envVars)
 	if err != nil {
-		log.Fatalf("docker-machine %s failed with %s", args, err)
+		log.Errorf("docker-machine %s failed with %s", args, err)
+		return
 	}
 
 	evtDir, err := evts(settings, evt.ID())
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		return
 	}
 
 	args = []string{"scp", "-r", filepath.Join(evtDir, "faucetconfig.yml"), fmt.Sprintf("%s:/home/docker/nodeconfig/", evt.State[v[0]].ID())}
 	_, err = cmdRunner("docker-machine", args, envVars)
 	if err != nil {
-		log.Fatalf("docker-machine %s failed with %s", args, err)
+		log.Errorf("docker-machine %s failed with %s", args, err)
 		return
 	}
 
@@ -315,7 +317,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	log.Debugf("Running docker %s on %s; envVars %s\n", args, firstValidator.ID(), envVars)
 	_, err = cmdRunner("docker", args, envVars)
 	if err != nil {
-		log.Fatalf("docker %s failed with %s", args, err)
+		log.Errorf("docker %s failed with %s", args, err)
 		return
 	}
 	return

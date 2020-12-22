@@ -108,14 +108,15 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunn
 		args := []string{"init", fmt.Sprintf("%s node %s", acc.Name, machineConfig.ID()), "--home", acc.ConfigLocation.DaemonConfigDir, "--chain-id", evt.ID()}
 		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
 			return nil, err
 		}
 
 		args = []string{"tendermint", "show-node-id", "--home", acc.ConfigLocation.DaemonConfigDir}
 		out, err = runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			return nil, err
 		}
 		machineConfig.TendermintNodeID = strings.TrimSuffix(out, "\n")
 	}
@@ -139,8 +140,8 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", account.ConfigLocation.CLIConfigDir}
 		out, err := runCommand(evt.Payload.CLIPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
-			break
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
+			return nil, err
 		}
 
 		var result map[string]interface{}
@@ -162,8 +163,8 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 		args := []string{"keys", "add", acc.Name, "-o", "json", "--keyring-backend", "test", "--home", extraAccDir}
 		out, err := runCommand(evt.Payload.CLIPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
-			break
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
+			return nil, err
 		}
 
 		var result map[string]interface{}
@@ -193,8 +194,8 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand Com
 			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
 			out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 			if err != nil {
-				log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
-				break
+				log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+				return err
 			}
 		}
 	}
@@ -228,8 +229,8 @@ func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunn
 		args := []string{"gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", evt.Accounts[email].ConfigLocation.CLIConfigDir, "--keyring-backend", "test", "--home", evt.Accounts[email].ConfigLocation.DaemonConfigDir, "--output-document", outputDocument}
 		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
-			break
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			return err
 		}
 
 	}
@@ -257,8 +258,8 @@ func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand Comm
 		args := []string{"collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
 		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
 		if err != nil {
-			log.Fatalf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
-			break
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			return err
 		}
 	}
 	return
@@ -277,26 +278,26 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 		node0Genesis, err := os.Open(pathToNode0Genesis)
 		if err != nil {
 			log.Errorf("cannot open file genesis descriptor: %s: %v", pathToNode0Genesis, err)
-			break
+			return err
 		}
 		otherGenesis := path.Join(valAcc.ConfigLocation.DaemonConfigDir, "config/genesis.json")
 		log.Infof("otherGenesis: %s\n", otherGenesis)
 		err = os.Remove(otherGenesis)
 		if err != nil {
-			log.Fatalf("Removing %s failed with %s\n", otherGenesis, err)
-			break
+			log.Errorf("Removing %s failed with %s\n", otherGenesis, err)
+			return err
 		}
 
 		newOtherGenesis, err := os.Create(otherGenesis)
 		if err != nil {
-			log.Fatalf("Creating a blank %s failed with %s\n", otherGenesis, err)
-			break
+			log.Errorf("Creating a blank %s failed with %s\n", otherGenesis, err)
+			return err
 		}
 
 		written, err := io.Copy(newOtherGenesis, node0Genesis)
 		if err != nil {
-			log.Fatalf("Copying %s to %s failed with %s\n", pathToNode0Genesis, otherGenesis, err)
-			break
+			log.Errorf("Copying %s to %s failed with %s\n", pathToNode0Genesis, otherGenesis, err)
+			return err
 		}
 		log.Debugf("Copied %v bytes to %s", written, otherGenesis)
 	}
@@ -314,8 +315,8 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 		configPath := path.Join(evt.Accounts[name].ConfigLocation.DaemonConfigDir, "config/config.toml")
 		t, err := toml.LoadFile(configPath)
 		if err != nil {
-			log.Fatalf("Reading toml from file %s failed with %s", configPath, err)
-			break
+			log.Errorf("Reading toml from file %s failed with %s", configPath, err)
+			return err
 		}
 		t.SetPathWithComment([]string{"p2p", "persistent_peers"}, "persistent_peers has been automatically set by lctrld", false, strings.Join(persistentPeerList, ","))
 		t.SetPathWithComment([]string{"rpc", "laddr"}, "laddr has been automatically set by lctrld", false, "tcp://0.0.0.0:26657")
@@ -323,13 +324,13 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 
 		w, err := os.Create(configPath)
 		if err != nil {
-			log.Fatalf("Opening file %s in write-mode failed with %s", configPath, err)
-			break
+			log.Errorf("Opening file %s in write-mode failed with %s", configPath, err)
+			return err
 		}
 		_, err = t.WriteTo(w)
 		if err != nil {
-			log.Fatalf("Writing TOML to %s failed with %s", configPath, err)
-			break
+			log.Errorf("Writing TOML to %s failed with %s", configPath, err)
+			return err
 		}
 	}
 	return

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/apeunit/LaunchControlD/pkg/server"
 	"github.com/spf13/cobra"
@@ -20,6 +20,6 @@ func init() {
 
 func serve(cmd *cobra.Command, args []string) {
 	if err := server.ServeHTTP(settings); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 }

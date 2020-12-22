@@ -18,7 +18,7 @@ func SetupWorkspace(settings config.Schema) (err error) {
 		log.Debugln("Folder ", settings.Workspace, "does not exists, creating")
 		err = os.MkdirAll(settings.Workspace, 0700)
 		if err != nil {
-			log.Fatal("SetupWorkspace: ", err)
+			log.Error("SetupWorkspace: ", err)
 			return
 		}
 	}
@@ -29,7 +29,7 @@ func SetupWorkspace(settings config.Schema) (err error) {
 			log.Debugln("Folder", dir, "does not exists, creating")
 			err = os.MkdirAll(dir, 0700)
 			if err != nil {
-				log.Fatal("SetupWorkspace: ", err)
+				log.Error("SetupWorkspace: ", err)
 				return
 			}
 		}
@@ -53,20 +53,20 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 		// generate a temp dir
 		td, err := tmp(settings)
 		if err != nil {
-			log.Fatal("InstallDockerMachine: ", err)
+			log.Error("InstallDockerMachine: ", err)
 			return
 		}
 		log.Debug("InstallDockerMachine: file will be download in ", td)
 		dwnFile, err := utils.DownloadFile(td, downloadURL)
 		if err != nil {
-			log.Fatal("InstallDockerMachine: ", err)
+			log.Error("InstallDockerMachine: ", err)
 			return
 		}
 		dwnFilePath := _path(td, dwnFile)
 		log.Debug("InstallDockerMachine: download complete ", dwnFilePath)
 		ct, err := utils.DetectContentType(dwnFilePath)
 		if err != nil {
-			log.Fatal("InstallDockerMachine: ", err)
+			log.Error("InstallDockerMachine: ", err)
 			return
 		}
 		log.Debug("InstallDockerMachine: downloaded file ", dwnFilePath, " has content-type ", ct)
@@ -75,7 +75,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 			log.Debugln("InstallDockerMachine: downloaded file is binary, moving to the destination path")
 			err = os.Rename(dwnFilePath, targetPath)
 			if err != nil {
-				log.Fatal("InstallDockerMachine: ", err)
+				log.Error("InstallDockerMachine: ", err)
 				return
 			}
 		case "application/zip":
@@ -83,25 +83,25 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 		case "application/x-gzip":
 			err = utils.ExtractGzip(dwnFilePath, td)
 			if err != nil {
-				log.Fatal("InstallDockerMachine: ", err)
+				log.Error("InstallDockerMachine: ", err)
 				return
 			}
 			err = utils.SearchAndMove(td, file, targetPath)
 			if err != nil {
-				log.Fatal("InstallDockerMachine: ", err)
+				log.Error("InstallDockerMachine: ", err)
 				return
 			}
 		default:
 			err = fmt.Errorf("InstallDockerMachine: unsupported file type %s", ct)
 		}
 		if err != nil {
-			log.Fatal("InstallDockerMachine: ", err)
+			log.Error("InstallDockerMachine: ", err)
 			return
 		}
 		// make it executable
 		os.Chmod(targetPath, 0700)
 		if err != nil {
-			log.Fatal("InstallDockerMachine: ", err)
+			log.Error("InstallDockerMachine: ", err)
 		}
 		return
 	}
@@ -109,7 +109,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 	// check if the system has been setup already
 	err = dine(settings.DockerMachine.Binary, settings.DockerMachine.BinaryURL)
 	if err != nil {
-		log.Fatal("InstallDockerMachine: ", err)
+		log.Error("InstallDockerMachine: ", err)
 		return
 	}
 	for dName, driver := range settings.DockerMachine.Drivers {
@@ -120,7 +120,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 		}
 		err = dine(driver.Binary, driver.BinaryURL)
 		if err != nil {
-			log.Fatal("InstallDockerMachine: ", err)
+			log.Error("InstallDockerMachine: ", err)
 			return
 		}
 	}
@@ -161,7 +161,7 @@ func ListEvents(settings config.Schema) (events []model.Event, err error) {
 			log.Debugln("Event found", info.Name())
 			evt, err := model.LoadEvent(subPath)
 			if err != nil {
-				log.Fatal("ListEvents failed:", err)
+				log.Error("ListEvents failed:", err)
 				return err
 			}
 			events = append(events, *evt)

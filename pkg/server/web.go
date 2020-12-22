@@ -213,7 +213,7 @@ func register(c *fiber.Ctx) error {
 // @Success 200 {object} APIReply "API Reply"
 // @Router /v1/events [post]
 func eventCreate(c *fiber.Ctx) error {
-	// TODO: workaround to handle log.Fatal in lib
+	// TODO: workaround to handle log.Error in lib
 	defer handlePanic(c)
 
 	// retrieve the owner email
@@ -272,7 +272,7 @@ func eventCreate(c *fiber.Ctx) error {
 // @Success 200 {object} APIEvent
 // @Router /v1/events/{id}/deploy [put]
 func eventDeploy(c *fiber.Ctx) error {
-	// TODO: workaround to handle log.Fatal in lib
+	// TODO: workaround to handle log.Error in lib
 	defer handlePanic(c)
 
 	eventID := c.Params("eventID")
@@ -301,7 +301,7 @@ func eventDeploy(c *fiber.Ctx) error {
 // @Success 200 {object} APIEvent
 // @Router /v1/events/{id} [delete]
 func deleteEvent(c *fiber.Ctx) error {
-	// TODO: workaround to handle log.Fatal in lib
+	// TODO: workaround to handle log.Error in lib
 	defer handlePanic(c)
 
 	eventID := c.Params("eventID")
@@ -329,7 +329,7 @@ func deleteEvent(c *fiber.Ctx) error {
 // @Success 200 {object} APIEvent
 // @Router /v1/events/{id} [get]
 func getEvent(c *fiber.Ctx) error {
-	// TODO: workaround to handle log.Fatal in lib
+	// TODO: workaround to handle log.Error in lib
 	defer handlePanic(c)
 
 	eventID := c.Params("eventID")
@@ -352,7 +352,7 @@ func getEvent(c *fiber.Ctx) error {
 // @Success 200 {array} APIEvent
 // @Router /v1/events [get]
 func listEvents(c *fiber.Ctx) error {
-	// TODO: workaround to handle log.Fatal in lib
+	// TODO: workaround to handle log.Error in lib
 	defer handlePanic(c)
 
 	// retrieve the owner email

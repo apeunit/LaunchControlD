@@ -79,19 +79,19 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Here we go!!")
 	err = lctrld.CreateEvent(settings, evt)
 	if err != nil {
-		log.Fatal("There was an error, run the command with --debug for more info:", err)
+		log.Error("There was an error, run the command with --debug for more info:", err)
 		return err
 	}
 
 	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
 	err = lctrld.Provision(settings, evt, lctrld.RunCommand, dmc)
 	if err != nil {
-		log.Fatal("There was an error, run the command with --debug for more info:", err)
+		log.Error("There was an error, run the command with --debug for more info:", err)
 		return err
 	}
 	err = lctrld.StoreEvent(settings, evt)
 	if err != nil {
-		log.Fatal("There was a problem saving the updated Event", err)
+		log.Error("There was a problem saving the updated Event", err)
 		return err
 	}
 	fmt.Println("Operation completed in", time.Since(start))
@@ -113,12 +113,12 @@ func tearDownEvent(cmd *cobra.Command, args []string) (err error) {
 	start := time.Now()
 	evt, err := lctrld.LoadEvent(settings, args[0])
 	if err != nil {
-		log.Fatal("There was an error shutting down the event: ", err)
+		log.Error("There was an error shutting down the event: ", err)
 		return err
 	}
 	err = lctrld.DestroyEvent(settings, evt, lctrld.RunCommand)
 	if err != nil {
-		log.Fatal("There was an error shutting down the event: ", err)
+		log.Error("There was an error shutting down the event: ", err)
 		return err
 	}
 	fmt.Println("Operation completed in", time.Since(start))
@@ -177,7 +177,7 @@ func retryEvent(cmd *cobra.Command, args []string) (err error) {
 		log.Infof("Updated info for %s: %#v\n", v, evt2.State[v])
 	}
 	if err != nil {
-		log.Fatal("There was a problem saving the updated Event", err)
+		log.Error("There was a problem saving the updated Event", err)
 		return
 	}
 	return
