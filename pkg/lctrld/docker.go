@@ -119,7 +119,7 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 
 		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
-		p := []string{"--debug", "create", "--driver", evt.Provider}
+		p := []string{"--debug", "create", "--driver", evt.Provider, "--engine-install-url", "https://releases.rancher.com/install-docker/19.03.9.sh"}
 		p = append(p, driver.Params...)
 		p = append(p, host)
 
