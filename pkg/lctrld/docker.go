@@ -101,7 +101,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) error {
+func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
@@ -125,17 +125,19 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 
 		log.Debugf("Provision cmd: %s %s %s", dmBin, evt.Provider, host)
 		log.Debug("Provision env vars set to ", envVars)
-		out, err := cmdRunner(dmBin, p, envVars)
-		if err != nil {
-			log.Fatalf("Provision cmd failed with %s, %s\n", err, out)
+		out, errI := cmdRunner(dmBin, p, envVars)
+		if errI != nil {
+			err = fmt.Errorf("Provision cmd failed with %s, %s", err, out)
+			log.Error(err)
 			break
 		}
 
 		log.Debug("Provision cmd output: ", string(out), err)
 		// load the configuration of the machine
-		mc, err := dmc.ReadConfig(fmt.Sprint(i))
-		if err != nil {
-			log.Fatal("Provision read machine config error:", err)
+		mc, errI := dmc.ReadConfig(fmt.Sprint(i))
+		if errI != nil {
+			err = fmt.Errorf("Provision read machine config error: %v", err)
+			log.Error(err)
 			break
 		}
 		evt.State[v.Name] = mc
@@ -144,7 +146,7 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 		return err
 	}
 	log.Infof("Your event ID is %s", evt.ID())
-	return nil
+	return
 }
 
 // RereadDockerMachineInfo is useful when docker-machine failed during 'create',

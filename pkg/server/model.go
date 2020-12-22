@@ -44,15 +44,15 @@ func APIReplyErr(code int, m string) APIReply {
 
 // APIEvent API safe event object
 type APIEvent struct {
-	ID          string                      `json:"id,omitempty"`
-	TokenSymbol string                      `json:"token_symbol,omitempty"` // token symbool
-	Owner       string                      `json:"owner,omitempty"`        // email address of the owner
-	Accounts    map[string]APIAccount       `json:"accounts,omitempty"`
-	Provider    string                      `json:"provider,omitempty"` // provider for provisioning
-	CreatedOn   time.Time                   `json:"created_on,omitempty"`
-	StartsOn    time.Time                   `json:"starts_on,omitempty"`
-	EndsOn      time.Time                   `json:"ends_on,omitempty"`
-	State       map[string]APIMachineConfig `json:"state,omitempty"`
+	ID          string                      `json:"id"`
+	TokenSymbol string                      `json:"token_symbol"` // token symbool
+	Owner       string                      `json:"owner"`        // email address of the owner
+	Accounts    map[string]APIAccount       `json:"accounts"`
+	Provider    string                      `json:"provider"` // provider for provisioning
+	CreatedOn   time.Time                   `json:"created_on"`
+	StartsOn    time.Time                   `json:"starts_on"`
+	EndsOn      time.Time                   `json:"ends_on"`
+	State       map[string]APIMachineConfig `json:"state"`
 }
 
 // APIAccount API safe account object
@@ -66,9 +66,9 @@ type APIAccount struct {
 
 // APIMachineConfig API safe machine config
 type APIMachineConfig struct {
-	TendermintNodeID string `json:"tendermint_node_id,omitempty"`
-	IPAddress        string `json:"IPAddress,omitempty"`
-	MachineName      string `json:"MachineName,omitempty"`
+	TendermintNodeID string `json:"tendermint_node_id"`
+	IPAddress        string `json:"IPAddress"`
+	MachineName      string `json:"MachineName"`
 }
 
 // ToAPIEvents copy a list of events to a API save version
