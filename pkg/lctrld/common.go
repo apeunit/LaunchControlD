@@ -81,10 +81,13 @@ func StoreEvent(settings config.Schema, evt *model.Event) (err error) {
 }
 
 // CommandRunner func type allows for mocking out RunCommand()
-type CommandRunner func(string, []string, []string) (string, error)
+type CommandRunner func([]string, []string) (string, error)
 
 // RunCommand runs a command
-func RunCommand(bin string, args, envVars []string) (out string, err error) {
+func RunCommand(command, envVars []string) (out string, err error) {
+	bin := command[0]
+	args := command[1:]
+
 	/// prepare the command
 	cmd := exec.Command(bin, args...)
 	// add the binary folder to the exec path

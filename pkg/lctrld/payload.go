@@ -62,7 +62,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 			return
 		}
 
-		_, err = runCommand("unzip", []string{"-d", bin(settings, ""), "-o", binFile}, []string{})
+		_, err = runCommand([]string{"unzip", "-d", bin(settings, ""), "-o", binFile}, []string{})
 		if err != nil {
 			return
 		}
@@ -105,17 +105,17 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunn
 			acc.ConfigLocation.CLIConfigDir = extraAccDir
 		}
 
-		args := []string{"init", fmt.Sprintf("%s node %s", acc.Name, machineConfig.ID()), "--home", acc.ConfigLocation.DaemonConfigDir, "--chain-id", evt.ID()}
-		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
+		command := []string{evt.Payload.DaemonPath, "init", fmt.Sprintf("%s node %s", acc.Name, machineConfig.ID()), "--home", acc.ConfigLocation.DaemonConfigDir, "--chain-id", evt.ID()}
+		out, err := runCommand(command, envVars)
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, command, err, out)
 			return nil, err
 		}
 
-		args = []string{"tendermint", "show-node-id", "--home", acc.ConfigLocation.DaemonConfigDir}
-		out, err = runCommand(evt.Payload.DaemonPath, args, envVars)
+		command = []string{evt.Payload.DaemonPath, "tendermint", "show-node-id", "--home", acc.ConfigLocation.DaemonConfigDir}
+		out, err = runCommand(command, envVars)
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, command, err, out)
 			return nil, err
 		}
 		machineConfig.TendermintNodeID = strings.TrimSuffix(out, "\n")
@@ -137,10 +137,10 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 
 	_, validatorAccounts := evt.Validators()
 	for _, account := range validatorAccounts {
-		args := []string{"keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", account.ConfigLocation.CLIConfigDir}
-		out, err := runCommand(evt.Payload.CLIPath, args, envVars)
+		command := []string{evt.Payload.CLIPath, "keys", "add", account.Name, "-o", "json", "--keyring-backend", "test", "--home", account.ConfigLocation.CLIConfigDir}
+		out, err := runCommand(command, envVars)
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, command, err, out)
 			return nil, err
 		}
 
@@ -160,10 +160,10 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 			return nil, err2
 		}
 
-		args := []string{"keys", "add", acc.Name, "-o", "json", "--keyring-backend", "test", "--home", extraAccDir}
-		out, err := runCommand(evt.Payload.CLIPath, args, envVars)
+		command := []string{evt.Payload.CLIPath, "keys", "add", acc.Name, "-o", "json", "--keyring-backend", "test", "--home", extraAccDir}
+		out, err := runCommand(command, envVars)
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.CLIPath, command, err, out)
 			return nil, err
 		}
 
@@ -191,10 +191,10 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand Com
 
 	for name := range evt.State {
 		for _, account := range evt.Accounts {
-			args := []string{"add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-			out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
+			command := []string{evt.Payload.DaemonPath, "add-genesis-account", account.Address, account.GenesisBalance, "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
+			out, err := runCommand(command, envVars)
 			if err != nil {
-				log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+				log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, command, err, out)
 				return err
 			}
 		}
@@ -226,10 +226,10 @@ func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunn
 
 		// Here we assume that last part of genesis_balance is the # of stake tokens
 		// launchpayloadd gentx --name v1@email.com --amount 10000stake --home-client ... --keyring-backend test --home ... --output-document ...
-		args := []string{"gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", evt.Accounts[email].ConfigLocation.CLIConfigDir, "--keyring-backend", "test", "--home", evt.Accounts[email].ConfigLocation.DaemonConfigDir, "--output-document", outputDocument}
-		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
+		command := []string{evt.Payload.DaemonPath, "gentx", "--name", email, "--ip", state.Instance.IPAddress, "--amount", stakeAmount[len(stakeAmount)-1], "--home-client", evt.Accounts[email].ConfigLocation.CLIConfigDir, "--keyring-backend", "test", "--home", evt.Accounts[email].ConfigLocation.DaemonConfigDir, "--output-document", outputDocument}
+		out, err := runCommand(command, envVars)
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, command, err, out)
 			return err
 		}
 
@@ -255,10 +255,10 @@ func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand Comm
 	// firstValidator := evt.Validators[0]
 
 	for name := range evt.State {
-		args := []string{"collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
-		out, err := runCommand(evt.Payload.DaemonPath, args, envVars)
+		command := []string{evt.Payload.DaemonPath, "collect-gentxs", "--gentx-dir", path.Join(basePath, "genesis_txs"), "--home", evt.Accounts[name].ConfigLocation.DaemonConfigDir}
+		out, err := runCommand(command, envVars)
 		if err != nil {
-			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, args, err, out)
+			log.Errorf("%s %s failed with %s, %s\n", evt.Payload.DaemonPath, command, err, out)
 			return err
 		}
 	}
@@ -347,6 +347,8 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) 
 	}
 	// The faucet should connect to one of the validator nodes
 	v, _ := evt.Validators()
+	// nodeIP := evt.State[v[0]].Instance.IPAddress
+
 	fc := model.FaucetConfig{
 		ListenAddr:    "0.0.0.0:8000",
 		ChainID:       evt.ID(),
