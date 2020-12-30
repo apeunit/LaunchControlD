@@ -85,21 +85,17 @@ type CommandRunner func([]string, []string) (string, error)
 
 // RunCommand runs a command
 func RunCommand(command, envVars []string) (out string, err error) {
-	bin := command[0]
-	args := command[1:]
-
-	/// prepare the command
-	cmd := exec.Command(bin, args...)
+	cmd := exec.Command(command[0], command[1:]...)
 	// add the binary folder to the exec path
 	cmd.Env = envVars
 	log.Debug("Running command ", command, cmd.Env)
 	// execute the command
 	o, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Errorf("%s %s failed with %s, %s\n", bin, args, err, string(o))
+		log.Errorf("%s failed with %s, %s\n", command, err, string(o))
 		return
 	}
 	out = strings.TrimSpace(string(o))
-	log.Debug("command stdout: ", out)
+	log.Debug("Command stdout: ", out)
 	return
 }
