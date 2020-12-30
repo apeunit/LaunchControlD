@@ -92,7 +92,7 @@ func RunCommand(command, envVars []string) (out string, err error) {
 	cmd := exec.Command(bin, args...)
 	// add the binary folder to the exec path
 	cmd.Env = envVars
-	log.Debug("command env vars set to ", cmd.Env)
+	log.Debug("Running command ", command, cmd.Env)
 	// execute the command
 	o, err := cmd.CombinedOutput()
 	if err != nil {

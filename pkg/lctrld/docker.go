@@ -123,21 +123,17 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 		p = append(p, driver.Params...)
 		p = append(p, host)
 
-		log.Debugf("Provision cmd: %s", p)
-		log.Debug("Provision env vars set to ", envVars)
-		out, errI := cmdRunner(p, envVars)
-		if errI != nil {
-			err = fmt.Errorf("Provision cmd failed with %s, %s", err, out)
+		_, err := cmdRunner(p, envVars)
+		if err != nil {
 			log.Error(err)
 			break
 		}
 
-		log.Debug("Provision cmd output: ", string(out), err)
 		// load the configuration of the machine
-		mc, errI := dmc.ReadConfig(fmt.Sprint(i))
-		if errI != nil {
-			log.Error(errI)
-			return errI
+		mc, err := dmc.ReadConfig(fmt.Sprint(i))
+		if err != nil {
+			log.Error(err)
+			return err
 		}
 		evt.State[v.Name] = mc
 	}
