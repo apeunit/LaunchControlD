@@ -11,24 +11,34 @@ import (
 
 // dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
 func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
-	// set the path to find executable
+	// add extra PATHs to find other docker-machine binaries
 	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
-	// set the home path for the command
+
+	// set MACHINE_STORAGE_PATH
 	home, err := evts(settings, evt.ID()) // this gives you the relative path to the event home
 	if err != nil {
 		return
 	}
-	envHome := fmt.Sprintf("HOME=%s", home)
-	// get the env var from the driver
+	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", _path(home, ".docker", "machine"))
+
+	// add docker-machine driver env vars
 	env = settings.DockerMachine.Drivers[evt.Provider].Env
-	env = append(env, envHome, envPath)
+
+	env = append(env, envMachineStoragePath, envPath)
+	env = append(env, settings.DockerMachine.Env...)
 	return
 }
 
 // dockerMachineNodeEnv recreates the output of docker-machine env <MACHINE NAME>, to run a command inside the docker-machine provisioned node.
 func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.MachineConfig) []string {
-	envVars = append(envVars, "DOCKER_TLS_VERIFY=1", fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress), fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir), fmt.Sprintf("DOCKER_MACHINE_NAME=%s", state.ID()))
+	envVars = append(
+		envVars,
+		"DOCKER_TLS_VERIFY=1",
+		fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress),
+		fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir),
+		fmt.Sprintf("DOCKER_MACHINE_NAME=%s", state.ID()),
+	)
 	return envVars
 }
 

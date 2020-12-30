@@ -136,9 +136,8 @@ func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner
 		// load the configuration of the machine
 		mc, errI := dmc.ReadConfig(fmt.Sprint(i))
 		if errI != nil {
-			err = fmt.Errorf("Provision read machine config error: %v", err)
-			log.Error(err)
-			break
+			log.Error(errI)
+			return errI
 		}
 		evt.State[v.Name] = mc
 	}

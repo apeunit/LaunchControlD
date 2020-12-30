@@ -33,6 +33,7 @@ type DockerMachine struct {
 	BinaryURL  string                         `mapstructure:"binary_url"`
 	Binary     string                         `mapstructure:"binary"`
 	Drivers    map[string]DockerMachineDriver `mapstructure:"drivers"`
+	Env        []string                       `mapstructure:"env"`
 }
 
 // DockerMachineDriver describes the location and environment params of any
