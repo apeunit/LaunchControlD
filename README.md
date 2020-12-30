@@ -20,6 +20,10 @@ docker_machine:
   version: "0.16.2"
   binary_url: https://github.com/docker/machine/releases/download/v0.16.2/docker-machine-Linux-x86_64
   binary: docker-machine
+  env:
+  - "MACHINE_DOCKER_INSTALL_URL=https://releases.rancher.com/install-docker/19.03.9.sh"
+  - "VIRTUALBOX_BOOT2DOCKER_URL=/your/local/copy/of/boot2docker.iso"
+
   # drivers for docker machine
   drivers:
     hetzner:
@@ -45,26 +49,13 @@ docker_machine:
       env:
       - "DIGITALOCEAN_ACCESS_TOKEN=123"
 
-event_params:
-  docker_image: "apeunit/launchpayload"
-  launch_payload:
-    binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
-    binary_path: "/tmp/workspace/bin"
-    daemon_path: "/tmp/workspace/bin/launchpayloadd"
-    cli_path: "/tmp/workspace/bin/launchpayloadcli"
-  genesis_accounts:
-    -
-      name: "alice@apeunit.com"
-      genesis_balance: "500drops,1000000evtx,100000000stake"
-      validator: true
-    -
-      name: "bob@apeunit.com"
-      genesis_balance: "500drops,1000000evtx,100000000stake"
-      validator: true
-    -
-      name: "dropgiver"
-      genesis_balance: "10000000000drops"
-      validator: false
+default_payload_location:
+  docker_image: "apeunit/launchpayload:1.0.0"
+  binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
+  binary_path: "/tmp/workspace/bin"
+  daemon_path: "/tmp/workspace/bin/launchpayloadd"
+  cli_path: "/tmp/workspace/bin/launchpayloadcli"
+
 
 ```
 
@@ -163,9 +154,9 @@ $HOST/swagger/
 
 where `$HOST` is the address where you run the API
 
-### Authentication 
+### Authentication
 
-The API provide a simple authentication mechanism that is token based. To be able to use the API first it is required to register using email/password. 
+The API provide a simple authentication mechanism that is token based. To be able to use the API first it is required to register using email/password.
 
-Once registered the API require to make  login call to obtain a temporary token, the 
-token is exchanged via the header named `X-Lctrld-Token` and it is valid for 12h. 
+Once registered the API require to make  login call to obtain a temporary token, the
+token is exchanged via the header named `X-Lctrld-Token` and it is valid for 12h.
