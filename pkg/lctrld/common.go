@@ -44,8 +44,8 @@ func tmp(settings config.Schema) (string, error) {
 }
 
 // evts returns /tmp/workspace/evts/<EVTID>
-func evts(settings config.Schema, dir string) (string, error) {
-	return _absPath(_path(settings.Workspace, evtsDir, dir))
+func evts(settings config.Schema, evtID string) (string, error) {
+	return _absPath(_path(settings.Workspace, evtsDir, evtID))
 }
 
 // evtFile returns "/tmp/workspace/evts/<EVTID>/event.json", i.e. the absolute path to the event descriptor file
