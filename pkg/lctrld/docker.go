@@ -290,7 +290,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 		return
 	}
 
-	command = []string{dmBin, "scp", "-r", filepath.Join(evtDir, "faucetconfig.yml"), fmt.Sprintf("%s:/home/docker/nodeconfig/", evt.State[v[0]].ID())}
+	command = []string{dmBin, "scp", "-r", filepath.Join(evtDir, "nodeconfig", "faucetconfig.yml"), fmt.Sprintf("%s:/home/docker/nodeconfig/", evt.State[v[0]].ID())}
 	_, err = cmdRunner(command, envVars)
 	if err != nil {
 		log.Errorf("docker-machine %s failed with %s", command, err)
@@ -300,7 +300,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	log.Infoln("Starting the faucet")
 	firstValidator := evt.State[v[0]]
 	envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(firstValidator.N), firstValidator)
-	command = []string{"docker", "run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "8000:8000", evt.Payload.DockerImage, "/payload/gofaucet", "/payload/config/faucetconfig.yml"}
+	command = []string{"docker", "run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "8000:8000", evt.Payload.DockerImage, "/payload/runfaucet.sh"}
 	log.Debugf("Running docker %s on %s; envVars %s\n", command, firstValidator.ID(), envVars)
 	_, err = cmdRunner(command, envVars)
 	if err != nil {

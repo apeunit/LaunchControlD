@@ -345,14 +345,19 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand C
 	// The faucet should connect to one of the validator nodes
 	v, _ := evt.Validators()
 	nodeIP := evt.State[v[0]].Instance.IPAddress
-	_, err = runCommand([]string{"docker", "pull", evt.Payload.DockerImage}, []string{})
+	out, err := runCommand([]string{"docker", "pull", evt.Payload.DockerImage}, []string{})
 	if err != nil {
 		return
 	}
+	log.Debugln(out)
 
-	command := []string{"docker", "run", "-v", "/home/docker/nodeconfig:/payload/config", evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
-	_, err = runCommand(command, []string{})
-
+	evtsDir, err := evts(settings, evt.ID())
+	if err != nil {
+		return
+	}
+	command := []string{"docker", "run", "-v", fmt.Sprintf("%s:/payload/config", _path(evtsDir, "nodeconfig")), evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
+	out, err = runCommand(command, []string{})
+	log.Debugln(out)
 	return
 }
 
