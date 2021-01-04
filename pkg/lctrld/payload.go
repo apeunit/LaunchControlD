@@ -5,15 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
-	"gopkg.in/yaml.v2"
 
 	"github.com/melbahja/got"
 	"github.com/pelletier/go-toml"
@@ -337,7 +334,7 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 }
 
 // GenerateFaucetConfig generates a configuration for the faucet given what it knows about the event
-func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) {
+func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
 	log.Infoln("Generating faucet configuration")
 
 	// Use the first ExtraAccount as a faucet account
@@ -347,29 +344,15 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event) (err error) 
 	}
 	// The faucet should connect to one of the validator nodes
 	v, _ := evt.Validators()
-	// nodeIP := evt.State[v[0]].Instance.IPAddress
-
-	fc := model.FaucetConfig{
-		ListenAddr:    "0.0.0.0:8000",
-		ChainID:       evt.ID(),
-		CliBinaryPath: "/payload/launchpayloadcli",
-		CliConfigPath: "/home/docker/nodeconfig/faucet_account",
-		FaucetAddr:    faucetAccount.Address,
-		Unit:          evt.TokenSymbol,
-		NodeAddr:      fmt.Sprintf("%s:26657", evt.State[v[0]].Instance.IPAddress),
-		Secret:        "abadjoke",
-	}
-
-	evtsDir, err := evts(settings, evt.ID())
+	nodeIP := evt.State[v[0]].Instance.IPAddress
+	_, err = runCommand([]string{"docker", "pull", evt.Payload.DockerImage}, []string{})
 	if err != nil {
 		return
 	}
-	f := filepath.Join(evtsDir, "faucetconfig.yml")
-	fBytes, err := yaml.Marshal(fc)
-	if err != nil {
-		return
-	}
-	err = ioutil.WriteFile(f, fBytes, 0644)
+
+	command := []string{"docker", "run", "-v", "/home/docker/nodeconfig:/payload/config", evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
+	_, err = runCommand(command, []string{})
+
 	return
 }
 
@@ -412,7 +395,7 @@ func ConfigurePayload(settings config.Schema, evt *model.Event, cmdRunner Comman
 	if err != nil {
 		return
 	}
-	err = GenerateFaucetConfig(settings, evt)
+	err = GenerateFaucetConfig(settings, evt, cmdRunner)
 	if err != nil {
 		return
 	}
