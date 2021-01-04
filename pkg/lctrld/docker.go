@@ -258,7 +258,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRu
 	}
 	envVars = dockerMachineNodeEnv(envVars, evt.ID(), machineHomeDir, evt.State[firstNode])
 
-	command := []string{dmBin, "ssh", evt.State[firstNode].ID(), "docker", "run", "-d", "--volume=/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", "apeunit/launchpayload", "/payload/runlightclient.sh", evt.State[firstNode].Instance.IPAddress, evt.ID()}
+	command := []string{dmBin, "ssh", evt.State[firstNode].ID(), "docker", "run", "-d", "--volume=/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.Payload.DockerImage, "/payload/runlightclient.sh", evt.State[firstNode].Instance.IPAddress, evt.ID()}
 	// command = []string{"scp", evt.Payload.CLIPath, fmt.Sprintf("%s:/home/docker", evt.State[firstNode].ID())}
 	log.Debugf("Running docker-machine %s on validator %s machine; envVars %s\n", command, firstNode, envVars)
 	_, err = cmdRunner(command, envVars)
