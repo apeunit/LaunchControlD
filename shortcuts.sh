@@ -23,7 +23,7 @@ function send() {
     export EVT=$EVTDIR/event.json
     export ALICE=`jq -r '.accounts."alice@apeunit.com".address' $EVT`
     export FAUCET=`jq -r '.accounts.dropgiver.address' $EVT`
-    TXHASH=`launchpayloadcli tx send $FAUCET $ALICE 1drop --keyring-backend test --home /tmp/workspace/evts/$EVTID/nodeconfig/extra_accounts/dropgiver/ --node tcp://$EVTIP:26657 --chain-id $EVTID -y -o json | jq -r '.txhash'`
+    TXHASH=`launchpayloadcli tx send $FAUCET $ALICE 1drop --memo "gina&lucy💦💦💦" --keyring-backend test --home /tmp/workspace/evts/$EVTID/nodeconfig/extra_accounts/dropgiver/ --node tcp://$EVTIP:26657 --chain-id $EVTID -y -o json | jq -r '.txhash'`
     echo $TXHASH
 
     sleep 5
@@ -42,8 +42,8 @@ function testeverything {
 
     ALICE=`jq -r '.accounts."alice@apeunit.com".address' $EVT`
     FAUCET=`jq -r '.accounts.dropgiver.address' $EVT`
-    echo "FAUCET: POST http://$EVTIP:8000/send/$ALICE/500drop"
-    OUTPUT=`curl -X POST -d 'token=abadjoke' http://$EVTIP:8000/send/$ALICE/1drop`
+    echo "FAUCET: POST http://$EVTIP:8000/send"
+    OUTPUT=`curl -X POST -H 'Content-Type: application/json' http://$EVTIP:8000/send -d "{\"to_address\": \"$ALICE\", \"amount\": \"1drop\", \"memo\": \"gina&lucy💦💦💦\", \"token\": \"abadjoke\"}"`
     echo $OUTPUT
     TXHASH=`echo $OUTPUT |jq -r '.txhash'`
     echo ""
