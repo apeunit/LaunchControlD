@@ -355,6 +355,10 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand C
 	if err != nil {
 		return
 	}
+
+	// docker image permissions problems again - faucet cannot write to mounted volume
+	os.Chmod(_path(evtsDir, "nodeconfig"), 0777)
+
 	command := []string{"docker", "run", "-v", fmt.Sprintf("%s:/payload/config", _path(evtsDir, "nodeconfig")), evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
 	out, err = runCommand(command, []string{})
 	log.Debugln(out)
