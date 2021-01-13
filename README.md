@@ -1,10 +1,21 @@
 # LaunchControlD
 
-The command & control server for the LaunchControl project
+The command & control server for the LaunchControl project. LaunchControl:
+
+1. takes a description of a Cosmos chain's genesis file
+2. provisions one virtual machine per Cosmos validator node
+3. generates the configuration files for each validator node
+4. deploys the Cosmos chain on each VM
+5. deploys an instance of the Cosmos light client
+6. and optionally a faucet.
+
+This simplifies the task of spinning up chains.
 
 ## Configuration
 
-The LaunchControlD project **requires** a configuration file to run properly, here is an example `config.yaml` file:
+The LaunchControlD project **requires** a configuration file, which specifies how lctrld can provision and manage virtual machines.
+
+Here is an example `config.yaml` file:
 
 ```yaml
 ---
@@ -91,36 +102,136 @@ To manage the events lifecycle use the command
 Example: To create a new event run the command
 
 ```sh
-> lctrld events new drop owner@email.com
+> lctrld events new eventsample1.yml
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+Summary:
+Validator alice@apeunit.com has initial balance of 500drop,1000000evtx,100000000stake
+Including other accounts, the genesis account state is:
+alice@apeunit.com: &{Name:alice@apeunit.com Address: Mnemonic: GenesisBalance:500drop,1000000evtx,100000000stake Validator:true Faucet:false ConfigLocation:{CLIConfigDir: DaemonConfigDir:}}
+dropgiver: &{Name:dropgiver Address: Mnemonic: GenesisBalance:10000000000drop,10000000000evtx Validator:false Faucet:true ConfigLocation:{CLIConfigDir: DaemonConfigDir:}}
+Finally will be deploying 1 servers+nodes (1 for each validators) on virtualbox
+Shall we proceed? [Y/n]:
+Here we go!!
+INFO[0006] alice@apeunit.com's node ID is drop-ed9e103f3f27564342af-0
+INFO[0074] Your event ID is drop-ed9e103f3f27564342af
+Operation completed in 1m14.70277799s
+
 ```
-This will start as many cx11 instances on hetzner as there were validators specified in the config.yaml, one instance for each validator.
+This will start as many virtual machines as there were validators specified in the config.yaml, one instance for each validator.
 
 To list the available events and the status of their nodes run:
 
 ```sh
 > lctrld events list --verbose
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+List events
+Event drop-c34efbd55083665002d2 owner: owner@email.com with 1 validators
+drop-c34efbd55083665002d2-0 status: Running
+drop-c34efbd55083665002d2-0 IP: 188.34.156.184
+Event drop-ed9e103f3f27564342af owner: whosaidblockchainisdecentralized@email.com with 1 validators
+drop-ed9e103f3f27564342af-0 status: Running
+drop-ed9e103f3f27564342af-0 IP: 192.168.99.145
+Operation completed in 1.739816533s
+
 ```
 
-Now you should setup the payload (Cosmos-SDK based chain) that will run on the machines. The generated config files are stored in the same directory as the event information.
+Now you should setup the payload (Cosmos-SDK based chain) that will run on the machines. The generated config files are stored in the same directory as the event information, under`nodeconfig/`, e.g. `/tmp/workspace/evts/drop-ed9e103f3f27564342af/nodeconfig/`
 
 ```sh
 > lctrld payload setup $EVTID
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+INFO[0000] Initializing daemon configs for each node
+INFO[0000] Generating keys for validator accounts
+INFO[0000] alice@apeunit.com -> cosmos1ac5rcpu8t3erpl6p6hrqx94cyh744ry596ztsd
+INFO[0000] Generating keys for non-validator accounts
+INFO[0000] dropgiver -> cosmos1hm66u2k4d7vcljs74g8cfckwpv4ule7yufww9p
+INFO[0000] Adding accounts to the genesis.json files
+INFO[0000] Creating genesis transactions to turn accounts into validators
+INFO[0001] Collecting genesis transactions and writing final genesis.json
+INFO[0001] Copying node 0's genesis.json to others and setting up p2p.persistent_peers
+alice@apeunit.com's node is 5a8a956afc8d4a614b8ce120e4936b5c8b31d07f@192.168.99.146:26656
+INFO[0001] Generating faucet configuration
 ```
 
 Tell the provisioned machines to run the docker images using the configuration files that were just generated.
 
 ```sh
 > lctrld payload deploy $EVTID
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+INFO[0000] Copying node configs to each provisioned machine
+INFO[0001] Running docker pull apeunit/launchpayload:latest on each provisioned machine
+INFO[0022] Running the dockerized Cosmos daemons on the provisioned machines
+INFO[0023] Running the CLI to provide the Light Client Daemon
+INFO[0023] Copying the faucet account and configuration to the first validator machine
+INFO[0023] Starting the faucet
 ```
 
 To stop and remove all the machines and their associated configuration, run
 ```sh
 > lctrld events teardown $EVTID
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+Teardown Event
+Event ID is drop-ed9e103f3f27564342af
+INFO[0000] alice@apeunit.com's node ID is drop-ed9e103f3f27564342af-0
+drop-ed9e103f3f27564342af-0 stop: Stopping "drop-ed9e103f3f27564342af-0"...
+Machine "drop-ed9e103f3f27564342af-0" was stopped.
+drop-ed9e103f3f27564342af-0 rm: About to remove drop-ed9e103f3f27564342af-0
+WARNING: This action will delete both local reference and remote instance.
+Are you sure? (y/n):
+Operation completed in 6.778189622s
+
 ```
 
 # Troubleshooting
 
 Here are some common errors that you may encounter in while running the `LaunchControlD` and also how to fix them.
+
+### docker-machine errors while provisioning virtual machines
+If this happens (especially when docker-machine [installs docker > 19.03](https://github.com/docker/machine/issues/4858)) a basic knowledge of how to use docker-machine will save the day. SSH into the virtual machine and troubleshoot the problem.
+```sh
+> docker-machine -s /tmp/workspace/evts/drop-c34efbd55083665002d2/.docker/machine ls
+NAME                          ACTIVE   DRIVER    STATE     URL                         SWARM   DOCKER     ERRORS
+drop-c34efbd55083665002d2-0   -        hetzner   Running   tcp://188.34.156.184:2376           v19.03.9
+
+> docker-machine -s /tmp/workspace/evts/drop-c34efbd55083665002d2/.docker/machine ssh drop-c34efbd55083665002d2-0
+Welcome to Ubuntu 18.04.5 LTS (GNU/Linux 4.15.0-126-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+ * Canonical Livepatch is available for installation.
+   - Reduce system reboots and improve kernel security. Activate at:
+     https://ubuntu.com/livepatch
+Last login: Mon Jan 11 11:54:43 2021 from 95.90.200.92
+**root@drop-c34efbd55083665002d2-0:~#**
+```
+
+Once you have fixed the problem and the virtual machine's dockerd is listening on `*:2376`, tell `lctrld` to reread the docker-machine state into `/tmp/workspace/evts/drop-c34efbd55083665002d2/event.json`, then continue with the `lctrld payload` subcommands.
+```sh
+> lctrld events retry drop-c34efbd55083665002d2
+
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+INFO[0000] Updated info for alice@apeunit.com: &model.MachineConfig{N:"0", EventID:"drop-c34efbd55083665002d2", DriverName:"", TendermintNodeID:"", Instance:model.MachineConfigInstance{IPAddress:"188.34.156.184", MachineName:"drop-c34efbd55083665002d2-0", SSHUser:"root", SSHPort:22, SSHKeyPath:"/tmp/workspace/evts/drop-c34efbd55083665002d2/.docker/machine/machines/drop-c34efbd55083665002d2-0/id_rsa", StorePath:"/tmp/workspace/evts/drop-c34efbd55083665002d2/.docker/machine"}}
+```
 
 ### Config file not found:
 
@@ -130,7 +241,7 @@ Error loading config file:  : Config File "config" Not Found in "[/home/andrea/D
 
 **Cause**: no valid configuration file was found
 
-**Soultion**: create a config file, using the [template above](#configuration)
+**Solution**: create a config file, using the [template above](#configuration)
 
 
 # References
