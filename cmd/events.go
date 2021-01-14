@@ -1,18 +1,3 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
@@ -22,6 +7,7 @@ import (
 
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -30,70 +16,59 @@ var eventsCmd = &cobra.Command{
 	Use:   "events",
 	Short: "Manage events",
 	Long:  ``,
-	// Run: func(cmd *cobra.Command, args []string) {
-	// 	fmt.Println("events called")
-	// },
 }
+var provider string
 
 func init() {
 	rootCmd.AddCommand(eventsCmd)
-	// ******************
-	// SETUP
-	// ******************
-	eventsCmd.AddCommand(setupEventCmd)
-	// token symbol
-	setupEventCmd.Flags().StringVarP(&event.TokenSymbol, "token", "t", "", "The token symbol for the Event")
-	setupEventCmd.MarkFlagRequired("token")
-	// event owner
-	setupEventCmd.Flags().StringVarP(&event.Owner, "owner", "o", "", "Set the owner address")
-	setupEventCmd.MarkFlagRequired("owner")
-	// validators emails
-	setupEventCmd.Flags().StringSliceVarP(&event.Validators, "email", "m", []string{}, "Set the validator addresses")
-	setupEventCmd.MarkFlagRequired("email")
-	// staking variables
-	setupEventCmd.Flags().Uint64VarP(&event.Coinbase, "coinbase", "b", model.DefaultCoinbase, "Amount of tokens to be available on the chain and distributed among the validators")
-	setupEventCmd.Flags().Uint64VarP(&event.Stake, "stake", "s", model.DefaultStake, "Amount of tokens at stake")
-	// provisioning
-	setupEventCmd.Flags().StringVar(&event.Provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
-	// TODO add more parameters like: startDate, endDate,
 
-	// ******************
-	// TEARDOWN
-	// ******************
+	eventsCmd.AddCommand(setupEventCmd)
+	setupEventCmd.Flags().StringVar(&provider, "provider", "hetzner", "Provider for provisioning the insfrastructure")
+
 	eventsCmd.AddCommand(tearDownEventCmd)
 
-	// ******************
-	// LIST
-	// ******************
 	eventsCmd.AddCommand(listEventCmd)
 	listEventCmd.Flags().BoolVar(&verbose, "verbose", false, "Print more details")
 
+	eventsCmd.AddCommand(retryEventCmd)
 }
 
-var event model.EvtvzE
 var verbose bool
 
 // setupEventCmd represents the setupEvent command
 var setupEventCmd = &cobra.Command{
-	Use:   "new",
+	Use:   "new <eventrequest YAML file>",
 	Short: "Setup a new event",
 	Long:  ``,
-	Run:   setupEvent,
+	Args:  cobra.ExactArgs(1),
+	RunE:  setupEvent,
 }
 
-func setupEvent(cmd *cobra.Command, args []string) {
-	fmt.Println("Preparing the environment")
+func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	start := time.Now()
 
-	vc := event.ValidatorsCount()
-	tpv := event.Coinbase / uint64(vc)
+	evtRequest, err := model.LoadEventRequestFromFile(args[0])
+	if err != nil {
+		return
+	}
+	evtRequest.PayloadLocation = settings.DefaultPayloadLocation
 
+	evt := model.NewEvent(evtRequest.TokenSymbol, evtRequest.Owner, provider, evtRequest.GenesisAccounts, evtRequest.PayloadLocation)
+	vc := evt.ValidatorsCount()
+
+	log.Debugf("%#v\n", settings)
+	log.Debugf("%#v\n", evtRequest)
+	log.Debugf("%#v\n", evt)
 	fmt.Println("Summary:")
-	fmt.Printf("there are %v validators\n", vc)
-	fmt.Printf("each with %v stake\n", event.Stake)
-	fmt.Printf("and a total coinbase of %s\n", event.FormatAmount(event.Coinbase))
-	fmt.Printf("that will be distributed over the %v validators (~ %s each).\n", vc, event.FormatAmount(tpv))
-	fmt.Printf("Finally will be deploying %v servers+nodes (1 for each validators) on %s\n", vc, event.Provider)
+	_, validatorAccounts := evt.Validators()
+	for _, acc := range validatorAccounts {
+		fmt.Printf("Validator %s has initial balance of %+v\n", acc.Name, acc.GenesisBalance)
+	}
+	fmt.Printf("Including other accounts, the genesis account state is:\n")
+	for k, v := range evt.Accounts {
+		fmt.Printf("%s: %+v\n", k, v)
+	}
+	fmt.Printf("Finally will be deploying %v servers+nodes (1 for each validators) on %s\n", vc, evt.Provider)
 	fmt.Print("Shall we proceed? [Y/n]:")
 	proceed := "Y"
 	fmt.Scanln(&proceed)
@@ -102,19 +77,25 @@ func setupEvent(cmd *cobra.Command, args []string) {
 		return
 	}
 	fmt.Println("Here we go!!")
-	err := lctrld.CreateEvent(settings, event)
+	err = lctrld.CreateEvent(settings, evt)
 	if err != nil {
-		fmt.Println("There was an error, run the command with --debug for more info:", err)
+		log.Error("There was an error, run the command with --debug for more info:", err)
+		return err
 	}
-	err = lctrld.Provision(settings, event.ID())
-	if err != nil {
-		fmt.Println("There was an error, run the command with --debug for more info:", err)
-	}
-	// lctrld.SetupNode
-	// lctrld.BuildImage
-	// lctrld.DeployEventChain(settings, event)
 
+	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	err = lctrld.Provision(settings, evt, lctrld.RunCommand, dmc)
+	if err != nil {
+		log.Error("There was an error, run the command with --debug for more info:", err)
+		return err
+	}
+	err = lctrld.StoreEvent(settings, evt)
+	if err != nil {
+		log.Error("There was a problem saving the updated Event", err)
+		return err
+	}
 	fmt.Println("Operation completed in", time.Since(start))
+	return nil
 }
 
 // tearDownEventCmd represents the tearDownEvent command
@@ -123,18 +104,25 @@ var tearDownEventCmd = &cobra.Command{
 	Short: "Destroy the resources associated to an event",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	Run:   tearDownEvent,
+	RunE:  tearDownEvent,
 }
 
-func tearDownEvent(cmd *cobra.Command, args []string) {
+func tearDownEvent(cmd *cobra.Command, args []string) (err error) {
 	fmt.Println("Teardown Event")
 	fmt.Println("Event ID is", args[0])
 	start := time.Now()
-	err := lctrld.DestroyEvent(settings, args[0])
+	evt, err := lctrld.LoadEvent(settings, args[0])
 	if err != nil {
-		fmt.Println("There was an error shutting down the event: ", err)
+		log.Error("There was an error shutting down the event: ", err)
+		return err
+	}
+	err = lctrld.DestroyEvent(settings, evt, lctrld.RunCommand)
+	if err != nil {
+		log.Error("There was an error shutting down the event: ", err)
+		return err
 	}
 	fmt.Println("Operation completed in", time.Since(start))
+	return nil
 }
 
 // listEventCmd represents the tearDownEvent command
@@ -155,8 +143,42 @@ func listEvent(cmd *cobra.Command, args []string) {
 	for _, evt := range events {
 		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
 		if verbose {
-			lctrld.InspectEvent(settings, evt)
+			lctrld.InspectEvent(settings, &evt, lctrld.RunCommand)
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))
+}
+
+// listEventCmd represents the tearDownEvent command
+var retryEventCmd = &cobra.Command{
+	Use:   "retry",
+	Short: "rereads docker-machine's .docker/machine/machines/<name>/config.json into event.json, in case a human fixed whatever went wrong",
+	Long:  "rereads docker-machine's .docker/machine/machines/<name>/config.json into event.json, in case a human fixed whatever went wrong",
+	Args:  cobra.ExactArgs(1),
+	RunE:  retryEvent,
+}
+
+func retryEvent(cmd *cobra.Command, args []string) (err error) {
+	evt, err := lctrld.LoadEvent(settings, args[0])
+	if err != nil {
+		return
+	}
+	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	evt2, err := lctrld.RereadDockerMachineInfo(settings, evt, dmc)
+	if err != nil {
+		return
+	}
+	err = lctrld.StoreEvent(settings, evt2)
+	if err != nil {
+		return
+	}
+	validatorNames, _ := evt2.Validators()
+	for _, v := range validatorNames {
+		log.Infof("Updated info for %s: %#v\n", v, evt2.State[v])
+	}
+	if err != nil {
+		log.Error("There was a problem saving the updated Event", err)
+		return
+	}
+	return
 }

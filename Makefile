@@ -14,6 +14,10 @@ ARCH = amd64
 # K8S
 K8S_NAMESPACE = geo
 K8S_DEPLOYMENT = LaunchControlD
+# SSH
+SSH_HOST = evtvz-one
+SSH_PATH = /usr/local/bin
+SSH_SERVICE = lctrld
 
 .PHONY: list
 list:
@@ -37,6 +41,10 @@ build-zip: build
 	sha1sum $(APP)-$(GIT_DESCR).zip
 	@echo done
 
+install: build
+	cp dist/lctrld $(GOPATH)/bin
+	@echo done
+
 test: test-all
 
 test-all:
@@ -50,11 +58,17 @@ bench-all:
 lint: lint-all
 
 lint-all:
-	@golint -set_exit_status $(GOPACKAGES)
+	golint -set_exit_status $(GOPACKAGES)
+	staticcheck $(GOPACKAGES)
 
 clean:
 	@echo remove $(OUTPUTFOLDER) folder
 	rm -rf $(OUTPUTFOLDER)
+	@echo done
+
+doc:
+	@echo generate the documentation 
+	swag init -g pkg/server/web.go -o api
 	@echo done
 
 docker: docker-build
@@ -76,12 +90,18 @@ docker-run:
 debug-start:
 	@go run main.go start
 
-k8s-deploy:
+deploy-ssh: clean build-dist
+	@echo deploy to $(SSH_HOST)
+	scp $(OUTPUTFOLDER)/$(APP) $(SSH_HOST):$(SSH_PATH)/$(APP).upl
+	ssh -t $(SSH_HOST) "mv $(SSH_PATH)/$(APP).upl $(SSH_PATH)/$(APP); systemctl restart $(SSH_SERVICE)"
+	@echo deploy complete
+
+deploy-k8s:
 	@echo deploy k8s
 	kubectl -n $(K8S_NAMESPACE) set image deployment/$(K8S_DEPLOYMENT) $(DOCKER_IMAGE)=$(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	@echo done
 
-k8s-rollback:
+rollback-k8s:
 	@echo deploy k8s
 	kubectl -n $(K8S_NAMESPACE) rollout undo deployment/$(K8S_DEPLOYMENT)
 	@echo done

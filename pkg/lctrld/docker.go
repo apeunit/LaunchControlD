@@ -3,8 +3,7 @@ package lctrld
 import (
 	"fmt"
 	"os"
-	"os/exec"
-	"strings"
+	"path/filepath"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
@@ -12,24 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func dockerEnv(settings config.Schema, evt model.EvtvzE) (env []string, err error) {
-	// set the path to find executable
-	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
-	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
-	// set the home path for the command
-	home, err := evts(settings, evt.ID()) // this gives you the relative path to the event home
-	if err != nil {
-		return
-	}
-	envHome := fmt.Sprintf("HOME=%s", home)
-	// get the env var from the driver
-	env = settings.DockerMachine.Drivers[evt.Provider].Env
-	env = append(env, envHome, envPath)
-	return
-}
-
 // InspectEvent inspect status of the infrastructure for an event
-func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -38,61 +21,75 @@ func InspectEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	}
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	evnVars, err := dockerEnv(settings, evt)
-	for i := range evt.Validators {
+	envVars, err := dockerMachineEnv(settings, evt)
+	_, validatorAccounts := evt.Validators()
+	for i := range validatorAccounts {
 		host := evt.NodeID(i)
-		out, err := runCommand(dmBin, []string{"status", host}, evnVars)
+		out, err := cmdRunner([]string{dmBin, "status", host}, envVars)
 		if err != nil {
 			break
 		}
 		fmt.Println(host, "status:", out)
-		out, err = runCommand(dmBin, []string{"ip", host}, evnVars)
+		out, err = cmdRunner([]string{dmBin, "ip", host}, envVars)
+		if err != nil {
+			break
+		}
 		fmt.Println(host, "IP:", out)
 	}
 	return
 }
 
 // DestroyEvent destroy an existing event
-func DestroyEvent(settings config.Schema, evtID string) (err error) {
-	path, err := evts(settings, evtID)
-	log.Debugln("DestroyEvent event", evtID, "home:", path)
+func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
+	path, err := evts(settings, evt.ID())
+	log.Debugln("op DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
+		// TODO: this is going to crash the program
 		log.Error("DestroyEvent failed:", err)
 		return
 	}
 	if !utils.FileExists(path) {
-		err = fmt.Errorf("Event ID %s not found", evtID)
-		log.Error("DestroyEvent failed:", err)
+		err = fmt.Errorf("event ID %s not found", evt.ID())
+		log.Error("op DestroyEvent failed:", err)
 		return
 	}
 	// load the descriptor
-	p, err := evtDescriptor(settings, evtID)
-	log.Debug("DestroyEvent event descriptor:", p)
+	p, err := evtFile(settings, evt.ID())
+	log.Debug("op DestroyEvent event descriptor:", p)
 	if err != nil {
-		log.Error("DestroyEvent failed:", err)
+		// TODO: this is going to crash the program
+		log.Error("op DestroyEvent failed:", err)
 		return
 	}
-	evt := model.EvtvzE{}
-	err = utils.LoadJSON(p, &evt)
-	if err != nil {
-		return
-	}
+
 	// run the rm command for each validator
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	envVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return
 	}
-	for i, v := range evt.Validators {
+
+	_, validatorAccounts := evt.Validators()
+	for i, v := range validatorAccounts {
 		host := evt.NodeID(i)
 		//driver := settings.DockerMachine.Drivers[evt.Provider]
-		log.Infof("Node ID for %s is %s", v, host)
+		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
-		out, err := runCommand(dmBin, []string{"rm", host}, envVars)
+		out, err := cmdRunner([]string{dmBin, "stop", host}, envVars)
 		if err != nil {
+			// TODO: preferr logging over printing to stdout
 			fmt.Println(err)
 		}
+		// TODO: prefer logging over printing on stdout
+		fmt.Println(host, "stop:", out)
+
+		out, err = cmdRunner([]string{dmBin, "rm", host}, envVars)
+		if err != nil {
+			// TODO: prefer logging over printing to stdout
+			fmt.Println(err)
+		}
+		// TODO: preferr logging over printing to stdout
 		fmt.Println(host, "rm:", out)
 
 	}
@@ -104,55 +101,211 @@ func DestroyEvent(settings config.Schema, evtID string) (err error) {
 }
 
 // Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evtID string) (err error) {
-	evt, err := loadEvent(settings, evtID)
-	if err != nil {
-		return
-	}
+func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
 	// Outputter
-	var out []byte
 	dmBin := dmBin(settings)
 	// set the path to find the executable
-	evnVars, err := dockerEnv(settings, evt)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
-		return
+		return err
 	}
 	// init docker nodes map
-	evt.State = make(map[string]model.MachineConfig)
+	evt.State = make(map[string]*model.MachineConfig)
 	// run the thing
-	for i, v := range evt.Validators {
+	_, validatorAccounts := evt.Validators()
+	for i, v := range validatorAccounts {
 		host := evt.NodeID(i)
 		driver := settings.DockerMachine.Drivers[evt.Provider]
 
-		log.Infof("Node ID for %s is %s", v, host)
+		log.Infof("%s's node ID is %s", v.Name, host)
 		// create the parameters
-		p := []string{"create", "--driver", evt.Provider}
+		p := []string{dmBin, "--debug", "create", "--driver", evt.Provider, "--engine-install-url", "https://releases.rancher.com/install-docker/19.03.9.sh"}
 		p = append(p, driver.Params...)
 		p = append(p, host)
-		log.Debug("Provision cmd: ", dmBin, evt.Provider, host)
-		/// prepare the command
-		cmd := exec.Command(dmBin, p...)
-		// add the binary folder to the exec path
-		cmd.Env = evnVars
-		log.Debug("Provision env vars set to ", cmd.Env)
-		// execute the command
-		out, err = cmd.CombinedOutput()
+
+		_, err := cmdRunner(p, envVars)
 		if err != nil {
-			log.Errorf("Provision cmd failed with %s, %s\n", err, out)
+			log.Error(err)
 			break
 		}
-		log.Debug("Provision cmd output: ", string(out), err)
+
 		// load the configuration of the machine
-		mc, err := machineConfig(settings, evt.ID(), i)
+		mc, err := dmc.ReadConfig(fmt.Sprint(i))
 		if err != nil {
-			log.Errorf("Provision read machine config error:", err)
-			break
+			log.Error(err)
+			return err
 		}
-		evt.State[v] = mc
+		evt.State[v.Name] = mc
 	}
+	if err != nil {
+		return err
+	}
+	log.Infof("Your event ID is %s", evt.ID())
+	return
+}
+
+// RereadDockerMachineInfo is useful when docker-machine failed during 'create',
+// and a human fixed the problem, and wants to continue
+func RereadDockerMachineInfo(settings config.Schema, evt *model.Event, dmc DockerMachineInterface) (event *model.Event, err error) {
+	_, validatorAccounts := evt.Validators()
+	for i, v := range validatorAccounts {
+		mc, err := dmc.ReadConfig(fmt.Sprint(i))
+		if err != nil {
+			log.Error("Provision read machine config error:", err)
+			return nil, err
+		}
+		evt.State[v.Name] = mc
+	}
+	return evt, err
+}
+
+// DeployPayload tells the provisioned machines to run the configured docker image
+func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
+	dmBin := dmBin(settings)
+	var args []string
+
+	log.Infoln("Copying node configs to each provisioned machine")
+	for name, state := range evt.State {
+		envVars, err := dockerMachineEnv(settings, evt)
+		if err != nil {
+			log.Errorf("dockerMachineEnv() failed while generating envVars: %s", err)
+			return err
+		}
+
+		// docker-machine ssh mkdir -p /home/docker/nodeconfig
+		command := []string{dmBin, "ssh", state.ID(), "mkdir", "-p", "/home/docker/nodeconfig"}
+		_, err = cmdRunner(command, envVars)
+		if err != nil {
+			log.Errorf("docker-machine %s failed with %s", command, err)
+			return err
+		}
+
+		// docker-machine scp -r pathDaemon evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
+		command = []string{dmBin, "scp", "-r", evt.Accounts[name].ConfigLocation.DaemonConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID())}
+		_, err = cmdRunner(command, envVars)
+		if err != nil {
+			log.Errorf("docker-machine %s failed with %s", command, err)
+			return err
+		}
+
+		// docker-machine scp -r pathCLI evtx-d97517a3673688070aef-0:/home/docker/nodeconfig
+		command = []string{dmBin, "scp", "-r", evt.Accounts[name].ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig", state.ID())}
+		_, err = cmdRunner(command, envVars)
+		if err != nil {
+			log.Errorf("docker-machine %s failed with %s", command, err)
+			return err
+		}
+
+		// docker-machine chmod -R 777 /home/docker/nodeconfig
+		command = []string{dmBin, "ssh", state.ID(), "chmod", "-R", "777", "/home/docker/nodeconfig"}
+		_, err = cmdRunner(command, envVars)
+		if err != nil {
+			log.Errorf("docker-machine %s failed with %s", command, err)
+			return err
+		}
+	}
+
+	log.Infof("Running docker pull %s on each provisioned machine", evt.Payload.DockerImage)
+	for email, state := range evt.State {
+		envVars, err := dockerMachineEnv(settings, evt)
+		if err != nil {
+			log.Errorf("dockerMachineEnv() failed while generating envVars: %s", err)
+			return err
+		}
+
+		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
+		envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(state.N), state)
+
+		// in docker-machine provisioned machine: docker pull apeunit/launchpayload
+		command := []string{"docker", "pull", evt.Payload.DockerImage}
+		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", command, email, envVars)
+		_, err = cmdRunner(command, envVars)
+		if err != nil {
+			log.Errorf("docker %s failed with %s", command, err)
+			return err
+		}
+	}
+
+	log.Infoln("Running the dockerized Cosmos daemons on the provisioned machines")
+	for email, state := range evt.State {
+		envVars, err := dockerMachineEnv(settings, evt)
+		if err != nil {
+			log.Errorf("dockerMachineEnv() failed while generating envVars: %s", err)
+			return err
+		}
+
+		// Build the output of docker-machine -s /tmp/workspace/evts/evtx-d97517a3673688070aef/.docker/machine/ env evtx-d97517a3673688070aef-1
+		envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(state.N), state)
+
+		// in docker-machine provisioned machine: docker run -v /home/docker/nodeconfig:/payload/config apeunit/launchpayload
+		command := []string{"docker", "run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "26656:26656", "-p", "26657:26657", "-p", "26658:26658", evt.Payload.DockerImage}
+		log.Debugf("Running docker %s for validator %s machine; envVars %s\n", command, email, envVars)
+		_, err = cmdRunner(command, envVars)
+		if err != nil {
+			log.Errorf("docker %s failed with %s", command, err)
+			return err
+		}
+	}
+
+	// https://forum.cosmos.network/t/what-could-cause-sync-mutex-lock-to-have-a-nil-pointer-dereference/4194
+	log.Infoln("Running the CLI to provide the Light Client Daemon")
+	emails, _ := evt.Validators()
+	firstNode := emails[0]
+	machineHomeDir := dmc.HomeDir(evt.State[firstNode].N)
+	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
 		return
 	}
-	err = storeEvent(settings, evt)
+	envVars = dockerMachineNodeEnv(envVars, evt.ID(), machineHomeDir, evt.State[firstNode])
+
+	command := []string{dmBin, "ssh", evt.State[firstNode].ID(), "docker", "run", "-d", "--volume=/home/docker/nodeconfig:/payload/config", "-p", "1317:1317", evt.Payload.DockerImage, "/payload/runlightclient.sh", evt.State[firstNode].Instance.IPAddress, evt.ID()}
+	// command = []string{"scp", evt.Payload.CLIPath, fmt.Sprintf("%s:/home/docker", evt.State[firstNode].ID())}
+	log.Debugf("Running docker-machine %s on validator %s machine; envVars %s\n", command, firstNode, envVars)
+	_, err = cmdRunner(command, envVars)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Infoln("Copying the faucet account and configuration to the first validator machine")
+	faucetAccount := evt.FaucetAccount()
+	v, _ := evt.Validators()
+	command = []string{dmBin, "scp", "-r", faucetAccount.ConfigLocation.CLIConfigDir, fmt.Sprintf("%s:/home/docker/nodeconfig/faucet_account", evt.State[v[0]].ID())}
+	_, err = cmdRunner(command, envVars)
+	if err != nil {
+		log.Errorf("docker-machine %s failed with %s", command, err)
+		return
+	}
+	// docker-machine chmod -R 777 /home/docker/nodeconfig AGAIN - what a mess!
+	command = []string{dmBin, "ssh", evt.State[v[0]].ID(), "chmod", "-R", "777", "/home/docker/nodeconfig"}
+	_, err = cmdRunner(command, envVars)
+	if err != nil {
+		log.Errorf("docker-machine %s failed with %s", command, err)
+		return
+	}
+
+	evtDir, err := evts(settings, evt.ID())
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	command = []string{dmBin, "scp", "-r", filepath.Join(evtDir, "nodeconfig", "faucetconfig.yml"), fmt.Sprintf("%s:/home/docker/nodeconfig/", evt.State[v[0]].ID())}
+	_, err = cmdRunner(command, envVars)
+	if err != nil {
+		log.Errorf("docker-machine %s failed with %s", command, err)
+		return
+	}
+
+	log.Infoln("Starting the faucet")
+	firstValidator := evt.State[v[0]]
+	envVars = dockerMachineNodeEnv(envVars, evt.ID(), dmc.HomeDir(firstValidator.N), firstValidator)
+	command = []string{"docker", "run", "-d", "-v", "/home/docker/nodeconfig:/payload/config", "-p", "8000:8000", evt.Payload.DockerImage, "/payload/runfaucet.sh"}
+	log.Debugf("Running docker %s on %s; envVars %s\n", command, firstValidator.ID(), envVars)
+	_, err = cmdRunner(command, envVars)
+	if err != nil {
+		log.Errorf("docker %s failed with %s", args, err)
+		return
+	}
 	return
 }

@@ -1,5 +1,7 @@
 dist
 *.log
 *.out
-workspace
-config.json
+config.yaml
+go.sum
+.vscode/
+private

@@ -1,7 +1,6 @@
 package lctrld
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
@@ -21,31 +20,36 @@ const (
 	dockerHome        = ".docker"
 )
 
+func _path(pieces ...string) string {
+	return filepath.Join(pieces...)
+}
+
+func _absPath(relative string) (string, error) {
+	return filepath.Abs(relative)
+}
+
+// dmBin returns /tmp/workspace/bin/docker-machine
+func dmBin(settings config.Schema) string {
+	return bin(settings, settings.DockerMachine.Binary)
+}
+
+// bin returns /tmp/workspace/bin
 func bin(settings config.Schema, file string) string {
 	return _path(settings.Workspace, binDir, file)
 }
 
+// tmp returns /tmp/workspace/tmp
 func tmp(settings config.Schema) (string, error) {
 	return ioutil.TempDir(_path(settings.Workspace, tmpDir), "")
 }
 
-func evts(settings config.Schema, dir string) (string, error) {
-	return _absPath(_path(settings.Workspace, evtsDir, dir))
+// evts returns /tmp/workspace/evts/<EVTID>
+func evts(settings config.Schema, evtID string) (string, error) {
+	return _absPath(_path(settings.Workspace, evtsDir, evtID))
 }
 
-// machineHome get the path of a docker-machine instance home
-func machineHome(settings config.Schema, evtID string, machineID int) string {
-	return _path(settings.Workspace, evtsDir, evtID, ".docker", "machine", "machines", fmt.Sprintf("%s-%d", evtID, machineID))
-}
-
-// machineConfig return configuration of a docker machine
-func machineConfig(settings config.Schema, evtID string, machineID int) (mc model.MachineConfig, err error) {
-	err = utils.LoadJSON(_path(machineHome(settings, evtID, machineID), "config.json"), &mc)
-	return
-}
-
-// evtDescriptor returns the absolute path to the event descriptor file
-func evtDescriptor(settings config.Schema, evtID string) (path string, err error) {
+// evtFile returns "/tmp/workspace/evts/<EVTID>/event.json", i.e. the absolute path to the event descriptor file
+func evtFile(settings config.Schema, evtID string) (path string, err error) {
 	path, err = evts(settings, evtID)
 	if err != nil {
 		return
@@ -54,8 +58,8 @@ func evtDescriptor(settings config.Schema, evtID string) (path string, err error
 	return
 }
 
-//loadEvent returns the Event model of the specified event ID
-func loadEvent(settings config.Schema, evtID string) (evt model.EvtvzE, err error) {
+//LoadEvent returns the Event model of the specified event ID
+func LoadEvent(settings config.Schema, evtID string) (evt *model.Event, err error) {
 	path, err := evts(settings, evtID)
 	if err != nil {
 		return
@@ -65,8 +69,8 @@ func loadEvent(settings config.Schema, evtID string) (evt model.EvtvzE, err erro
 	return
 }
 
-// storeEvent returns the Event model of the specified event ID
-func storeEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+// StoreEvent saves the Event model to a file
+func StoreEvent(settings config.Schema, evt *model.Event) (err error) {
 	path, err := evts(settings, evt.ID())
 	if err != nil {
 		return
@@ -76,35 +80,22 @@ func storeEvent(settings config.Schema, evt model.EvtvzE) (err error) {
 	return
 }
 
-func _path(pieces ...string) string {
-	return filepath.Join(pieces...)
-}
+// CommandRunner func type allows for mocking out RunCommand()
+type CommandRunner func([]string, []string) (string, error)
 
-func _absPath(relative string) (string, error) {
-	return filepath.Abs(relative)
-}
-
-func dmBin(settings config.Schema) string {
-	return bin(settings, settings.DockerMachine.Binary)
-}
-
-func dmDriverBin(settings config.Schema, driverName string) string {
-	return bin(settings, settings.DockerMachine.Drivers[driverName].Binary)
-}
-
-func runCommand(bin string, args, envVars []string) (out string, err error) {
-	/// prepare the command
-	cmd := exec.Command(bin, args...)
+// RunCommand runs a command
+func RunCommand(command, envVars []string) (out string, err error) {
+	cmd := exec.Command(command[0], command[1:]...)
 	// add the binary folder to the exec path
 	cmd.Env = envVars
-	log.Debug("command env vars set to ", cmd.Env)
+	log.Debug("Running command ", command, cmd.Env)
 	// execute the command
 	o, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Errorf("cmd.Run() failed with %s, %s\n", err, string(o))
+		log.Errorf("%s failed with %s, %s\n", command, err, string(o))
 		return
 	}
 	out = strings.TrimSpace(string(o))
-	log.Debug("command stdout: ", out)
+	log.Debug("Command stdout: ", out)
 	return
 }

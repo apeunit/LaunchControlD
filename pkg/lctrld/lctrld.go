@@ -128,20 +128,24 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 }
 
 // CreateEvent creates the event home and the event descriptor
-func CreateEvent(settings config.Schema, evt model.EvtvzE) (err error) {
+func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
 	path, err := evts(settings, evt.ID())
+	if err != nil {
+		return
+	}
 	if !utils.FileExists(path) {
 		err = os.MkdirAll(path, 0700)
 		if err != nil {
 			return
 		}
 	}
-	err = storeEvent(settings, evt)
+	err = StoreEvent(settings, evt)
 	return
 }
 
 // ListEvents list available events
-func ListEvents(settings config.Schema) (events []model.EvtvzE, err error) {
+func ListEvents(settings config.Schema) (events []model.Event, err error) {
+	events = make([]model.Event, 0)
 	evtsBase, err := evts(settings, "")
 	if err != nil {
 		log.Error("ListEvents failed:", err)
@@ -155,15 +159,33 @@ func ListEvents(settings config.Schema) (events []model.EvtvzE, err error) {
 		}
 		if info.Name() == evtDescriptorFile {
 			log.Debugln("Event found", info.Name())
-			evt := model.EvtvzE{}
-			err := utils.LoadJSON(subPath, &evt)
+			evt, err := model.LoadEvent(subPath)
 			if err != nil {
 				log.Error("ListEvents failed:", err)
 				return err
 			}
-			events = append(events, evt)
+			events = append(events, *evt)
 		}
 		return nil
 	})
+	return
+}
+
+// GetEventByID retrieve an event by name
+func GetEventByID(settings config.Schema, ID string) (event model.Event, err error) {
+	// this is not very fast but it does the job for the moment
+	evts, err := ListEvents(settings)
+	if err != nil {
+		return
+	}
+	// search the one
+	for _, evt := range evts {
+		if evt.ID() == ID {
+			event = evt
+			return
+		}
+	}
+	// if we got here we haven't found it
+	err = fmt.Errorf("no event found with id %s", ID)
 	return
 }

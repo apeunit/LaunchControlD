@@ -3,6 +3,7 @@ package utils
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -52,11 +53,12 @@ func LoadJSON(filePath string, v interface{}) (err error) {
 
 // StoreJSON store a struct to a json file
 func StoreJSON(filePath string, v interface{}) (err error) {
-	data, err := json.Marshal(v)
+	data, err := json.Marshal(&v)
 	if err != nil {
 		return
 	}
-	err = ioutil.WriteFile(filePath, data, 0700)
+	// default json permission to rw- --- ---
+	err = ioutil.WriteFile(filePath, data, 0600)
 	return
 }
 
@@ -93,12 +95,12 @@ func ExtractGzip(filePath, outFolder string) (err error) {
 	}
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
-		log.Fatal("ExtractTarGz: NewReader failed")
+		log.Error("ExtractTarGz: NewReader failed")
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
 
-	for true {
+	for {
 		header, err := tarReader.Next()
 
 		if err == io.EOF {
@@ -106,26 +108,26 @@ func ExtractGzip(filePath, outFolder string) (err error) {
 		}
 
 		if err != nil {
-			log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
+			log.Errorf("ExtractTarGz: Next() failed: %s", err.Error())
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if err := os.Mkdir(filepath.Join(outFolder, header.Name), 0755); err != nil {
-				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
+				log.Errorf("ExtractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
 			outFile, err := os.Create(filepath.Join(outFolder, header.Name))
 			if err != nil {
-				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
+				log.Errorf("ExtractTarGz: Create() failed: %s", err.Error())
 			}
 			defer outFile.Close()
 			if _, err := io.Copy(outFile, tarReader); err != nil {
-				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
+				log.Errorf("ExtractTarGz: Copy() failed: %s", err.Error())
 			}
 		default:
-			log.Fatalf(
-				"ExtractTarGz: uknown type: %s in %s",
+			log.Errorf(
+				"ExtractTarGz: unknown type: %v in %s",
 				header.Typeflag,
 				header.Name)
 		}
@@ -161,5 +163,25 @@ func SearchAndMove(root, file, targetPath string) (err error) {
 	if !found {
 		err = fmt.Errorf("file %s was not found in %s", file, root)
 	}
+	return
+}
+
+// GetPath build the path to a file
+func GetPath(pieces ...string) string {
+	return filepath.Join(pieces...)
+}
+
+// GenerateRandomHash returns securely generated random bytes.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func GenerateRandomHash() (h string, err error) {
+	b := make([]byte, 512)
+	_, err = rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return
+	}
+	h = Hash(b)
 	return
 }
