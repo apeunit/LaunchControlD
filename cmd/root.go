@@ -60,7 +60,7 @@ func initConfig() {
 	fmt.Printf(`
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ v%s`, rootCmd.Version)
+└─┘ └┘  ┴  └┘ └─┘═╩╝ %s`, rootCmd.Version)
 	fmt.Println()
 
 	if cfgFile != "" {
