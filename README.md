@@ -11,6 +11,12 @@ The command & control server for the LaunchControl project. LaunchControl:
 
 This simplifies the task of spinning up chains.
 
+## Building
+```sh
+make build # binaries now in dist/
+make install # installs to GOPATH/bin
+```
+
 ## Configuration
 
 The LaunchControlD project **requires** a configuration file, which specifies how lctrld can provision and manage virtual machines.
@@ -99,10 +105,10 @@ To manage the events lifecycle use the command
 > lctrld events
 ```
 
-Example: To create a new event run the command
+Example: To create a new event, using Virtualbox to provision the VMs instead of some cloud service, run the command
 
 ```sh
-> lctrld events new eventsample1.yml
+> lctrld events new eventsample1.yml --provider virtualbox
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
 └─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
