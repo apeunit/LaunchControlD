@@ -111,7 +111,7 @@ Example: To create a new event, using Virtualbox to provision the VMs instead of
 > lctrld events new eventsample1.yml --provider virtualbox
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
 Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
 Summary:
 Validator alice@apeunit.com has initial balance of 500drop,1000000evtx,100000000stake
@@ -134,7 +134,7 @@ To list the available events and the status of their nodes run:
 > lctrld events list --verbose
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
 Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
 List events
 Event drop-c34efbd55083665002d2 owner: owner@email.com with 1 validators
@@ -153,7 +153,7 @@ Now you should setup the payload (Cosmos-SDK based chain) that will run on the m
 > lctrld payload setup $EVTID
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
 Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
 INFO[0000] Initializing daemon configs for each node
 INFO[0000] Generating keys for validator accounts
@@ -174,7 +174,7 @@ Tell the provisioned machines to run the docker images using the configuration f
 > lctrld payload deploy $EVTID
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
 Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
 INFO[0000] Copying node configs to each provisioned machine
 INFO[0001] Running docker pull apeunit/launchpayload:latest on each provisioned machine
@@ -189,7 +189,7 @@ To stop and remove all the machines and their associated configuration, run
 > lctrld events teardown $EVTID
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
 Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
 Teardown Event
 Event ID is drop-ed9e103f3f27564342af
@@ -234,7 +234,7 @@ Once you have fixed the problem and the virtual machine's dockerd is listening o
 
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ vv1.1.0-12-g73ac2f7
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
 Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
 INFO[0000] Updated info for alice@apeunit.com: &model.MachineConfig{N:"0", EventID:"drop-c34efbd55083665002d2", DriverName:"", TendermintNodeID:"", Instance:model.MachineConfigInstance{IPAddress:"188.34.156.184", MachineName:"drop-c34efbd55083665002d2-0", SSHUser:"root", SSHPort:22, SSHKeyPath:"/tmp/workspace/evts/drop-c34efbd55083665002d2/.docker/machine/machines/drop-c34efbd55083665002d2-0/id_rsa", StorePath:"/tmp/workspace/evts/drop-c34efbd55083665002d2/.docker/machine"}}
 ```
