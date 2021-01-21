@@ -11,6 +11,13 @@ The command & control server for the LaunchControl project. LaunchControl:
 
 This simplifies the task of spinning up chains.
 
+## Prerequisites
+docker, virtualbox
+
+lctrld needs docker to run the docker images to generate configuration files for the nodes. Remember to login to your Docker Hub account to be able to download images.
+
+To provision nodes on your own computer, install virtualbox (docker-machine has a built in virtualbox module). Otherwise lctrld expects to provision nodes using a cloud provider.
+
 ## Building
 ```sh
 make build # binaries now in dist/
@@ -75,6 +82,8 @@ default_payload_location:
 
 
 ```
+
+If you will be deploying nodes often using Virtualbox, it is useful to download your own copy of [boot2docker.iso](https://github.com/boot2docker/boot2docker/releases/tag/v19.03.12) so that you won't have to download it every time. Specify the path with `VIRTUALBOX_BOOT2DOCKER_URL`.
 
 Other drivers can be added in the configuration file (a list of available drivers can be found [here](https://github.com/docker/docker.github.io/blob/master/machine/AVAILABLE_DRIVER_PLUGINS.md)).
 
@@ -150,7 +159,7 @@ Operation completed in 1.739816533s
 Now you should setup the payload (Cosmos-SDK based chain) that will run on the machines. The generated config files are stored in the same directory as the event information, under`nodeconfig/`, e.g. `/tmp/workspace/evts/drop-ed9e103f3f27564342af/nodeconfig/`
 
 ```sh
-> lctrld payload setup $EVTID
+> lctrld payload setup drop-ed9e103f3f27564342af
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
 └─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
@@ -171,7 +180,7 @@ INFO[0001] Generating faucet configuration
 Tell the provisioned machines to run the docker images using the configuration files that were just generated.
 
 ```sh
-> lctrld payload deploy $EVTID
+> lctrld payload deploy drop-ed9e103f3f27564342af
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
 └─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
@@ -186,7 +195,7 @@ INFO[0023] Starting the faucet
 
 To stop and remove all the machines and their associated configuration, run
 ```sh
-> lctrld events teardown $EVTID
+> lctrld events teardown drop-ed9e103f3f27564342af
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
 └─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
@@ -205,7 +214,35 @@ Operation completed in 6.778189622s
 
 # Troubleshooting
 
-Here are some common errors that you may encounter in while running the `LaunchControlD` and also how to fix them.
+Here are some common errors that you may encounter while running the `LaunchControlD` and also how to fix them.
+### Stale directories from errored commands prevent you from retrying the command
+Sometimes provisioning a virtual machine with `lctrld events new eventsample1.yml` can error out. When this happens, the event directory e.g. `/tmp/workspace/evts/drop-c34efbd55083665002d2/` is left over. If you remove it, lctrld and docker-machine will think there is no virtual machine, but you may have to remove the virtual machine in Virtualbox using `VBoxManage unregistervm <vm name>`. Or if you are using Hetzner, make sure the VPS is removed, and delete the corresponding SSH key.
+
+In the following example, the previous invocation of `lctrld payload setup drop-c34efbd55083665002d2` failed, so `/tmp/workspace/evts/drop-c34efbd55083665002d2/nodeconfig` was created, but not deleted. `nodeconfig` is where the generated blockchain node configurations and accounts are stored. Simply remove `/tmp/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/` and rerun the command.
+```sh
+> lctrld payload setup drop-c34efbd55083665002d2
+
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ va61f4a0
+Using config file: ./config.yaml
+INFO[0000] Initializing daemon configs for each node
+ERRO[0000] [/tmp/workspace/bin/launchpayloadd init alice@apeunit.com node drop-c34efbd55083665002d2-0 --home /tmp/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/0/daemon --chain-id drop-c34efbd55083665002d2] failed with exit status 1, ERROR: genesis.json file already exists: /tmp/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/0/daemon/config/genesis.json
+
+ERRO[0000] /tmp/workspace/bin/launchpayloadd [/tmp/workspace/bin/launchpayloadd init alice@apeunit.com node drop-c34efbd55083665002d2-0 --home /tmp/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/0/daemon --chain-id drop-c34efbd55083665002d2] failed with exit status 1,
+Error: exit status 1
+Usage:
+  lctrld payload setup EVENTID [flags]
+
+Flags:
+  -h, --help   help for setup
+
+Global Flags:
+      --config string   config file (default is /etc/lctrld/config.yaml)
+  -d, --debug           Enable debug logging
+
+exit status 1
+```
 
 ### docker-machine errors while provisioning virtual machines
 If this happens (especially when docker-machine [installs docker > 19.03](https://github.com/docker/machine/issues/4858)) a basic knowledge of how to use docker-machine will save the day. SSH into the virtual machine and troubleshoot the problem.
