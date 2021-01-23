@@ -287,7 +287,7 @@ func eventDeploy(c *fiber.Ctx) error {
 
 	/// deploy
 	dmc := lctrld.NewDockerMachineConfig(appSettings, event.ID())
-	err = lctrld.Provision(appSettings, &event, lctrld.RunCommand, dmc)
+	err = lctrld.ProvisionEvent(appSettings, &event, lctrld.RunCommand, dmc)
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}

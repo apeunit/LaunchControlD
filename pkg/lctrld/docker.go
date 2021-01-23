@@ -100,8 +100,8 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 	return
 }
 
-// Provision provision the infrastructure for the event
-func Provision(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
+// ProvisionEvent provision the infrastructure for the event
+func ProvisionEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
