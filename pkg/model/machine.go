@@ -35,27 +35,6 @@ func (m *Machine) HomeDir() string {
 	return filepath.Join(m.settings.Workspace, "evts", m.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", m.EventID, m.N))
 }
 
-// Run tells docker-machine to run a command within this provisioned Machine
-func (m *Machine) Run(cmd []string) (err error) {
-	envVars := append(m.dockerMachineEnv,
-		"DOCKER_TLS_VERIFY=1",
-		fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", m.Instance.IPAddress),
-		fmt.Sprintf("DOCKER_CERT_PATH=%s", m.HomeDir()),
-		fmt.Sprintf("DOCKER_MACHINE_NAME=%s", m.ID()),
-	)
-
-	_, err = m.CmdRunner(cmd, envVars)
-	return
-}
-
-// Copy recursively copies a path from the local machine to the provisioned Machine
-// TODO: reconcile with duplicate logic from lctrld/common.go: is dmBin() needed at all?
-func (m *Machine) Copy(sourcePath, destPath string) (err error) {
-	p := []string{"docker-machine", "scp", "-r", sourcePath, fmt.Sprintf("%s:%s", m.ID(), destPath)}
-	_, err = m.CmdRunner(p, m.dockerMachineEnv)
-	return
-}
-
 // TendermintPeerNodeID returns <nodeID@192.168.1....:26656> which is used in specifying peers to connect to in the daemon's config.toml file
 func (m *Machine) TendermintPeerNodeID() string {
 	return fmt.Sprintf("%s@%s:26656", m.TendermintNodeID, m.Instance.IPAddress)

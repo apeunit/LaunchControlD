@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
@@ -53,28 +54,41 @@ type DockerMachineInterface interface {
 // DockerMachine implements docker-machine functionality for lctrld
 type DockerMachine struct {
 	EventID  string
+	EnvVars  []string
 	Settings config.Schema
 }
 
 // NewDockerMachine ensures that all fields of a DockerMachineConfig are filled out
 func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
+	// add extra PATHs to find other docker-machine binaries
+	p := append(settings.DockerMachine.SearchPath, utils.Bin(settings, ""))
+	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
+
+	// set MACHINE_STORAGE_PATH
+	home, err := utils.Evts(settings, eventID) // this gives you the relative path to the event home
+	if err != nil {
+		return
+	}
+	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", filepath.Join(home, ".docker", "machine"))
+
 	return &DockerMachine{
 		EventID:  eventID,
+		EnvVars:  append([]string{}, envPath, envMachineStoragePath),
 		Settings: settings,
 	}
 }
 
 // HomeDir returns the path of a docker-machine instance home, e.g.
 // /tmp/workspace/evts/drop-xxx/.docker/machine/machines/drop-xxx-0/
-func (dm *DockerMachine) HomeDir(machineN string) string {
-	return filepath.Join(dm.Settings.Workspace, utils.EvtsDir, dm.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dm.EventID, machineN))
+func (dm *DockerMachine) HomeDir(machineName string) string {
+	return filepath.Join(dm.Settings.Workspace, utils.EvtsDir, dm.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dm.EventID, machineName))
 }
 
 // ReadConfig return configuration of a docker machine
-func (dm *DockerMachine) ReadConfig(machineN string) (mc *model.Machine, err error) {
+func (dm *DockerMachine) ReadConfig(machineName string) (mc *model.Machine, err error) {
 	mc = new(model.Machine)
 	dmcf := new(DockerMachineConfigFormat)
-	err = utils.LoadJSON(filepath.Join(dm.HomeDir(machineN), "config.json"), &dmcf)
+	err = utils.LoadJSON(filepath.Join(dm.HomeDir(machineName), "config.json"), &dmcf)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +100,47 @@ func (dm *DockerMachine) ReadConfig(machineN string) (mc *model.Machine, err err
 	mc.Instance.StorePath = dmcf.Driver.StorePath
 	mc.N = strings.Split(dmcf.Name, "-")[2]
 	mc.EventID = dm.EventID
+	return
+}
+
+func (dm *DockerMachine) ProvisionMachine(machineName, provider string, cmdRunner cmdrunner.CommandRunner) (mc *model.Machine, err error) {
+	driver := dm.Settings.DockerMachine.Drivers[provider]
+
+	p := []string{utils.DmBin(dm.Settings), "--debug", "create", "--driver", provider, "--engine-install-url", "https://releases.rancher.com/install-docker/19.03.9.sh"}
+	p = append(p, driver.Params...)
+	p = append(p, machineName)
+
+	_, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+
+	return dm.ReadConfig(machineName)
+}
+
+// Run tells docker-machine to run a command within this provisioned Machine
+func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (err error) {
+	ip, err := cmdRunner([]string{"docker-machine", "ip", machineName}, dm.EnvVars)
+	if err != nil {
+		return err
+	}
+
+	envVars := append(dm.EnvVars,
+		"DOCKER_TLS_VERIFY=1",
+		fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", ip),
+		fmt.Sprintf("DOCKER_CERT_PATH=%s", dm.HomeDir(machineName)),
+		fmt.Sprintf("DOCKER_MACHINE_NAME=%s", machineName),
+	)
+
+	_, err = cmdRunner(cmd, envVars)
+	return
+}
+
+// Copy recursively copies a path from the local machine to the provisioned Machine
+// TODO: reconcile with duplicate logic from lctrld/common.go: is dmBin() needed at all?
+func (dm *DockerMachine) Copy(machineName, sourcePath, destPath string, cmdRunner cmdrunner.CommandRunner) (err error) {
+	p := []string{"docker-machine", "scp", "-r", sourcePath, fmt.Sprintf("%s:%s", machineName, destPath)}
+	_, err = cmdRunner(p, dm.EnvVars)
 	return
 }
 
