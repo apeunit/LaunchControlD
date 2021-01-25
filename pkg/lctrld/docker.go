@@ -14,13 +14,13 @@ import (
 
 // InspectEvent inspect status of the infrastructure for an event
 func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
-	path, err := evts(settings, evt.ID())
+	path, err := utils.Evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
 		log.Error("Inspect failed:", err)
 		return
 	}
-	dmBin := dmBin(settings)
+	dmBin := utils.DmBin(settings)
 	// set the path to find the executable
 	envVars, err := dockerMachineEnv(settings, evt)
 	_, validatorAccounts := evt.Validators()
@@ -42,7 +42,7 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 
 // DestroyEvent destroy an existing event
 func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
-	path, err := evts(settings, evt.ID())
+	path, err := utils.Evts(settings, evt.ID())
 	log.Debugln("op DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
 		// TODO: this is going to crash the program
@@ -55,7 +55,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 		return
 	}
 	// load the descriptor
-	p, err := evtFile(settings, evt.ID())
+	p, err := utils.EvtFile(settings, evt.ID())
 	log.Debug("op DestroyEvent event descriptor:", p)
 	if err != nil {
 		// TODO: this is going to crash the program
@@ -64,7 +64,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 	}
 
 	// run the rm command for each validator
-	dmBin := dmBin(settings)
+	dmBin := utils.DmBin(settings)
 	// set the path to find the executable
 	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
@@ -104,7 +104,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 // ProvisionEvent provision the infrastructure for the event
 func ProvisionEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner, dmc DockerMachineInterface) (err error) {
 	// Outputter
-	dmBin := dmBin(settings)
+	dmBin := utils.DmBin(settings)
 	// set the path to find the executable
 	envVars, err := dockerMachineEnv(settings, evt)
 	if err != nil {
@@ -162,7 +162,7 @@ func RereadDockerMachineInfo(settings config.Schema, evt *model.Event, dmc Docke
 
 // DeployPayload tells the provisioned machines to run the configured docker image
 func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner, dmc DockerMachineInterface) (err error) {
-	dmBin := dmBin(settings)
+	dmBin := utils.DmBin(settings)
 	var args []string
 
 	log.Infoln("Copying node configs to each provisioned machine")
@@ -285,7 +285,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner cmdrunner
 		return
 	}
 
-	evtDir, err := evts(settings, evt.ID())
+	evtDir, err := utils.Evts(settings, evt.ID())
 	if err != nil {
 		log.Error(err)
 		return

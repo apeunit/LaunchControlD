@@ -7,11 +7,13 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
+	"github.com/apeunit/LaunchControlD/pkg/utils"
 
 	"github.com/melbahja/got"
 	"github.com/pelletier/go-toml"
@@ -20,7 +22,7 @@ import (
 
 // getConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
 func getConfigDir(settings config.Schema, eventID string) (finalPath string, err error) {
-	p, err := evts(settings, eventID)
+	p, err := utils.Evts(settings, eventID)
 	if err != nil {
 		return
 	}
@@ -52,7 +54,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 	_, cliExistsErr := os.Stat(evt.Payload.CLIPath)
 	_, daemonExistsErr := os.Stat(evt.Payload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
-		binFile := bin(settings, "payloadBinaries.zip")
+		binFile := utils.Bin(settings, "payloadBinaries.zip")
 		log.Infof("downloading payload binaries from %s to %s", evt.Payload.BinaryURL, binFile)
 		g := got.New()
 		err = g.Download(evt.Payload.BinaryURL, binFile)
@@ -60,7 +62,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 			return
 		}
 
-		_, err = runCommand([]string{"unzip", "-d", bin(settings, ""), "-o", binFile}, []string{})
+		_, err = runCommand([]string{"unzip", "-d", utils.Bin(settings, ""), "-o", binFile}, []string{})
 		if err != nil {
 			return
 		}
@@ -352,15 +354,15 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand c
 	}
 	log.Debugln(out)
 
-	evtsDir, err := evts(settings, evt.ID())
+	evtsDir, err := utils.Evts(settings, evt.ID())
 	if err != nil {
 		return
 	}
 
 	// docker image permissions problems again - faucet cannot write to mounted volume
-	os.Chmod(_path(evtsDir, "nodeconfig"), 0777)
+	os.Chmod(filepath.Join(evtsDir, "nodeconfig"), 0777)
 
-	command := []string{"docker", "run", "-v", fmt.Sprintf("%s:/payload/config", _path(evtsDir, "nodeconfig")), evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
+	command := []string{"docker", "run", "-v", fmt.Sprintf("%s:/payload/config", filepath.Join(evtsDir, "nodeconfig")), evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
 	out, err = runCommand(command, []string{})
 	log.Debugln(out)
 	return

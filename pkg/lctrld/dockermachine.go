@@ -2,6 +2,7 @@ package lctrld
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
@@ -12,15 +13,15 @@ import (
 // dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
 func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
 	// add extra PATHs to find other docker-machine binaries
-	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
+	p := append(settings.DockerMachine.SearchPath, utils.Bin(settings, ""))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
 
 	// set MACHINE_STORAGE_PATH
-	home, err := evts(settings, evt.ID()) // this gives you the relative path to the event home
+	home, err := utils.Evts(settings, evt.ID()) // this gives you the relative path to the event home
 	if err != nil {
 		return
 	}
-	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", _path(home, ".docker", "machine"))
+	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", filepath.Join(home, ".docker", "machine"))
 
 	// add docker-machine driver env vars
 	env = settings.DockerMachine.Drivers[evt.Provider].Env
@@ -67,14 +68,14 @@ func NewDockerMachineConfig(settings config.Schema, eventID string) *DockerMachi
 // HomeDir returns the path of a docker-machine instance home, e.g.
 // /tmp/workspace/evts/drop-xxx/.docker/machine/machines/drop-xxx-0/
 func (dmc *DockerMachineConfig) HomeDir(machineN string) string {
-	return _path(dmc.Settings.Workspace, evtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dmc.EventID, machineN))
+	return filepath.Join(dmc.Settings.Workspace, utils.EvtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dmc.EventID, machineN))
 }
 
 // ReadConfig return configuration of a docker machine
 func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.Machine, err error) {
 	mc = new(model.Machine)
 	dmcf := new(DockerMachineConfigFormat)
-	err = utils.LoadJSON(_path(dmc.HomeDir(machineN), "config.json"), &dmcf)
+	err = utils.LoadJSON(filepath.Join(dmc.HomeDir(machineN), "config.json"), &dmcf)
 	if err != nil {
 		return nil, err
 	}
