@@ -17,15 +17,15 @@ const (
 
 // Event maintain the status of an event
 type Event struct {
-	TokenSymbol string                    `json:"token_symbol"` // token symbool
-	Owner       string                    `json:"owner"`        // email address of the owner
-	Accounts    map[string]*Account       `json:"accounts"`
-	Provider    string                    `json:"provider"` // provider for provisioning
-	CreatedOn   time.Time                 `json:"created_on"`
-	StartsOn    time.Time                 `json:"starts_on"`
-	EndsOn      time.Time                 `json:"ends_on"`
-	State       map[string]*MachineConfig `json:"state"`
-	Payload     PayloadLocation           `json:"payload"`
+	TokenSymbol string              `json:"token_symbol"` // token symbool
+	Owner       string              `json:"owner"`        // email address of the owner
+	Accounts    map[string]*Account `json:"accounts"`
+	Provider    string              `json:"provider"` // provider for provisioning
+	CreatedOn   time.Time           `json:"created_on"`
+	StartsOn    time.Time           `json:"starts_on"`
+	EndsOn      time.Time           `json:"ends_on"`
+	State       map[string]*Machine `json:"state"`
+	Payload     PayloadLocation     `json:"payload"`
 }
 
 // NewEvent helper for a new event
@@ -53,7 +53,7 @@ func NewEvent(symbol, owner, provider string, genesisAccounts []GenesisAccount, 
 		CreatedOn:   time.Now(),
 		StartsOn:    time.Now(),
 		EndsOn:      time.Time{},
-		State:       make(map[string]*MachineConfig),
+		State:       make(map[string]*Machine),
 		Payload:     payload,
 	}
 }

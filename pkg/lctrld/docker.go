@@ -110,7 +110,7 @@ func ProvisionEvent(settings config.Schema, evt *model.Event, cmdRunner CommandR
 		return err
 	}
 	// init docker nodes map
-	evt.State = make(map[string]*model.MachineConfig)
+	evt.State = make(map[string]*model.Machine)
 	// run the thing
 	_, validatorAccounts := evt.Validators()
 	for i, v := range validatorAccounts {

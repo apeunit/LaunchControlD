@@ -33,12 +33,12 @@ func TestDockerMachineConfig(t *testing.T) {
 
 	mc, err := dmc.ReadConfig("0")
 	assert.Nil(t, err)
-	mcExpected := &model.MachineConfig{
+	mcExpected := &model.Machine{
 		N:                "0",
 		EventID:          "drop-28b10d4eff415a7b0b2c",
 		DriverName:       "",
 		TendermintNodeID: "",
-		Instance: model.MachineConfigInstance{
+		Instance: model.MachineNetworkConfig{
 			IPAddress:   "192.168.99.100",
 			MachineName: "drop-28b10d4eff415a7b0b2c-0",
 			SSHUser:     "docker",

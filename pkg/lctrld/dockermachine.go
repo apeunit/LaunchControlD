@@ -31,7 +31,7 @@ func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, e
 }
 
 // dockerMachineNodeEnv recreates the output of docker-machine env <MACHINE NAME>, to run a command inside the docker-machine provisioned node.
-func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.MachineConfig) []string {
+func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.Machine) []string {
 	envVars = append(
 		envVars,
 		"DOCKER_TLS_VERIFY=1",
@@ -46,7 +46,7 @@ func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, stat
 // read docker-machine config files
 type DockerMachineInterface interface {
 	HomeDir(string) string
-	ReadConfig(string) (*model.MachineConfig, error)
+	ReadConfig(string) (*model.Machine, error)
 }
 
 // DockerMachineConfig holds information that lets lctrld read the state of a
@@ -71,8 +71,8 @@ func (dmc *DockerMachineConfig) HomeDir(machineN string) string {
 }
 
 // ReadConfig return configuration of a docker machine
-func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.MachineConfig, err error) {
-	mc = new(model.MachineConfig)
+func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.Machine, err error) {
+	mc = new(model.Machine)
 	dmcf := new(DockerMachineConfigFormat)
 	err = utils.LoadJSON(_path(dmc.HomeDir(machineN), "config.json"), &dmcf)
 	if err != nil {
