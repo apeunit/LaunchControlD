@@ -28,7 +28,7 @@ func TestDockerMachineConfig(t *testing.T) {
 			},
 		},
 	}
-	dmc := NewDockerMachineConfig(settings, "drop-28b10d4eff415a7b0b2c")
+	dmc := NewDockerMachine(settings, "drop-28b10d4eff415a7b0b2c")
 	assert.Equal(t, "testdata/evts/drop-28b10d4eff415a7b0b2c/.docker/machine/machines/drop-28b10d4eff415a7b0b2c-0", dmc.HomeDir("0"))
 
 	mc, err := dmc.ReadConfig("0")

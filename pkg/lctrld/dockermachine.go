@@ -50,16 +50,15 @@ type DockerMachineInterface interface {
 	ReadConfig(string) (*model.Machine, error)
 }
 
-// DockerMachineConfig holds information that lets lctrld read the state of a
-// docker-machine provisioning
-type DockerMachineConfig struct {
+// DockerMachine implements docker-machine functionality for lctrld
+type DockerMachine struct {
 	EventID  string
 	Settings config.Schema
 }
 
-// NewDockerMachineConfig ensures that all fields of a DockerMachineConfig are filled out
-func NewDockerMachineConfig(settings config.Schema, eventID string) *DockerMachineConfig {
-	return &DockerMachineConfig{
+// NewDockerMachine ensures that all fields of a DockerMachineConfig are filled out
+func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
+	return &DockerMachine{
 		EventID:  eventID,
 		Settings: settings,
 	}
@@ -67,15 +66,15 @@ func NewDockerMachineConfig(settings config.Schema, eventID string) *DockerMachi
 
 // HomeDir returns the path of a docker-machine instance home, e.g.
 // /tmp/workspace/evts/drop-xxx/.docker/machine/machines/drop-xxx-0/
-func (dmc *DockerMachineConfig) HomeDir(machineN string) string {
-	return filepath.Join(dmc.Settings.Workspace, utils.EvtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dmc.EventID, machineN))
+func (dm *DockerMachine) HomeDir(machineN string) string {
+	return filepath.Join(dm.Settings.Workspace, utils.EvtsDir, dm.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dm.EventID, machineN))
 }
 
 // ReadConfig return configuration of a docker machine
-func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.Machine, err error) {
+func (dm *DockerMachine) ReadConfig(machineN string) (mc *model.Machine, err error) {
 	mc = new(model.Machine)
 	dmcf := new(DockerMachineConfigFormat)
-	err = utils.LoadJSON(filepath.Join(dmc.HomeDir(machineN), "config.json"), &dmcf)
+	err = utils.LoadJSON(filepath.Join(dm.HomeDir(machineN), "config.json"), &dmcf)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +85,7 @@ func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.Machine, 
 	mc.Instance.SSHKeyPath = dmcf.Driver.SSHKeyPath
 	mc.Instance.StorePath = dmcf.Driver.StorePath
 	mc.N = strings.Split(dmcf.Name, "-")[2]
-	mc.EventID = dmc.EventID
+	mc.EventID = dm.EventID
 	return
 }
 

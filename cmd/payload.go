@@ -47,7 +47,7 @@ func deploy(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	dmc := lctrld.NewDockerMachine(settings, evt.ID())
 	err = lctrld.DeployPayload(settings, evt, cmdrunner.RunCommand, dmc)
 	return
 }

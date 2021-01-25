@@ -84,7 +84,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	dmc := lctrld.NewDockerMachine(settings, evt.ID())
 	err = lctrld.ProvisionEvent(settings, evt, cmdrunner.RunCommand, dmc)
 	if err != nil {
 		log.Error("There was an error, run the command with --debug for more info:", err)
@@ -164,7 +164,7 @@ func retryEvent(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return
 	}
-	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
+	dmc := lctrld.NewDockerMachine(settings, evt.ID())
 	evt2, err := lctrld.RereadDockerMachineInfo(settings, evt, dmc)
 	if err != nil {
 		return
