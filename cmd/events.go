@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	log "github.com/sirupsen/logrus"
@@ -84,7 +85,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
-	err = lctrld.ProvisionEvent(settings, evt, lctrld.RunCommand, dmc)
+	err = lctrld.ProvisionEvent(settings, evt, cmdrunner.RunCommand, dmc)
 	if err != nil {
 		log.Error("There was an error, run the command with --debug for more info:", err)
 		return err
@@ -116,7 +117,7 @@ func tearDownEvent(cmd *cobra.Command, args []string) (err error) {
 		log.Error("There was an error shutting down the event: ", err)
 		return err
 	}
-	err = lctrld.DestroyEvent(settings, evt, lctrld.RunCommand)
+	err = lctrld.DestroyEvent(settings, evt, cmdrunner.RunCommand)
 	if err != nil {
 		log.Error("There was an error shutting down the event: ", err)
 		return err
@@ -143,7 +144,7 @@ func listEvent(cmd *cobra.Command, args []string) {
 	for _, evt := range events {
 		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
 		if verbose {
-			lctrld.InspectEvent(settings, &evt, lctrld.RunCommand)
+			lctrld.InspectEvent(settings, &evt, cmdrunner.RunCommand)
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))

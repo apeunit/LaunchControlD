@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 
@@ -47,7 +48,7 @@ func getExtraAccountConfigDir(settings config.Schema, eventID, name string) (fin
 
 // DownloadPayloadBinary downloads a copy of the payload binaries to the host
 // running lctrld to generate the config files for the provisioned machines
-func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	_, cliExistsErr := os.Stat(evt.Payload.CLIPath)
 	_, daemonExistsErr := os.Stat(evt.Payload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
@@ -75,7 +76,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 // InitDaemon runs gaiad init burnerchain --home
 // state.DaemonConfigDir
 // and gaiad tendermint show-node-id
-func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunner) (*model.Event, error) {
+func InitDaemon(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (*model.Event, error) {
 	log.Infoln("Initializing daemon configs for each node")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -124,7 +125,7 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunn
 // GenerateKeys generates keys for each genesis account (this includes validator
 // accounts). The specific command is gaiacli keys add validatoremail/some other name -o json
 // --keyring-backend test --home.... for each node.
-func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRunner) (*model.Event, error) {
+func GenerateKeys(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (*model.Event, error) {
 	log.Infoln("Generating keys for validator accounts")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -178,7 +179,7 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 
 // AddGenesisAccounts runs gaiad add-genesis-account with the created addresses
 // and default initial balances
-func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -202,7 +203,7 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand Com
 
 // GenesisTxs runs gentx to turn accounts into validator accounts and outputs
 // the genesis transactions into a single folder.
-func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func GenesisTxs(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -237,7 +238,7 @@ func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunn
 // CollectGenesisTxs is run on every node's config directory from the single
 // directory where the genesis transactions were placed before. In the end, only
 // the first node's genesis.json will be used.
-func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 
 	envVars, err := dockerMachineEnv(settings, evt)
@@ -263,7 +264,7 @@ func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand Comm
 }
 
 // EditConfigs edits the config.toml of every node to have the same persistent_peers.
-func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func EditConfigs(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Copying node 0's genesis.json to others and setting up p2p.persistent_peers")
 
 	// Although we just generated the genesis.json for every node (makes it
@@ -334,7 +335,7 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 }
 
 // GenerateFaucetConfig generates a configuration for the faucet given what it knows about the event
-func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Generating faucet configuration")
 
 	// Use the first ExtraAccount as a faucet account
@@ -367,7 +368,7 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand C
 
 // ConfigurePayload is a wrapper function that runs all the needed steps to
 // generate a payload's configuration and fills out the evt object with said information.
-func ConfigurePayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
+func ConfigurePayload(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	err = DownloadPayloadBinary(settings, evt, cmdRunner)
 	if err != nil {
 		return

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
@@ -12,7 +13,7 @@ import (
 )
 
 // InspectEvent inspect status of the infrastructure for an event
-func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
+func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -40,7 +41,7 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 }
 
 // DestroyEvent destroy an existing event
-func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
+func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	path, err := evts(settings, evt.ID())
 	log.Debugln("op DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -101,7 +102,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 }
 
 // ProvisionEvent provision the infrastructure for the event
-func ProvisionEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
+func ProvisionEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner, dmc DockerMachineInterface) (err error) {
 	// Outputter
 	dmBin := dmBin(settings)
 	// set the path to find the executable
@@ -160,7 +161,7 @@ func RereadDockerMachineInfo(settings config.Schema, evt *model.Event, dmc Docke
 }
 
 // DeployPayload tells the provisioned machines to run the configured docker image
-func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner, dmc DockerMachineInterface) (err error) {
+func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner, dmc DockerMachineInterface) (err error) {
 	dmBin := dmBin(settings)
 	var args []string
 

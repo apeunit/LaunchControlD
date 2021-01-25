@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
@@ -287,15 +288,15 @@ func eventDeploy(c *fiber.Ctx) error {
 
 	/// deploy
 	dmc := lctrld.NewDockerMachineConfig(appSettings, event.ID())
-	err = lctrld.ProvisionEvent(appSettings, &event, lctrld.RunCommand, dmc)
+	err = lctrld.ProvisionEvent(appSettings, &event, cmdrunner.RunCommand, dmc)
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
-	err = lctrld.ConfigurePayload(appSettings, &event, lctrld.RunCommand)
+	err = lctrld.ConfigurePayload(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
-	err = lctrld.DeployPayload(appSettings, &event, lctrld.RunCommand, dmc)
+	err = lctrld.DeployPayload(appSettings, &event, cmdrunner.RunCommand, dmc)
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
@@ -324,7 +325,7 @@ func deleteEvent(c *fiber.Ctx) error {
 		return c.JSON(fiber.ErrNotFound)
 	}
 	// destroy
-	err = lctrld.DestroyEvent(appSettings, &event, lctrld.RunCommand)
+	err = lctrld.DestroyEvent(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
 		return c.JSON(fiber.ErrInternalServerError)
 	}
