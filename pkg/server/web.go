@@ -227,7 +227,7 @@ func eventCreate(c *fiber.Ctx) error {
 	log.Debugf("REST: event request %#v", er)
 	// TODO: find a better way for defaults
 	er.Provider = appSettings.Web.DefaultProvider
-	er.PayloadLocation = appSettings.DefaultPayloadLocation
+	er.PayloadLocation = model.NewDefaultPayloadLocation()
 	// override the owner
 	er.Owner = ownerEmail
 	// validate the event request

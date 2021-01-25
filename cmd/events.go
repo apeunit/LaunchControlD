@@ -51,7 +51,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return
 	}
-	evtRequest.PayloadLocation = settings.DefaultPayloadLocation
+	evtRequest.PayloadLocation = model.NewDefaultPayloadLocation()
 
 	evt := model.NewEvent(evtRequest.TokenSymbol, evtRequest.Owner, provider, evtRequest.GenesisAccounts, evtRequest.PayloadLocation)
 	vc := evt.ValidatorsCount()

@@ -45,3 +45,14 @@ func LoadEventRequestFromFile(path string) (eq *EventRequest, err error) {
 	}
 	return eq, nil
 }
+
+// NewDefaultPayloadLocation is a placeholder to help code refactoring and reduce import cycles
+func NewDefaultPayloadLocation() PayloadLocation {
+	return PayloadLocation{
+		DockerImage: "apeunit/launchpayload:v1.0.0",
+		BinaryURL:   "https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip",
+		BinaryPath:  "/tmp/workspace/bin",
+		DaemonPath:  "/tmp/workspace/bin/launchpayloadd",
+		CLIPath:     "/tmp/workspace/bin/launchpayloadcli",
+	}
+}

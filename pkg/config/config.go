@@ -3,16 +3,14 @@ package config
 import (
 	"time"
 
-	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/spf13/viper"
 )
 
 // Schema describes the layout of config.yaml
 type Schema struct {
-	Workspace              string                `mapstructure:"workspace"`
-	DockerMachine          DockerMachine         `mapstructure:"docker_machine"`
-	DefaultPayloadLocation model.PayloadLocation `mapstructure:"default_payload_location"`
-	Web                    WebSchema             `mapstructure:"web"`
+	Workspace     string        `mapstructure:"workspace"`
+	DockerMachine DockerMachine `mapstructure:"docker_machine"`
+	Web           WebSchema     `mapstructure:"web"`
 	// the following are used at runtime
 	RuntimeStartedAt time.Time `mapstructure:"-"`
 	RuntimeVersion   string    `mapstructure:"-"`
