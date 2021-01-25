@@ -2,6 +2,7 @@ package lctrld
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 // dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
 func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
 	// add extra PATHs to find other docker-machine binaries
-	p := append(settings.DockerMachine.SearchPath, utils.Bin(settings, ""))
+	p := append([]string{}, utils.Bin(settings, ""))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
 
 	// set MACHINE_STORAGE_PATH
@@ -60,20 +61,24 @@ type DockerMachine struct {
 
 // NewDockerMachine ensures that all fields of a DockerMachineConfig are filled out
 func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
-	// add extra PATHs to find other docker-machine binaries
-	p := append(settings.DockerMachine.SearchPath, utils.Bin(settings, ""))
-	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
+	envVars := []string{}
+	// build PATH variable
+	path := append([]string{}, utils.Bin(settings, ""), os.Getenv("PATH"))
+	envPath := fmt.Sprintf("PATH=%s", strings.Join(path, ":"))
 
 	// set MACHINE_STORAGE_PATH
 	home, err := utils.Evts(settings, eventID) // this gives you the relative path to the event home
 	if err != nil {
-		return
+		return nil
 	}
 	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", filepath.Join(home, ".docker", "machine"))
 
+	// include extra environment variables from the lctrld settings
+	envVars = append([]string{}, envPath, envMachineStoragePath)
+	envVars = append(envVars, settings.DockerMachine.Env...)
 	return &DockerMachine{
 		EventID:  eventID,
-		EnvVars:  append([]string{}, envPath, envMachineStoragePath),
+		EnvVars:  envVars,
 		Settings: settings,
 	}
 }
@@ -81,7 +86,7 @@ func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
 // HomeDir returns the path of a docker-machine instance home, e.g.
 // /tmp/workspace/evts/drop-xxx/.docker/machine/machines/drop-xxx-0/
 func (dm *DockerMachine) HomeDir(machineName string) string {
-	return filepath.Join(dm.Settings.Workspace, utils.EvtsDir, dm.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dm.EventID, machineName))
+	return filepath.Join(dm.Settings.Workspace, utils.EvtsDir, dm.EventID, ".docker", "machine", "machines", machineName)
 }
 
 // ReadConfig return configuration of a docker machine
@@ -103,6 +108,7 @@ func (dm *DockerMachine) ReadConfig(machineName string) (mc *model.Machine, err 
 	return
 }
 
+// ProvisionMachine runs docker-machine create MACHINE_NAME
 func (dm *DockerMachine) ProvisionMachine(machineName, provider string, cmdRunner cmdrunner.CommandRunner) (mc *model.Machine, err error) {
 	driver := dm.Settings.DockerMachine.Drivers[provider]
 

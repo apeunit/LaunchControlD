@@ -25,13 +25,11 @@ type WebSchema struct {
 
 // DockerMachine describes the host's docker-machine binary
 type DockerMachine struct {
-	Workspace  string                         `mapstructure:"workspace"`
-	SearchPath []string                       `mapstructure:"search_path"`
-	Version    string                         `mapstructure:"version"`
-	BinaryURL  string                         `mapstructure:"binary_url"`
-	Binary     string                         `mapstructure:"binary"`
-	Drivers    map[string]DockerMachineDriver `mapstructure:"drivers"`
-	Env        []string                       `mapstructure:"env"`
+	Version   string                         `mapstructure:"version"`
+	BinaryURL string                         `mapstructure:"binary_url"`
+	Binary    string                         `mapstructure:"binary"`
+	Drivers   map[string]DockerMachineDriver `mapstructure:"drivers"`
+	Env       []string                       `mapstructure:"env"`
 }
 
 // DockerMachineDriver describes the location and environment params of any
