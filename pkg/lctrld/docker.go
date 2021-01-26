@@ -84,7 +84,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner CommandRun
 		// TODO: prefer logging over printing on stdout
 		fmt.Println(host, "stop:", out)
 
-		out, err = cmdRunner([]string{dmBin, "rm", host}, envVars)
+		out, err = cmdRunner([]string{dmBin, "rm", "-y", host}, envVars)
 		if err != nil {
 			// TODO: prefer logging over printing to stdout
 			fmt.Println(err)

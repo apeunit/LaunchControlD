@@ -2,6 +2,7 @@ package lctrld
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
@@ -12,7 +13,7 @@ import (
 // dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
 func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
 	// add extra PATHs to find other docker-machine binaries
-	p := append(settings.DockerMachine.SearchPath, bin(settings, ""))
+	p := append([]string{}, bin(settings, ""), os.Getenv("PATH"))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
 
 	// set MACHINE_STORAGE_PATH
