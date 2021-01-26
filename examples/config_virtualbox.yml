@@ -1,0 +1,22 @@
+# the workspace folder will be created if not exists
+workspace: "/lctrld/workspace"
+# this section is docker-machine configuration
+docker_machine:
+  # add additional folders to the search path while executing the docker-machine command
+  search_path:
+  - "/usr/local/bin"
+  - "/usr/bin"
+  # version of the docker-machine release (only for reference)
+  version: "0.16.2"
+  binary_url: https://github.com/docker/machine/releases/download/v0.16.2/docker-machine-Linux-x86_64
+  binary: docker-machine
+  env:
+  - "VIRTUALBOX_BOOT2DOCKER_URL=/lctrld/boot2docker.iso"
+
+default_payload_location:
+  docker_image: "apeunit/launchpayload:1.0.0"
+  binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
+  binary_path: "/lctrld/workspace/bin"
+  daemon_path: "/lctrld/workspace/bin/launchpayloadd"
+  cli_path: "/lctrld/workspace/bin/launchpayloadcli"
+

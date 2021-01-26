@@ -9,7 +9,7 @@ genesis_accounts:
     validator: true
     faucet: false
   -
-    name: "dropgiver"
+    name: "bob@apeunit.com"
     genesis_balance: "10000000000drop,10000000000evtx"
-    validator: false
-    faucet: true
+    validator: true
+    faucet: false
