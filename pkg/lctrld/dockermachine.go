@@ -124,6 +124,22 @@ func (dm *DockerMachine) ProvisionMachine(machineName, provider string, cmdRunne
 	return dm.ReadConfig(machineName)
 }
 
+// StopMachine runs docker-machine stop MACHINE_NAME && docker-machine rm -y MACHINE_NAME
+func (dm *DockerMachine) StopMachine(machineName string, cmdRunner cmdrunner.CommandRunner) (err error) {
+	p := []string{utils.DmBin(dm.Settings), "stop", machineName}
+	_, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+
+	p = []string{utils.DmBin(dm.Settings), "rm", "-y", machineName}
+	_, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+	return
+}
+
 // Run tells docker-machine to run a command within this provisioned Machine
 func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (err error) {
 	ip, err := cmdRunner([]string{"docker-machine", "ip", machineName}, dm.EnvVars)

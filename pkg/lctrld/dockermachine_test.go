@@ -31,7 +31,7 @@ var mockSettings = config.Schema{
 }
 
 func TestDockerMachineProvisionMachine(t *testing.T) {
-	evtID := "test-2849deadbeef0293"
+	evtID := "test-startmachine"
 	machineName := fmt.Sprintf("%s-%s", evtID, "0")
 	dm := NewDockerMachine(mockSettings, evtID)
 	fmt.Println(dm.EnvVars)
@@ -47,6 +47,30 @@ func TestDockerMachineProvisionMachine(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = cmdrunner.RunCommand([]string{"VBoxManage", "unregistervm", machineName}, dm.EnvVars)
 	assert.Nil(t, err)
+	evtDir, err := utils.Evts(mockSettings, evtID)
+	assert.Nil(t, err)
+	fmt.Println("Gonna rm -rf", evtDir)
+	err = os.RemoveAll(evtDir)
+	assert.Nil(t, err)
+}
+
+func TestDockerMachineStopMachine(t *testing.T) {
+	evtID := "test-stopmachine"
+	machineName := fmt.Sprintf("%s-%s", evtID, "0")
+	dm := NewDockerMachine(mockSettings, evtID)
+	fmt.Println(dm.EnvVars)
+	_, err := dm.ProvisionMachine(machineName, "virtualbox", cmdrunner.RunCommand)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println("Gonna stop the machine")
+	err = dm.StopMachine(machineName, cmdrunner.RunCommand)
+	if err != nil {
+		t.Error(err)
+	}
+	// cleanup: remove workspacedir/evts/<EVTID>
 	evtDir, err := utils.Evts(mockSettings, evtID)
 	assert.Nil(t, err)
 	fmt.Println("Gonna rm -rf", evtDir)
