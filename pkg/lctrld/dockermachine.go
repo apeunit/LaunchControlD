@@ -140,11 +140,14 @@ func (dm *DockerMachine) StopMachine(machineName string, cmdRunner cmdrunner.Com
 	return
 }
 
-// Run tells docker-machine to run a command within this provisioned Machine
-func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (err error) {
-	ip, err := cmdRunner([]string{"docker-machine", "ip", machineName}, dm.EnvVars)
+// RunDocker tells this computer's docker binary to talk with the remote
+// machine's docker installation and run a commnad for safety, this command
+// prepends "docker" to any command you send it. Therefore, to run "docker pull
+// <IMAGE>" on the remote machine, pass in []string{"pull", IMAGENAME}
+func (dm *DockerMachine) RunDocker(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
+	ip, err := cmdRunner([]string{utils.DmBin(dm.Settings), "ip", machineName}, dm.EnvVars)
 	if err != nil {
-		return err
+		return
 	}
 
 	envVars := append(dm.EnvVars,
@@ -153,15 +156,23 @@ func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunn
 		fmt.Sprintf("DOCKER_CERT_PATH=%s", dm.HomeDir(machineName)),
 		fmt.Sprintf("DOCKER_MACHINE_NAME=%s", machineName),
 	)
+	finalCmd := []string{"docker"}
+	finalCmd = append(finalCmd, cmd...)
+	out, err = cmdRunner(finalCmd, envVars)
+	return
+}
 
-	_, err = cmdRunner(cmd, envVars)
+// Run uses docker-machine ssh to run a command on the remote machine.
+func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
+	finalCmd := []string{utils.DmBin(dm.Settings), "ssh", machineName}
+	finalCmd = append(finalCmd, cmd...)
+	out, err = cmdRunner(finalCmd, dm.EnvVars)
 	return
 }
 
 // Copy recursively copies a path from the local machine to the provisioned Machine
-// TODO: reconcile with duplicate logic from lctrld/common.go: is dmBin() needed at all?
 func (dm *DockerMachine) Copy(machineName, sourcePath, destPath string, cmdRunner cmdrunner.CommandRunner) (err error) {
-	p := []string{"docker-machine", "scp", "-r", sourcePath, fmt.Sprintf("%s:%s", machineName, destPath)}
+	p := []string{utils.DmBin(dm.Settings), "scp", "-r", sourcePath, fmt.Sprintf("%s:%s", machineName, destPath)}
 	_, err = cmdRunner(p, dm.EnvVars)
 	return
 }

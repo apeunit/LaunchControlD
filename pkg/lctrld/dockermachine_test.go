@@ -3,6 +3,7 @@ package lctrld
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
@@ -64,6 +65,66 @@ func TestDockerMachineStopMachine(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	fmt.Println("Gonna stop the machine")
+	err = dm.StopMachine(machineName, cmdrunner.RunCommand)
+	if err != nil {
+		t.Error(err)
+	}
+	// cleanup: remove workspacedir/evts/<EVTID>
+	evtDir, err := utils.Evts(mockSettings, evtID)
+	assert.Nil(t, err)
+	fmt.Println("Gonna rm -rf", evtDir)
+	err = os.RemoveAll(evtDir)
+	assert.Nil(t, err)
+}
+
+func TestDockerMachineGeneral(t *testing.T) {
+	var err error // Declare it first, in case I want to comment out code
+	evtID := "test-general"
+	machineName := fmt.Sprintf("%s-%s", evtID, "0")
+	dm := NewDockerMachine(mockSettings, evtID)
+	fmt.Println(dm.EnvVars)
+	_, err = dm.ProvisionMachine(machineName, "virtualbox", cmdrunner.RunCommand)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Run("testRun", func(t *testing.T) {
+		out, err := dm.Run(machineName, []string{"hostname"}, cmdrunner.RunCommand)
+		if err != nil {
+			t.Error(err)
+		}
+		assert.Equal(t, out, machineName)
+		out, err = dm.Run(machineName, []string{"mkdir", "/home/docker/testdir"}, cmdrunner.RunCommand)
+		if err != nil {
+			t.Error(err)
+		}
+		out, err = dm.Run(machineName, []string{"ls", "-la", "/home/docker/"}, cmdrunner.RunCommand)
+		if err != nil {
+			t.Error(err)
+		}
+		fmt.Println("out", out)
+		assert.Contains(t, out, "testdir")
+	})
+	t.Run("testCopy", func(t *testing.T) {
+		evtDir, err := utils.Evts(dm.Settings, evtID)
+		assert.Nil(t, err)
+		testDir := filepath.Join(evtDir, "ThisIsATestDir")
+		err = os.Mkdir(testDir, 0755)
+		assert.Nil(t, err)
+
+		err = dm.Copy(machineName, testDir, "/home/docker", cmdrunner.RunCommand)
+		assert.Nil(t, err)
+
+		out, err := dm.Run(machineName, []string{"ls", "-la", "/home/docker/"}, cmdrunner.RunCommand)
+		if err != nil {
+			t.Error(err)
+		}
+		fmt.Println("out", out)
+		assert.Contains(t, out, "ThisIsATestDir")
+	})
 
 	fmt.Println("Gonna stop the machine")
 	err = dm.StopMachine(machineName, cmdrunner.RunCommand)
