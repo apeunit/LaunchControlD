@@ -20,22 +20,15 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 		log.Error("Inspect failed:", err)
 		return
 	}
-	dmBin := utils.DmBin(settings)
-	// set the path to find the executable
-	envVars, err := dockerMachineEnv(settings, evt)
+	dm := NewDockerMachine(settings, evt.ID())
 	_, validatorAccounts := evt.Validators()
 	for i := range validatorAccounts {
-		host := evt.NodeID(i)
-		out, err := cmdRunner([]string{dmBin, "status", host}, envVars)
+		machineName := evt.NodeID(i)
+		out, err := dm.Status(machineName, cmdRunner)
 		if err != nil {
 			break
 		}
-		fmt.Println(host, "status:", out)
-		out, err = cmdRunner([]string{dmBin, "ip", host}, envVars)
-		if err != nil {
-			break
-		}
-		fmt.Println(host, "IP:", out)
+		fmt.Println(machineName, out)
 	}
 	return
 }
