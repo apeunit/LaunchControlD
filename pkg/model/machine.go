@@ -18,7 +18,7 @@ type Machine struct {
 	Instance         MachineNetworkConfig `json:"Instance"`
 	settings         config.Schema
 	dockerMachineEnv []string
-	CmdRunner        cmdrunner.CommandRunner
+	cmdRunner        cmdrunner.CommandRunner
 }
 
 // ID joins the EventID and N, e.g. EventID is evtx-d97517a3673688070aef, N is
