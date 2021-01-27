@@ -12,46 +12,6 @@ import (
 	"github.com/apeunit/LaunchControlD/pkg/utils"
 )
 
-// dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
-func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
-	// add extra PATHs to find other docker-machine binaries
-	p := append([]string{}, utils.Bin(settings, ""))
-	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
-
-	// set MACHINE_STORAGE_PATH
-	home, err := utils.Evts(settings, evt.ID()) // this gives you the relative path to the event home
-	if err != nil {
-		return
-	}
-	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", filepath.Join(home, ".docker", "machine"))
-
-	// add docker-machine driver env vars
-	env = settings.DockerMachine.Drivers[evt.Provider].Env
-
-	env = append(env, envMachineStoragePath, envPath)
-	env = append(env, settings.DockerMachine.Env...)
-	return
-}
-
-// dockerMachineNodeEnv recreates the output of docker-machine env <MACHINE NAME>, to run a command inside the docker-machine provisioned node.
-func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.Machine) []string {
-	envVars = append(
-		envVars,
-		"DOCKER_TLS_VERIFY=1",
-		fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress),
-		fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir),
-		fmt.Sprintf("DOCKER_MACHINE_NAME=%s", state.ID()),
-	)
-	return envVars
-}
-
-// DockerMachineInterface is a mocking interface for functions that need to
-// read docker-machine config files
-type DockerMachineInterface interface {
-	HomeDir(string) string
-	ReadConfig(string) (*model.Machine, error)
-}
-
 // DockerMachine implements docker-machine functionality for lctrld
 type DockerMachine struct {
 	EventID  string
