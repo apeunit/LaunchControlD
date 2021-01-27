@@ -11,17 +11,41 @@ The command & control server for the LaunchControl project. LaunchControl:
 
 This simplifies the task of spinning up chains.
 
-## Prerequisites
-docker, virtualbox
+## Installation 
 
-lctrld needs docker to run the docker images to generate configuration files for the nodes. Remember to login to your Docker Hub account to be able to download images.
+Before you start make sure that you have docker installed:
+
+*lctrld* needs docker to run the docker images to generate configuration files for the nodes. Remember to login to your Docker Hub account to be able to download images.
 
 To provision nodes on your own computer, install virtualbox (docker-machine has a built in virtualbox module). Otherwise lctrld expects to provision nodes using a cloud provider.
 
-## Building
+
+### Via go package manager
+
+If you have go installed you can run
+
 ```sh
+go get github.com/apeunit/LaunchControlD
+```
+
+### From source
+
+To install it from source run 
+
+```sh
+git clone git@github.com:apeunit/LaunchControlD.git
+cd LaunchControlD
 make build # binaries now in dist/
 make install # installs to GOPATH/bin
+cd ..
+```
+
+## Check your installation                
+    
+if everything went well you should able to run
+```sh
+lctrld --version
+lctrld version v1.0.0
 ```
 
 ## Configuration
@@ -74,7 +98,7 @@ docker_machine:
       - "DIGITALOCEAN_ACCESS_TOKEN=123"
 
 default_payload_location:
-  docker_image: "apeunit/launchpayload:1.0.0"
+  docker_image: "apeunit/launchpayload:v1.0.0"
   binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
   binary_path: "/tmp/workspace/bin"
   daemon_path: "/tmp/workspace/bin/launchpayloadd"
@@ -114,102 +138,233 @@ To manage the events lifecycle use the command
 > lctrld events
 ```
 
-Example: To create a new event, using Virtualbox to provision the VMs instead of some cloud service, run the command
+## Example  
+
+The following example will create a new event composed by two validator nodes and a faucet running on 3 virtual machine on a local virtualbox installation. It is assumed that `lctrld` is already installed.
+
+**Prerequisites**
+- To run the example it is required to install virtualbox on the local machine
+- The examples assumes that your working directory is `/lctrld`
+
+First download the sample virtualbox configuration:
 
 ```sh
-> lctrld events new eventsample1.yml --provider virtualbox
-┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
-├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
-Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
-Summary:
-Validator alice@apeunit.com has initial balance of 500drop,1000000evtx,100000000stake
-Including other accounts, the genesis account state is:
-alice@apeunit.com: &{Name:alice@apeunit.com Address: Mnemonic: GenesisBalance:500drop,1000000evtx,100000000stake Validator:true Faucet:false ConfigLocation:{CLIConfigDir: DaemonConfigDir:}}
-dropgiver: &{Name:dropgiver Address: Mnemonic: GenesisBalance:10000000000drop,10000000000evtx Validator:false Faucet:true ConfigLocation:{CLIConfigDir: DaemonConfigDir:}}
-Finally will be deploying 1 servers+nodes (1 for each validators) on virtualbox
-Shall we proceed? [Y/n]:
-Here we go!!
-INFO[0006] alice@apeunit.com's node ID is drop-ed9e103f3f27564342af-0
-INFO[0074] Your event ID is drop-ed9e103f3f27564342af
-Operation completed in 1m14.70277799s
+curl -LO https://raw.githubusercontent.com/apeunit/LaunchControlD/master/examples/config_virtualbox.yml
+```
+
+Then download the latest version of the `boot2docker` iso image
 
 ```
-This will start as many virtual machines as there were validators specified in the config.yaml, one instance for each validator.
+curl -LO https://github.com/boot2docker/boot2docker/releases/download/v19.03.12/boot2docker.iso
+```
+
+And finally download the event specification 
+
+```sh 
+curl -LO https://raw.githubusercontent.com/apeunit/LaunchControlD/master/examples/simple_event_w_faucet.yml
+```
+
+Now we can run the setup:
+```sh
+> lctrld setup --config config_virtualbox.yml
+```
+
+The output of the setup command should look like this:
+```sh
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-2-g360d24d
+Using config file: config_virtualbox.yml
+Setup LaunchControlD started
+Setup completed in  1m1.007284248s
+
+```
+
+and the content of the current directory should be 
+
+```sh 
+ls --tree
+.
+├── boot2docker.iso
+├── config_virtualbox.yml
+├── simple_event_w_faucet.yml
+└── workspace
+   ├── bin
+   │  └── docker-machine
+   ├── evts
+   └── tmp
+      └── 445467972
+```
+
+Once the setup is completed we can setup the event
+
+```sh
+> lctrld events new simple_event_w_faucet.yml \
+--provider virtualbox \
+--config config_virtualbox.yml
+
+┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
+├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-3-ga756f1b
+Using config file: config_virtualbox.yml
+Summary:
+Validator alice@apeunit.com has initial balance of 500drop,1000000evtx,100000000stake
+Validator bob@apeunit.com has initial balance of 500drop,1000000evtx,100000000stake
+Including other accounts, the genesis account state is:
+alice@apeunit.com: &{Name:alice@apeunit.com Address: Mnemonic: GenesisBalance:500drop,1000000evtx,100000000stake Validator:true Faucet:false ConfigLocation:{CLIConfigDir: DaemonConfigDir:}}
+bob@apeunit.com: &{Name:bob@apeunit.com Address: Mnemonic: GenesisBalance:500drop,1000000evtx,100000000stake Validator:true Faucet:false ConfigLocation:{CLIConfigDir: DaemonConfigDir:}}
+dropgiver: &{Name:dropgiver Address: Mnemonic: GenesisBalance:10000000000drop,10000000000evtx Validator:false Faucet:true ConfigLocation:{CLIConfigDir: DaemonConfigDir:}}
+Finally will be deploying 2 servers+nodes (1 for each validators) on virtualbox
+Shall we proceed? [Y/n]:Y
+Here we go!!
+INFO[0001] alice@apeunit.com's node ID is drop-c34efbd55083665002d2-0 
+INFO[0062] bob@apeunit.com's node ID is drop-c34efbd55083665002d2-1 
+INFO[0117] Your event ID is drop-c34efbd55083665002d2   
+Operation completed in 1m57.477250453s
+
+```
+This will start as many virtual machines as there were validators specified in the `simple_event_w_faucet.yml`, **one instance for each validator**.
+
+Take note of the event ID (`drop-c34efbd55083665002d2`) since it will be used later
 
 To list the available events and the status of their nodes run:
 
 ```sh
-> lctrld events list --verbose
+> lctrld events list --verbose --config config_virtualbox.yml
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
-Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-3-ga756f1b
+Using config file: config_virtualbox.yml
 List events
-Event drop-c34efbd55083665002d2 owner: owner@email.com with 1 validators
+Event drop-c34efbd55083665002d2 owner: owner@email.com with 2 validators
 drop-c34efbd55083665002d2-0 status: Running
-drop-c34efbd55083665002d2-0 IP: 188.34.156.184
-Event drop-ed9e103f3f27564342af owner: whosaidblockchainisdecentralized@email.com with 1 validators
-drop-ed9e103f3f27564342af-0 status: Running
-drop-ed9e103f3f27564342af-0 IP: 192.168.99.145
-Operation completed in 1.739816533s
-
+drop-c34efbd55083665002d2-0 IP: 192.168.99.108
+drop-c34efbd55083665002d2-1 status: Running
+drop-c34efbd55083665002d2-1 IP: 192.168.99.109
+Operation completed in 1.457770547s
 ```
 
-Now you should setup the payload (Cosmos-SDK based chain) that will run on the machines. The generated config files are stored in the same directory as the event information, under`nodeconfig/`, e.g. `/tmp/workspace/evts/drop-ed9e103f3f27564342af/nodeconfig/`
+At this point we have installed and setup `lctrld`, prepared the configuration files and provisioned the infrastructure for our event network to run on. 
+
+What is left to do is to actually deploy the nodes (Cosmos-SDK based) on the network, or as we will refer to it later, to deploy the `payload`.
+
+> 💡: The generated event config files are stored in the same directory as the event ID, under`nodeconfig/`, in this case: `/lctrld/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/`
 
 ```sh
-> lctrld payload setup drop-ed9e103f3f27564342af
+> lctrld payload setup drop-c34efbd55083665002d2 --config config_virtualbox.yml
+
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
-Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
-INFO[0000] Initializing daemon configs for each node
-INFO[0000] Generating keys for validator accounts
-INFO[0000] alice@apeunit.com -> cosmos1ac5rcpu8t3erpl6p6hrqx94cyh744ry596ztsd
-INFO[0000] Generating keys for non-validator accounts
-INFO[0000] dropgiver -> cosmos1hm66u2k4d7vcljs74g8cfckwpv4ule7yufww9p
-INFO[0000] Adding accounts to the genesis.json files
-INFO[0000] Creating genesis transactions to turn accounts into validators
-INFO[0001] Collecting genesis transactions and writing final genesis.json
-INFO[0001] Copying node 0's genesis.json to others and setting up p2p.persistent_peers
-alice@apeunit.com's node is 5a8a956afc8d4a614b8ce120e4936b5c8b31d07f@192.168.99.146:26656
-INFO[0001] Generating faucet configuration
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-3-ga756f1b
+Using config file: config_virtualbox.yml
+INFO[0000] Initializing daemon configs for each node    
+INFO[0000] Generating keys for validator accounts       
+INFO[0000] alice@apeunit.com -> cosmos16vj34rzjwlqnuudh0yagsf42xk9c4jxhfzqsh3 
+INFO[0000] bob@apeunit.com -> cosmos1kgpxkmu8uk7kgj7cka59zsl0wzlyxacqnuv9w4 
+INFO[0000] Generating keys for non-validator accounts   
+INFO[0000] dropgiver -> cosmos16kau2asdta7un6cyr08czgunxxzexl56zy0qcd 
+INFO[0000] Adding accounts to the genesis.json files    
+INFO[0000] Creating genesis transactions to turn accounts into validators 
+INFO[0000] Collecting genesis transactions and writing final genesis.json 
+INFO[0000] Copying node 0's genesis.json to others and setting up p2p.persistent_peers 
+INFO[0000] otherGenesis: /lctrld/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/1/daemon/config/genesis.json 
+alice@apeunit.com's node is 9ca0730f9ed0435cde89aaa21233cc202a4b6886@192.168.99.108:26656 
+bob@apeunit.com's node is f9c467f5d247f4aec2f18936a3ef078f1ab60c9c@192.168.99.109:26656 
+INFO[0000] Generating faucet configuration 
+
 ```
 
 Tell the provisioned machines to run the docker images using the configuration files that were just generated.
 
 ```sh
-> lctrld payload deploy drop-ed9e103f3f27564342af
+> lctrld payload deploy drop-c34efbd55083665002d2 --config config_virtualbox.yml
+
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
-Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
-INFO[0000] Copying node configs to each provisioned machine
-INFO[0001] Running docker pull apeunit/launchpayload:latest on each provisioned machine
-INFO[0022] Running the dockerized Cosmos daemons on the provisioned machines
-INFO[0023] Running the CLI to provide the Light Client Daemon
-INFO[0023] Copying the faucet account and configuration to the first validator machine
-INFO[0023] Starting the faucet
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-3-ga756f1b
+Using config file: config_virtualbox.yml
+INFO[0000] Copying node configs to each provisioned machine 
+INFO[0000] Running docker pull apeunit/launchpayload:v1.0.0 on each provisioned machine 
+INFO[0060] Running the dockerized Cosmos daemons on the provisioned machines 
+INFO[0061] Running the CLI to provide the Light Client Daemon 
+INFO[0061] Copying the faucet account and configuration to the first validator machine 
+INFO[0061] Starting the faucet   
 ```
+
+And it's done! 🎉 
+
+You can see it working by pointing your browser to one of the nodes faucet:
+
+```sh
+curl -s http://192.168.99.108:8000/status | jq
+```
+```json
+{
+  "node_info": {
+    "protocol_version": {
+      "p2p": "7",
+      "block": "10",
+      "app": "0"
+    },
+    "id": "9ca0730f9ed0435cde89aaa21233cc202a4b6886",
+    "listen_addr": "tcp://0.0.0.0:26656",
+    "network": "drop-c34efbd55083665002d2",
+    "version": "0.33.7",
+    "channels": "4020212223303800",
+    "moniker": "alice@apeunit.com node drop-c34efbd55083665002d2-0",
+    "other": {
+      "tx_index": "on",
+      "rpc_address": "tcp://0.0.0.0:26657"
+    }
+  },
+  "sync_info": {
+    "latest_block_hash": "D53320F8DDDF32F5DBB0D448489D1ACDEDA944566118A6EBDB3DE59A2527B9BD",
+    "latest_app_hash": "2636C416614501773F86501EFFE3801CDE310BA092BC875E8D547F58C1C68D8E",
+    "latest_block_height": "2",
+    "latest_block_time": "2021-01-27T10:26:50.848598231Z",
+    "earliest_block_hash": "32A9CBFBAC4ED2B79052537F40F6F5E5304D8AFA688F85C37D9743F6BCEA9185",
+    "earliest_app_hash": "",
+    "earliest_block_height": "1",
+    "earliest_block_time": "2021-01-27T10:24:44.152679036Z",
+    "catching_up": false
+  },
+  "validator_info": {
+    "address": "F8E33C9DDB3980687A8465CB3D03697E9D227D6B",
+    "pub_key": {
+      "type": "tendermint/PubKeyEd25519",
+      "value": "SHa1pbySh+4D+axdeyBjZmauSkfa3V2eStawjbv59bQ="
+    },
+    "voting_power": "100"
+  }
+}
+```
+
+
+
 
 To stop and remove all the machines and their associated configuration, run
 ```sh
-> lctrld events teardown drop-ed9e103f3f27564342af
+> lctrld events teardown drop-c34efbd55083665002d2 --config config_virtualbox.yml
+
 ┌─┐┬  ┬┌┬┐┬  ┬┌─┐╔╦╗
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
-└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0
-Using config file: /home/shinichi/source/work/LaunchControlD/config.yaml
+└─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-3-ga756f1b
+Using config file: config_virtualbox.yml
 Teardown Event
-Event ID is drop-ed9e103f3f27564342af
-INFO[0000] alice@apeunit.com's node ID is drop-ed9e103f3f27564342af-0
-drop-ed9e103f3f27564342af-0 stop: Stopping "drop-ed9e103f3f27564342af-0"...
-Machine "drop-ed9e103f3f27564342af-0" was stopped.
-drop-ed9e103f3f27564342af-0 rm: About to remove drop-ed9e103f3f27564342af-0
+Event ID is drop-c34efbd55083665002d2
+INFO[0000] alice@apeunit.com's node ID is drop-c34efbd55083665002d2-0 
+drop-c34efbd55083665002d2-0 stop: Stopping "drop-c34efbd55083665002d2-0"...
+Machine "drop-c34efbd55083665002d2-0" was stopped.
+drop-c34efbd55083665002d2-0 rm: About to remove drop-c34efbd55083665002d2-0
 WARNING: This action will delete both local reference and remote instance.
 Are you sure? (y/n):
-Operation completed in 6.778189622s
-
+INFO[0005] bob@apeunit.com's node ID is drop-c34efbd55083665002d2-1 
+drop-c34efbd55083665002d2-1 stop: Stopping "drop-c34efbd55083665002d2-1"...
+Machine "drop-c34efbd55083665002d2-1" was stopped.
+drop-c34efbd55083665002d2-1 rm: About to remove drop-c34efbd55083665002d2-1
+WARNING: This action will delete both local reference and remote instance.
+Are you sure? (y/n):
+Operation completed in 10.148454512s
 ```
 
 # Troubleshooting
