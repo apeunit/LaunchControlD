@@ -81,10 +81,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 func InitDaemon(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (*model.Event, error) {
 	log.Infoln("Initializing daemon configs for each node")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return nil, err
-	}
+	envVars := utils.BuildEnvVars(settings)
 
 	_, accounts := evt.Validators()
 	for _, acc := range accounts {
@@ -130,10 +127,7 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand cmdrunner.C
 func GenerateKeys(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (*model.Event, error) {
 	log.Infoln("Generating keys for validator accounts")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return nil, err
-	}
+	envVars := utils.BuildEnvVars(settings)
 
 	_, validatorAccounts := evt.Validators()
 	for _, account := range validatorAccounts {
@@ -184,10 +178,7 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand cmdrunner
 func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return
-	}
+	envVars := utils.BuildEnvVars(settings)
 
 	for name := range evt.State {
 		for _, account := range evt.Accounts {
@@ -208,11 +199,11 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand cmd
 func GenesisTxs(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
 
-	envVars, err := dockerMachineEnv(settings, evt)
+	envVars := utils.BuildEnvVars(settings)
+	basePath, err := getConfigDir(settings, evt.ID())
 	if err != nil {
 		return
 	}
-	basePath, err := getConfigDir(settings, evt.ID())
 
 	// Ensure that the genesis txs destination directory exists
 	outputGenesisTxDir := path.Join(basePath, "genesis_txs")
@@ -243,10 +234,7 @@ func GenesisTxs(settings config.Schema, evt *model.Event, runCommand cmdrunner.C
 func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return
-	}
+	envVars := utils.BuildEnvVars(settings)
 	basePath, err := getConfigDir(settings, evt.ID())
 	if err != nil {
 		return

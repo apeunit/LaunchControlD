@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/apeunit/LaunchControlD/pkg/config"
 )
@@ -43,4 +46,12 @@ func EvtFile(settings config.Schema, evtID string) (path string, err error) {
 	}
 	path = filepath.Join(path, EvtDescriptorFile)
 	return
+}
+
+// BuildEnvVars generates a sane base for environment variables to run shell
+// commands with. It just includes $PATH
+func BuildEnvVars(settings config.Schema) []string {
+	path := append([]string{}, Bin(settings, ""), os.Getenv("PATH"))
+	envPath := fmt.Sprintf("PATH=%s", strings.Join(path, ":"))
+	return []string{envPath}
 }

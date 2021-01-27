@@ -2,7 +2,6 @@ package lctrld
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -21,10 +20,7 @@ type DockerMachine struct {
 
 // NewDockerMachine ensures that all fields of a DockerMachineConfig are filled out
 func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
-	envVars := []string{}
-	// build PATH variable
-	path := append([]string{}, utils.Bin(settings, ""), os.Getenv("PATH"))
-	envPath := fmt.Sprintf("PATH=%s", strings.Join(path, ":"))
+	envVars := utils.BuildEnvVars(settings)
 
 	// set MACHINE_STORAGE_PATH
 	home, err := utils.Evts(settings, eventID) // this gives you the relative path to the event home
@@ -32,9 +28,9 @@ func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
 		return nil
 	}
 	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", filepath.Join(home, ".docker", "machine"))
+	envVars = append(envVars, envMachineStoragePath)
 
 	// include extra environment variables from the lctrld settings
-	envVars = append([]string{}, envPath, envMachineStoragePath)
 	envVars = append(envVars, settings.DockerMachine.Env...)
 	return &DockerMachine{
 		EventID:  eventID,
