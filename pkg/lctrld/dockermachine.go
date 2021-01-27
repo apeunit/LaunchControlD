@@ -140,6 +140,23 @@ func (dm *DockerMachine) StopMachine(machineName string, cmdRunner cmdrunner.Com
 	return
 }
 
+// Status runs docker-machine ip MACHINE_NAME and docker-machine status machine_NAME
+func (dm *DockerMachine) Status(machineName string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
+	var out1, out2 string
+	p := []string{utils.DmBin(dm.Settings), "status", machineName}
+	out1, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+	p = []string{utils.DmBin(dm.Settings), "ip", machineName}
+	out2, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+	out = strings.Join([]string{out1, out2}, "\n")
+	return
+}
+
 // RunDocker tells this computer's docker binary to talk with the remote
 // machine's docker installation and run a commnad for safety, this command
 // prepends "docker" to any command you send it. Therefore, to run "docker pull
