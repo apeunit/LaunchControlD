@@ -20,34 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// getConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
-func getConfigDir(settings config.Schema, eventID string) (finalPath string, err error) {
-	p, err := settings.Evts(eventID)
-	if err != nil {
-		return
-	}
-	return path.Join(p, "nodeconfig"), nil
-}
-
-// getNodeConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/0
-func getNodeConfigDir(settings config.Schema, eventID, nodeID string) (configDir string, err error) {
-	basePath, err := getConfigDir(settings, eventID)
-	if err != nil {
-		return
-	}
-	nodeIDsplit := strings.Split(nodeID, "-")
-	return path.Join(basePath, nodeIDsplit[len(nodeIDsplit)-1]), nil
-}
-
-// getExtraAccountConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/extra_accounts
-func getExtraAccountConfigDir(settings config.Schema, eventID, name string) (finalPath string, err error) {
-	p, err := getConfigDir(settings, eventID)
-	if err != nil {
-		return
-	}
-	return path.Join(p, "extra_accounts", name), nil
-}
-
 // DownloadPayloadBinary downloads a copy of the payload binaries to the host
 // running lctrld to generate the config files for the provisioned machines
 func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
@@ -88,14 +60,14 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand cmdrunner.C
 		// Make the config directory for the node CLI
 		machineConfig := evt.State[acc.Name]
 		if acc.Validator {
-			nodeConfigDir, err := getNodeConfigDir(settings, evt.ID(), machineConfig.N)
+			nodeConfigDir, err := settings.NodeConfigDir(evt.ID(), machineConfig.N)
 			if err != nil {
 				break
 			}
 			acc.ConfigLocation.DaemonConfigDir = path.Join(nodeConfigDir, "daemon")
 			acc.ConfigLocation.CLIConfigDir = path.Join(nodeConfigDir, "cli")
 		} else {
-			extraAccDir, err := getExtraAccountConfigDir(settings, evt.ID(), acc.Name)
+			extraAccDir, err := settings.ExtraAccountConfigDir(evt.ID(), acc.Name)
 			if err != nil {
 				break
 			}
@@ -149,7 +121,7 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand cmdrunner
 
 	log.Infoln("Generating keys for non-validator accounts")
 	for _, acc := range evt.ExtraAccounts() {
-		extraAccDir, err2 := getExtraAccountConfigDir(settings, evt.ID(), acc.Name)
+		extraAccDir, err2 := settings.ExtraAccountConfigDir(evt.ID(), acc.Name)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -200,7 +172,7 @@ func GenesisTxs(settings config.Schema, evt *model.Event, runCommand cmdrunner.C
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
 
 	envVars := utils.BuildEnvVars(settings)
-	basePath, err := getConfigDir(settings, evt.ID())
+	basePath, err := settings.ConfigDir(evt.ID())
 	if err != nil {
 		return
 	}
@@ -235,7 +207,7 @@ func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand cmdr
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 
 	envVars := utils.BuildEnvVars(settings)
-	basePath, err := getConfigDir(settings, evt.ID())
+	basePath, err := settings.ConfigDir(evt.ID())
 	if err != nil {
 		return
 	}

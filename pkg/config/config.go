@@ -2,7 +2,9 @@ package config
 
 import (
 	"io/ioutil"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -13,7 +15,6 @@ const (
 	TmpDir            = "tmp"
 	EvtsDir           = "evts"
 	EvtDescriptorFile = "event.json"
-	DockerHome        = ".docker"
 )
 
 // Schema describes the layout of config.yaml
@@ -54,6 +55,34 @@ func (s Schema) EvtFile(evtID string) (path string, err error) {
 	}
 	path = filepath.Join(path, EvtDescriptorFile)
 	return
+}
+
+// ConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
+func (s Schema) ConfigDir(eventID string) (finalPath string, err error) {
+	p, err := s.Evts(eventID)
+	if err != nil {
+		return
+	}
+	return path.Join(p, "nodeconfig"), nil
+}
+
+// NodeConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/0
+func (s Schema) NodeConfigDir(eventID, nodeID string) (configDir string, err error) {
+	basePath, err := s.ConfigDir(eventID)
+	if err != nil {
+		return
+	}
+	nodeIDsplit := strings.Split(nodeID, "-")
+	return path.Join(basePath, nodeIDsplit[len(nodeIDsplit)-1]), nil
+}
+
+// ExtraAccountConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/extra_accounts
+func (s Schema) ExtraAccountConfigDir(eventID, name string) (finalPath string, err error) {
+	p, err := s.ConfigDir(eventID)
+	if err != nil {
+		return
+	}
+	return path.Join(p, "extra_accounts", name), nil
 }
 
 // WebSchema configuration for web
