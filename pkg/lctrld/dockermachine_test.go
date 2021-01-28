@@ -8,7 +8,6 @@ import (
 
 	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
-	"github.com/apeunit/LaunchControlD/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +47,7 @@ func TestDockerMachineProvisionMachine(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = cmdrunner.RunCommand([]string{"VBoxManage", "unregistervm", machineName}, dm.EnvVars)
 	assert.Nil(t, err)
-	evtDir, err := utils.Evts(mockSettings, evtID)
+	evtDir, err := mockSettings.Evts(evtID)
 	assert.Nil(t, err)
 	fmt.Println("Gonna rm -rf", evtDir)
 	err = os.RemoveAll(evtDir)
@@ -72,7 +71,7 @@ func TestDockerMachineStopMachine(t *testing.T) {
 		t.Error(err)
 	}
 	// cleanup: remove workspacedir/evts/<EVTID>
-	evtDir, err := utils.Evts(mockSettings, evtID)
+	evtDir, err := mockSettings.Evts(evtID)
 	assert.Nil(t, err)
 	fmt.Println("Gonna rm -rf", evtDir)
 	err = os.RemoveAll(evtDir)
@@ -109,7 +108,7 @@ func TestDockerMachineGeneral(t *testing.T) {
 		assert.Contains(t, out, "testdir")
 	})
 	t.Run("testCopy", func(t *testing.T) {
-		evtDir, err := utils.Evts(dm.Settings, evtID)
+		evtDir, err := mockSettings.Evts(evtID)
 		assert.Nil(t, err)
 		testDir := filepath.Join(evtDir, "ThisIsATestDir")
 		err = os.Mkdir(testDir, 0755)
@@ -132,7 +131,7 @@ func TestDockerMachineGeneral(t *testing.T) {
 		t.Error(err)
 	}
 	// cleanup: remove workspacedir/evts/<EVTID>
-	evtDir, err := utils.Evts(mockSettings, evtID)
+	evtDir, err := mockSettings.Evts(evtID)
 	assert.Nil(t, err)
 	fmt.Println("Gonna rm -rf", evtDir)
 	err = os.RemoveAll(evtDir)

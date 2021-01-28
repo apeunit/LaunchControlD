@@ -22,7 +22,7 @@ import (
 
 // getConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
 func getConfigDir(settings config.Schema, eventID string) (finalPath string, err error) {
-	p, err := utils.Evts(settings, eventID)
+	p, err := settings.Evts(eventID)
 	if err != nil {
 		return
 	}
@@ -54,7 +54,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 	_, cliExistsErr := os.Stat(evt.Payload.CLIPath)
 	_, daemonExistsErr := os.Stat(evt.Payload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
-		binFile := utils.Bin(settings, "payloadBinaries.zip")
+		binFile := settings.Bin("payloadBinaries.zip")
 		log.Infof("downloading payload binaries from %s to %s", evt.Payload.BinaryURL, binFile)
 		g := got.New()
 		err = g.Download(evt.Payload.BinaryURL, binFile)
@@ -62,7 +62,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 			return
 		}
 
-		_, err = runCommand([]string{"unzip", "-d", utils.Bin(settings, ""), "-o", binFile}, []string{})
+		_, err = runCommand([]string{"unzip", "-d", settings.Bin(""), "-o", binFile}, []string{})
 		if err != nil {
 			return
 		}
@@ -342,7 +342,7 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand c
 	}
 	log.Debugln(out)
 
-	evtsDir, err := utils.Evts(settings, evt.ID())
+	evtsDir, err := settings.Evts(evt.ID())
 	if err != nil {
 		return
 	}

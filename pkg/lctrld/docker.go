@@ -14,7 +14,7 @@ import (
 
 // InspectEvent inspect status of the infrastructure for an event
 func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
-	path, err := utils.Evts(settings, evt.ID())
+	path, err := settings.Evts(evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
 		log.Error("Inspect failed:", err)
@@ -35,7 +35,7 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 
 // DestroyEvent destroy an existing event
 func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
-	path, err := utils.Evts(settings, evt.ID())
+	path, err := settings.Evts(evt.ID())
 	log.Debugln("op DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
 		// TODO: this is going to crash the program
@@ -48,7 +48,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 		return
 	}
 	// load the descriptor
-	p, err := utils.EvtFile(settings, evt.ID())
+	p, err := settings.EvtFile(evt.ID())
 	log.Debug("op DestroyEvent event descriptor:", p)
 	if err != nil {
 		// TODO: this is going to crash the program
@@ -190,7 +190,7 @@ func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner cmdrunner
 		return
 	}
 
-	evtDir, err := utils.Evts(settings, evt.ID())
+	evtDir, err := settings.Evts(evt.ID())
 	if err != nil {
 		log.Error(err)
 		return

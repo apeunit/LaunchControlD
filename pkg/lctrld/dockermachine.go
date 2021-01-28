@@ -9,7 +9,11 @@ import (
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
+	log "github.com/sirupsen/logrus"
 )
+
+// DockerHome pretends that /tmp/workspace/evts/<EVTDIR> is the $HOME, so under that would be .docker
+const DockerHome = ".docker"
 
 // DockerMachine implements docker-machine functionality for lctrld
 type DockerMachine struct {
@@ -23,7 +27,7 @@ func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
 	envVars := utils.BuildEnvVars(settings)
 
 	// set MACHINE_STORAGE_PATH
-	home, err := utils.Evts(settings, eventID) // this gives you the relative path to the event home
+	home, err := settings.Evts(eventID) // this gives you the relative path to the event home
 	if err != nil {
 		return nil
 	}
@@ -42,7 +46,11 @@ func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
 // HomeDir returns the path of a docker-machine instance home, e.g.
 // /tmp/workspace/evts/drop-xxx/.docker/machine/machines/drop-xxx-0/
 func (dm *DockerMachine) HomeDir(machineName string) string {
-	return filepath.Join(dm.Settings.Workspace, utils.EvtsDir, dm.EventID, ".docker", "machine", "machines", machineName)
+	evtDir, err := dm.Settings.Evts(dm.EventID)
+	if err != nil {
+		log.Warn("Swallowing error while finding absolute path", err)
+	}
+	return filepath.Join(evtDir, DockerHome, "machine", "machines", machineName)
 }
 
 // ReadConfig return configuration of a docker machine
@@ -68,7 +76,7 @@ func (dm *DockerMachine) ReadConfig(machineName string) (mc *model.Machine, err 
 func (dm *DockerMachine) ProvisionMachine(machineName, provider string, cmdRunner cmdrunner.CommandRunner) (mc *model.Machine, err error) {
 	driver := dm.Settings.DockerMachine.Drivers[provider]
 
-	p := []string{utils.DmBin(dm.Settings), "--debug", "create", "--driver", provider, "--engine-install-url", "https://releases.rancher.com/install-docker/19.03.9.sh"}
+	p := []string{dm.Settings.DmBin(), "--debug", "create", "--driver", provider, "--engine-install-url", "https://releases.rancher.com/install-docker/19.03.9.sh"}
 	p = append(p, driver.Params...)
 	p = append(p, machineName)
 
@@ -82,13 +90,13 @@ func (dm *DockerMachine) ProvisionMachine(machineName, provider string, cmdRunne
 
 // StopMachine runs docker-machine stop MACHINE_NAME && docker-machine rm -y MACHINE_NAME
 func (dm *DockerMachine) StopMachine(machineName string, cmdRunner cmdrunner.CommandRunner) (err error) {
-	p := []string{utils.DmBin(dm.Settings), "stop", machineName}
+	p := []string{dm.Settings.DmBin(), "stop", machineName}
 	_, err = cmdRunner(p, dm.EnvVars)
 	if err != nil {
 		return
 	}
 
-	p = []string{utils.DmBin(dm.Settings), "rm", "-y", machineName}
+	p = []string{dm.Settings.DmBin(), "rm", "-y", machineName}
 	_, err = cmdRunner(p, dm.EnvVars)
 	if err != nil {
 		return
@@ -99,12 +107,12 @@ func (dm *DockerMachine) StopMachine(machineName string, cmdRunner cmdrunner.Com
 // Status runs docker-machine ip MACHINE_NAME and docker-machine status machine_NAME
 func (dm *DockerMachine) Status(machineName string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
 	var out1, out2 string
-	p := []string{utils.DmBin(dm.Settings), "status", machineName}
+	p := []string{dm.Settings.DmBin(), "status", machineName}
 	out1, err = cmdRunner(p, dm.EnvVars)
 	if err != nil {
 		return
 	}
-	p = []string{utils.DmBin(dm.Settings), "ip", machineName}
+	p = []string{dm.Settings.DmBin(), "ip", machineName}
 	out2, err = cmdRunner(p, dm.EnvVars)
 	if err != nil {
 		return
@@ -118,7 +126,7 @@ func (dm *DockerMachine) Status(machineName string, cmdRunner cmdrunner.CommandR
 // prepends "docker" to any command you send it. Therefore, to run "docker pull
 // <IMAGE>" on the remote machine, pass in []string{"pull", IMAGENAME}
 func (dm *DockerMachine) RunDocker(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
-	ip, err := cmdRunner([]string{utils.DmBin(dm.Settings), "ip", machineName}, dm.EnvVars)
+	ip, err := cmdRunner([]string{dm.Settings.DmBin(), "ip", machineName}, dm.EnvVars)
 	if err != nil {
 		return
 	}
@@ -137,7 +145,7 @@ func (dm *DockerMachine) RunDocker(machineName string, cmd []string, cmdRunner c
 
 // Run uses docker-machine ssh to run a command on the remote machine.
 func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
-	finalCmd := []string{utils.DmBin(dm.Settings), "ssh", machineName}
+	finalCmd := []string{dm.Settings.DmBin(), "ssh", machineName}
 	finalCmd = append(finalCmd, cmd...)
 	out, err = cmdRunner(finalCmd, dm.EnvVars)
 	return
@@ -145,7 +153,7 @@ func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunn
 
 // Copy recursively copies a path from the local machine to the provisioned Machine
 func (dm *DockerMachine) Copy(machineName, sourcePath, destPath string, cmdRunner cmdrunner.CommandRunner) (err error) {
-	p := []string{utils.DmBin(dm.Settings), "scp", "-r", sourcePath, fmt.Sprintf("%s:%s", machineName, destPath)}
+	p := []string{dm.Settings.DmBin(), "scp", "-r", sourcePath, fmt.Sprintf("%s:%s", machineName, destPath)}
 	_, err = cmdRunner(p, dm.EnvVars)
 	return
 }
