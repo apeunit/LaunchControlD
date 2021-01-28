@@ -28,27 +28,27 @@ type Schema struct {
 }
 
 // DmBin returns /tmp/workspace/bin/docker-machine
-func (s Schema) DmBin() string {
+func (s *Schema) DmBin() string {
 	return s.Bin(s.DockerMachine.Binary)
 }
 
 // Bin returns /tmp/workspace/bin/<FILE>
-func (s Schema) Bin(file string) string {
+func (s *Schema) Bin(file string) string {
 	return filepath.Join(s.Workspace, BinDir, file)
 }
 
 // Tmp returns /Tmp/workspace/tmp
-func (s Schema) Tmp() (string, error) {
+func (s *Schema) Tmp() (string, error) {
 	return ioutil.TempDir(filepath.Join(s.Workspace, TmpDir), "")
 }
 
 // Evts returns /tmp/workspace/evts/<EVTID>
-func (s Schema) Evts(evtID string) (string, error) {
+func (s *Schema) Evts(evtID string) (string, error) {
 	return filepath.Abs(filepath.Join(s.Workspace, EvtsDir, evtID))
 }
 
 // EvtFile returns "/tmp/workspace/evts/<EVTID>/event.json", i.e. the absolute path to the event descriptor file
-func (s Schema) EvtFile(evtID string) (path string, err error) {
+func (s *Schema) EvtFile(evtID string) (path string, err error) {
 	path, err = s.Evts(evtID)
 	if err != nil {
 		return
@@ -58,7 +58,7 @@ func (s Schema) EvtFile(evtID string) (path string, err error) {
 }
 
 // ConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
-func (s Schema) ConfigDir(eventID string) (finalPath string, err error) {
+func (s *Schema) ConfigDir(eventID string) (finalPath string, err error) {
 	p, err := s.Evts(eventID)
 	if err != nil {
 		return
@@ -67,7 +67,7 @@ func (s Schema) ConfigDir(eventID string) (finalPath string, err error) {
 }
 
 // NodeConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/0
-func (s Schema) NodeConfigDir(eventID, nodeID string) (configDir string, err error) {
+func (s *Schema) NodeConfigDir(eventID, nodeID string) (configDir string, err error) {
 	basePath, err := s.ConfigDir(eventID)
 	if err != nil {
 		return
@@ -77,7 +77,7 @@ func (s Schema) NodeConfigDir(eventID, nodeID string) (configDir string, err err
 }
 
 // ExtraAccountConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/extra_accounts
-func (s Schema) ExtraAccountConfigDir(eventID, name string) (finalPath string, err error) {
+func (s *Schema) ExtraAccountConfigDir(eventID, name string) (finalPath string, err error) {
 	p, err := s.ConfigDir(eventID)
 	if err != nil {
 		return

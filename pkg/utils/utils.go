@@ -22,7 +22,7 @@ import (
 
 // BuildEnvVars generates a sane base for environment variables to run shell
 // commands with. It just includes $PATH
-func BuildEnvVars(settings config.Schema) []string {
+func BuildEnvVars(settings *config.Schema) []string {
 	path := append([]string{}, settings.Bin(""), os.Getenv("PATH"))
 	envPath := fmt.Sprintf("PATH=%s", strings.Join(path, ":"))
 	return []string{envPath}

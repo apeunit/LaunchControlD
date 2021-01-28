@@ -19,11 +19,11 @@ const DockerHome = ".docker"
 type DockerMachine struct {
 	EventID  string
 	EnvVars  []string
-	Settings config.Schema
+	Settings *config.Schema
 }
 
 // NewDockerMachine ensures that all fields of a DockerMachineConfig are filled out
-func NewDockerMachine(settings config.Schema, eventID string) *DockerMachine {
+func NewDockerMachine(settings *config.Schema, eventID string) *DockerMachine {
 	envVars := utils.BuildEnvVars(settings)
 
 	// set MACHINE_STORAGE_PATH

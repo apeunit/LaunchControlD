@@ -13,7 +13,7 @@ import (
 )
 
 // InspectEvent inspect status of the infrastructure for an event
-func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
+func InspectEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	path, err := settings.Evts(evt.ID())
 	log.Debugln("InspectEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -34,7 +34,7 @@ func InspectEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 }
 
 // DestroyEvent destroy an existing event
-func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
+func DestroyEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	path, err := settings.Evts(evt.ID())
 	log.Debugln("op DestroyEvent event", evt.ID(), "home:", path)
 	if err != nil {
@@ -71,7 +71,7 @@ func DestroyEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.
 }
 
 // ProvisionEvent provision the infrastructure for the event
-func ProvisionEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
+func ProvisionEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	dm := NewDockerMachine(settings, evt.ID())
 	// init docker nodes map
 	// TODO: shouldn't this be initialized already during evt struct creation?
@@ -94,7 +94,7 @@ func ProvisionEvent(settings config.Schema, evt *model.Event, cmdRunner cmdrunne
 
 // RereadDockerMachineInfo is useful when docker-machine failed during 'create',
 // and a human fixed the problem, and wants to continue
-func RereadDockerMachineInfo(settings config.Schema, evt *model.Event) (event *model.Event, err error) {
+func RereadDockerMachineInfo(settings *config.Schema, evt *model.Event) (event *model.Event, err error) {
 	dm := NewDockerMachine(settings, evt.ID())
 	_, validatorAccounts := evt.Validators()
 	for i, v := range validatorAccounts {
@@ -110,7 +110,7 @@ func RereadDockerMachineInfo(settings config.Schema, evt *model.Event) (event *m
 }
 
 // DeployPayload tells the provisioned machines to run the configured docker image
-func DeployPayload(settings config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
+func DeployPayload(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	var command []string
 	log.Infoln("Copying node configs to each provisioned machine")
 

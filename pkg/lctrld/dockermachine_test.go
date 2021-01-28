@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockSettings = config.Schema{
+var mockSettings = &config.Schema{
 	Workspace: "/tmp/workspace",
 	DockerMachine: config.DockerMachine{
 		Version:   "0.16.2",

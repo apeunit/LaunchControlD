@@ -12,7 +12,7 @@ import (
 )
 
 //SetupWorkspace setup the workspace for the service
-func SetupWorkspace(settings config.Schema) (err error) {
+func SetupWorkspace(settings *config.Schema) (err error) {
 	// workspace folder
 	if !utils.FileExists(settings.Workspace) {
 		log.Debugln("Folder ", settings.Workspace, "does not exists, creating")
@@ -38,7 +38,7 @@ func SetupWorkspace(settings config.Schema) (err error) {
 }
 
 // InstallDockerMachine setup docker machine environment
-func InstallDockerMachine(settings config.Schema) (err error) {
+func InstallDockerMachine(settings *config.Schema) (err error) {
 	log.Debug("InstallDockerMachine setup binaries")
 
 	// download if not exists helper
@@ -128,7 +128,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 }
 
 // CreateEvent creates the event home and the event descriptor
-func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
+func CreateEvent(settings *config.Schema, evt *model.Event) (err error) {
 	path, err := settings.Evts(evt.ID())
 	if err != nil {
 		return
@@ -144,7 +144,7 @@ func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
 }
 
 //LoadEvent returns the Event model of the specified event ID
-func LoadEvent(settings config.Schema, evtID string) (evt *model.Event, err error) {
+func LoadEvent(settings *config.Schema, evtID string) (evt *model.Event, err error) {
 	path, err := settings.Evts(evtID)
 	if err != nil {
 		return
@@ -155,7 +155,7 @@ func LoadEvent(settings config.Schema, evtID string) (evt *model.Event, err erro
 }
 
 // StoreEvent saves the Event model to a file
-func StoreEvent(settings config.Schema, evt *model.Event) (err error) {
+func StoreEvent(settings *config.Schema, evt *model.Event) (err error) {
 	path, err := settings.Evts(evt.ID())
 	if err != nil {
 		return
@@ -166,7 +166,7 @@ func StoreEvent(settings config.Schema, evt *model.Event) (err error) {
 }
 
 // ListEvents list available events
-func ListEvents(settings config.Schema) (events []model.Event, err error) {
+func ListEvents(settings *config.Schema) (events []model.Event, err error) {
 	events = make([]model.Event, 0)
 	evtsBase, err := settings.Evts("")
 	if err != nil {
@@ -194,7 +194,7 @@ func ListEvents(settings config.Schema) (events []model.Event, err error) {
 }
 
 // GetEventByID retrieve an event by name
-func GetEventByID(settings config.Schema, ID string) (event model.Event, err error) {
+func GetEventByID(settings *config.Schema, ID string) (event model.Event, err error) {
 	// this is not very fast but it does the job for the moment
 	evts, err := ListEvents(settings)
 	if err != nil {

@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	appSettings config.Schema
+	appSettings *config.Schema
 	usersDb     *UsersDB
 )
 
@@ -39,7 +39,7 @@ var (
 // @license.name MIT
 // @host api.launch-control.eventivize.co
 // @BasePath /api
-func ServeHTTP(settings config.Schema) (err error) {
+func ServeHTTP(settings *config.Schema) (err error) {
 	log.Info("starting http")
 	// make settings available to the other functions
 	appSettings = settings
