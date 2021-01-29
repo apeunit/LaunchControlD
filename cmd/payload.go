@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +39,7 @@ func setupChain(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	return lctrld.ConfigurePayload(settings, evt, lctrld.RunCommand)
+	return lctrld.ConfigurePayload(settings, evt, cmdrunner.RunCommand)
 }
 
 func deploy(cmd *cobra.Command, args []string) (err error) {
@@ -46,7 +47,7 @@ func deploy(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
-	err = lctrld.DeployPayload(settings, evt, lctrld.RunCommand, dmc)
+
+	err = lctrld.DeployPayload(settings, evt, cmdrunner.RunCommand)
 	return
 }

@@ -12,7 +12,7 @@ import (
 )
 
 //SetupWorkspace setup the workspace for the service
-func SetupWorkspace(settings config.Schema) (err error) {
+func SetupWorkspace(settings *config.Schema) (err error) {
 	// workspace folder
 	if !utils.FileExists(settings.Workspace) {
 		log.Debugln("Folder ", settings.Workspace, "does not exists, creating")
@@ -38,12 +38,12 @@ func SetupWorkspace(settings config.Schema) (err error) {
 }
 
 // InstallDockerMachine setup docker machine environment
-func InstallDockerMachine(settings config.Schema) (err error) {
+func InstallDockerMachine(settings *config.Schema) (err error) {
 	log.Debug("InstallDockerMachine setup binaries")
 
 	// download if not exists helper
 	dine := func(file, downloadURL string) (err error) {
-		targetPath := bin(settings, file)
+		targetPath := settings.Bin(file)
 		log.Debug("InstallDockerMachine: checking ", targetPath)
 		if utils.FileExists(targetPath) {
 			log.Debug("InstallDockerMachine: ", targetPath, " found!")
@@ -51,7 +51,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 		}
 		log.Debug("InstallDockerMachine: ", targetPath, " does not exists, downloading from ", downloadURL)
 		// generate a temp dir
-		td, err := tmp(settings)
+		td, err := settings.Tmp()
 		if err != nil {
 			log.Error("InstallDockerMachine: ", err)
 			return
@@ -62,7 +62,7 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 			log.Error("InstallDockerMachine: ", err)
 			return
 		}
-		dwnFilePath := _path(td, dwnFile)
+		dwnFilePath := filepath.Join(td, dwnFile)
 		log.Debug("InstallDockerMachine: download complete ", dwnFilePath)
 		ct, err := utils.DetectContentType(dwnFilePath)
 		if err != nil {
@@ -128,8 +128,8 @@ func InstallDockerMachine(settings config.Schema) (err error) {
 }
 
 // CreateEvent creates the event home and the event descriptor
-func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
-	path, err := evts(settings, evt.ID())
+func CreateEvent(settings *config.Schema, evt *model.Event) (err error) {
+	path, err := settings.Evts(evt.ID())
 	if err != nil {
 		return
 	}
@@ -143,21 +143,43 @@ func CreateEvent(settings config.Schema, evt *model.Event) (err error) {
 	return
 }
 
+//LoadEvent returns the Event model of the specified event ID
+func LoadEvent(settings *config.Schema, evtID string) (evt *model.Event, err error) {
+	path, err := settings.Evts(evtID)
+	if err != nil {
+		return
+	}
+	path = filepath.Join(path, config.EvtDescriptorFile)
+	err = utils.LoadJSON(path, &evt)
+	return
+}
+
+// StoreEvent saves the Event model to a file
+func StoreEvent(settings *config.Schema, evt *model.Event) (err error) {
+	path, err := settings.Evts(evt.ID())
+	if err != nil {
+		return
+	}
+	path = filepath.Join(path, config.EvtDescriptorFile)
+	err = utils.StoreJSON(path, evt)
+	return
+}
+
 // ListEvents list available events
-func ListEvents(settings config.Schema) (events []model.Event, err error) {
+func ListEvents(settings *config.Schema) (events []model.Event, err error) {
 	events = make([]model.Event, 0)
-	evtsBase, err := evts(settings, "")
+	evtsBase, err := settings.Evts("")
 	if err != nil {
 		log.Error("ListEvents failed:", err)
 		return
 	}
 	filepath.Walk(evtsBase, func(subPath string, info os.FileInfo, err error) error {
-		if info.Name() == dockerHome {
+		if info.Name() == DockerHome {
 			log.Debugln("Folder", info.Name(), "skipped")
 			// skip docker folder
 			return filepath.SkipDir
 		}
-		if info.Name() == evtDescriptorFile {
+		if info.Name() == config.EvtDescriptorFile {
 			log.Debugln("Event found", info.Name())
 			evt, err := model.LoadEvent(subPath)
 			if err != nil {
@@ -172,7 +194,7 @@ func ListEvents(settings config.Schema) (events []model.Event, err error) {
 }
 
 // GetEventByID retrieve an event by name
-func GetEventByID(settings config.Schema, ID string) (event model.Event, err error) {
+func GetEventByID(settings *config.Schema, ID string) (event model.Event, err error) {
 	// this is not very fast but it does the job for the moment
 	evts, err := ListEvents(settings)
 	if err != nil {

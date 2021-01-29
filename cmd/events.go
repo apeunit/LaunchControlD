@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	log "github.com/sirupsen/logrus"
@@ -51,7 +52,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return
 	}
-	evtRequest.PayloadLocation = settings.DefaultPayloadLocation
+	evtRequest.PayloadLocation = model.NewDefaultPayloadLocation()
 
 	evt := model.NewEvent(evtRequest.TokenSymbol, evtRequest.Owner, provider, evtRequest.GenesisAccounts, evtRequest.PayloadLocation)
 	vc := evt.ValidatorsCount()
@@ -83,8 +84,7 @@ func setupEvent(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
-	err = lctrld.Provision(settings, evt, lctrld.RunCommand, dmc)
+	err = lctrld.ProvisionEvent(settings, evt, cmdrunner.RunCommand)
 	if err != nil {
 		log.Error("There was an error, run the command with --debug for more info:", err)
 		return err
@@ -116,7 +116,7 @@ func tearDownEvent(cmd *cobra.Command, args []string) (err error) {
 		log.Error("There was an error shutting down the event: ", err)
 		return err
 	}
-	err = lctrld.DestroyEvent(settings, evt, lctrld.RunCommand)
+	err = lctrld.DestroyEvent(settings, evt, cmdrunner.RunCommand)
 	if err != nil {
 		log.Error("There was an error shutting down the event: ", err)
 		return err
@@ -143,7 +143,7 @@ func listEvent(cmd *cobra.Command, args []string) {
 	for _, evt := range events {
 		fmt.Println("Event", evt.ID(), "owner:", evt.Owner, "with", evt.ValidatorsCount(), "validators")
 		if verbose {
-			lctrld.InspectEvent(settings, &evt, lctrld.RunCommand)
+			lctrld.InspectEvent(settings, &evt, cmdrunner.RunCommand)
 		}
 	}
 	fmt.Println("Operation completed in", time.Since(start))
@@ -163,8 +163,8 @@ func retryEvent(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return
 	}
-	dmc := lctrld.NewDockerMachineConfig(settings, evt.ID())
-	evt2, err := lctrld.RereadDockerMachineInfo(settings, evt, dmc)
+
+	evt2, err := lctrld.RereadDockerMachineInfo(settings, evt)
 	if err != nil {
 		return
 	}

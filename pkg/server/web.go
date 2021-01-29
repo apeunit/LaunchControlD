@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/lctrld"
 	"github.com/apeunit/LaunchControlD/pkg/model"
@@ -25,7 +26,7 @@ const (
 )
 
 var (
-	appSettings config.Schema
+	appSettings *config.Schema
 	usersDb     *UsersDB
 )
 
@@ -38,7 +39,7 @@ var (
 // @license.name MIT
 // @host api.launch-control.eventivize.co
 // @BasePath /api
-func ServeHTTP(settings config.Schema) (err error) {
+func ServeHTTP(settings *config.Schema) (err error) {
 	log.Info("starting http")
 	// make settings available to the other functions
 	appSettings = settings
@@ -227,7 +228,7 @@ func eventCreate(c *fiber.Ctx) error {
 	log.Debugf("REST: event request %#v", er)
 	// TODO: find a better way for defaults
 	er.Provider = appSettings.Web.DefaultProvider
-	er.PayloadLocation = appSettings.DefaultPayloadLocation
+	er.PayloadLocation = model.NewDefaultPayloadLocation()
 	// override the owner
 	er.Owner = ownerEmail
 	// validate the event request
@@ -286,16 +287,15 @@ func eventDeploy(c *fiber.Ctx) error {
 	}
 
 	/// deploy
-	dmc := lctrld.NewDockerMachineConfig(appSettings, event.ID())
-	err = lctrld.Provision(appSettings, &event, lctrld.RunCommand, dmc)
+	err = lctrld.ProvisionEvent(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
-	err = lctrld.ConfigurePayload(appSettings, &event, lctrld.RunCommand)
+	err = lctrld.ConfigurePayload(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
-	err = lctrld.DeployPayload(appSettings, &event, lctrld.RunCommand, dmc)
+	err = lctrld.DeployPayload(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
 		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
 	}
@@ -324,7 +324,7 @@ func deleteEvent(c *fiber.Ctx) error {
 		return c.JSON(fiber.ErrNotFound)
 	}
 	// destroy
-	err = lctrld.DestroyEvent(appSettings, &event, lctrld.RunCommand)
+	err = lctrld.DestroyEvent(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
 		return c.JSON(fiber.ErrInternalServerError)
 	}
