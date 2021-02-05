@@ -1,6 +1,7 @@
 package cmdrunner
 
 import (
+	"errors"
 	"os/exec"
 	"strings"
 
@@ -20,7 +21,7 @@ func RunCommand(command, envVars []string) (out string, err error) {
 	o, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Errorf("%s failed with %s, %s\n", command, err, string(o))
-		return
+		return "", errors.New(strings.TrimSpace(string(o)))
 	}
 	out = strings.TrimSpace(string(o))
 	log.Debug("Command stdout: ", out)
