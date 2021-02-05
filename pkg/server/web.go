@@ -289,15 +289,15 @@ func eventDeploy(c *fiber.Ctx) error {
 	/// deploy
 	err = lctrld.ProvisionEvent(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
-		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
+		return c.JSON(APIReplyErr(http.StatusInternalServerError, "There was a problem provisioning the infrastructure for your chain. Our loggers must've caught it, so just let us know you had a problem."))
 	}
 	err = lctrld.ConfigurePayload(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
-		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
+		return c.JSON(APIReplyErr(http.StatusInternalServerError, "There was a problem generating the configuration files for your chain. Our loggers must've caught it, so just let us know you had a problem."))
 	}
 	err = lctrld.DeployPayload(appSettings, &event, cmdrunner.RunCommand)
 	if err != nil {
-		return c.JSON(APIReplyErr(http.StatusInternalServerError, err.Error()))
+		return c.JSON(APIReplyErr(http.StatusInternalServerError, "Your chain was configured and virtual machines deployed, but ther was an error starting your chain. Our loggers must've caught it, so just let us know you had a problem."))
 	}
 
 	return c.JSON(ToAPIEvent(&event))
