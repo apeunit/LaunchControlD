@@ -116,7 +116,7 @@ func Defaults() {
 	// web
 	viper.SetDefault("web.listen_address", ":2012")
 	viper.SetDefault("web.users_db_file", "users.json")
-	viper.SetDefault("web.default_provider", "virtualbox")
+	viper.SetDefault("web.default_provider", "hetzner")
 	// services
 	// viper.SetDefault("services.sentry_dsn", "")
 }
