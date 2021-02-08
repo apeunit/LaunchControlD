@@ -44,6 +44,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is /etc/lctrld/config.yaml)")
 	// verbose logging
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
+	// set the environment variable name, useful for logging via sentry
+	rootCmd.PersistentFlags().StringVar(&settings.Sentry.Environment, "env", "develop", "Override the runtime environment name")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -74,7 +76,6 @@ func initConfig() {
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
-	config.Defaults()
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error loading config file:", viper.ConfigFileUsed(), ":", err)
