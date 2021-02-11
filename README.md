@@ -11,7 +11,7 @@ The command & control server for the LaunchControl project. LaunchControl:
 
 This simplifies the task of spinning up chains.
 
-## Installation
+## Installation 
 
 Before you start make sure that you have docker installed:
 
@@ -30,7 +30,7 @@ go get github.com/apeunit/LaunchControlD
 
 ### From source
 
-To install it from source run
+To install it from source run 
 
 ```sh
 git clone git@github.com:apeunit/LaunchControlD.git
@@ -41,7 +41,7 @@ cd ..
 ```
 
 ## Check your installation
-
+    
 if everything went well you should able to run
 ```sh
 lctrld --version

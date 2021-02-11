@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Folder/file names
 const (
 	BinDir            = "bin"
 	TmpDir            = "tmp"
@@ -17,11 +18,24 @@ const (
 	EvtDescriptorFile = "event.json"
 )
 
+// set configuration defaults
+func init() {
+	// web
+	viper.SetDefault("web.listen_address", ":2012")
+	viper.SetDefault("web.users_db_file", "users.json")
+	viper.SetDefault("web.default_provider", "virtualbox")
+	// sentry
+	viper.SetDefault("sentry.dsn", "https://17c93719b0a94e139ec731d306648ca1@o413394.ingest.sentry.io/5627329")
+	viper.SetDefault("sentry.environment", "develop")
+	viper.SetDefault("sentry.enabled", true)
+}
+
 // Schema describes the layout of config.yaml
 type Schema struct {
 	Workspace     string        `mapstructure:"workspace"`
 	DockerMachine DockerMachine `mapstructure:"docker_machine"`
 	Web           WebSchema     `mapstructure:"web"`
+	Sentry        SentrySchema  `mapstructure:"sentry"`
 	// the following are used at runtime
 	RuntimeStartedAt time.Time `mapstructure:"-"`
 	RuntimeVersion   string    `mapstructure:"-"`
@@ -85,6 +99,13 @@ func (s *Schema) ExtraAccountConfigDir(eventID, name string) (finalPath string, 
 	return path.Join(p, "extra_accounts", name), nil
 }
 
+// SentrySchema configure sentry
+type SentrySchema struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	DSN         string `mapstructure:"dsn"`
+	Environment string `mapstructure:"environment"`
+}
+
 // WebSchema configuration for web
 type WebSchema struct {
 	ListenAddress   string `mapstructure:"listen_address"`
@@ -109,14 +130,4 @@ type DockerMachineDriver struct {
 	Binary    string   `mapstructure:"binary"`
 	Params    []string `mapstructure:"params"`
 	Env       []string `mapstructure:"env"`
-}
-
-// Defaults configure defaults for the configuration
-func Defaults() {
-	// web
-	viper.SetDefault("web.listen_address", ":2012")
-	viper.SetDefault("web.users_db_file", "users.json")
-	viper.SetDefault("web.default_provider", "hetzner")
-	// services
-	// viper.SetDefault("services.sentry_dsn", "")
 }

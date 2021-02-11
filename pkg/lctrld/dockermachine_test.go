@@ -96,7 +96,7 @@ func TestDockerMachineGeneral(t *testing.T) {
 			t.Error(err)
 		}
 		assert.Equal(t, out, machineName)
-		out, err = dm.Run(machineName, []string{"mkdir", "/home/docker/testdir"}, cmdrunner.RunCommand)
+		_, err = dm.Run(machineName, []string{"mkdir", "/home/docker/testdir"}, cmdrunner.RunCommand)
 		if err != nil {
 			t.Error(err)
 		}

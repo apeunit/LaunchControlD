@@ -98,7 +98,7 @@ func RereadDockerMachineInfo(settings *config.Schema, evt *model.Event) (event *
 	dm := NewDockerMachine(settings, evt.ID())
 	_, validatorAccounts := evt.Validators()
 	for i, v := range validatorAccounts {
-		machineName := fmt.Sprintf("%s-%s", evt.ID(), i)
+		machineName := fmt.Sprintf("%s-%d", evt.ID(), i)
 		mc, err := dm.ReadConfig(machineName)
 		if err != nil {
 			log.Error("Provision read machine config error:", err)
