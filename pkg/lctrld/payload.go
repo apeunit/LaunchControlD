@@ -328,9 +328,7 @@ func GenerateFaucetConfig(settings *config.Schema, evt *model.Event, runCommand 
 	return
 }
 
-// ConfigurePayload is a wrapper function that runs all the needed steps to
-// generate a payload's configuration and fills out the evt object with said information.
-func ConfigurePayload(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
+func configurePayload(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	err = DownloadPayloadBinary(settings, evt, cmdRunner)
 	if err != nil {
 		return
@@ -370,6 +368,20 @@ func ConfigurePayload(settings *config.Schema, evt *model.Event, cmdRunner cmdru
 	err = GenerateFaucetConfig(settings, evt, cmdRunner)
 	if err != nil {
 		return
+	}
+	return
+}
+
+// ConfigurePayload is a wrapper function that runs all the needed steps to
+// generate a payload's configuration and fills out the evt object with said information.
+func ConfigurePayload(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
+	nodeconfigPath, err := settings.ConfigDir(evt.ID())
+	if err != nil {
+		return
+	}
+	err = configurePayload(settings, evt, cmdRunner)
+	if err != nil {
+		os.RemoveAll(nodeconfigPath)
 	}
 	return
 }

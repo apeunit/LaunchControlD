@@ -57,7 +57,7 @@ func (s *Schema) EvtFile(evtID string) (path string, err error) {
 	return
 }
 
-// ConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
+// ConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig
 func (s *Schema) ConfigDir(eventID string) (finalPath string, err error) {
 	p, err := s.Evts(eventID)
 	if err != nil {
