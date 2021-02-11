@@ -40,7 +40,7 @@ make install # installs to GOPATH/bin
 cd ..
 ```
 
-## Check your installation                
+## Check your installation
     
 if everything went well you should able to run
 ```sh
