@@ -30,7 +30,7 @@ func BuildEnvVars(settings *config.Schema) []string {
 
 // DownloadFile will download a url to a local file. It's efficient because it will
 // write as it downloads and not load the whole file into memory.
-func DownloadFile(folder string, url string) (filename string, err error) {
+func DownloadFile(folder, url string) (filename string, err error) {
 	filename = path.Base(url)
 	filePath := filepath.Join(folder, filename)
 	// Get the data
