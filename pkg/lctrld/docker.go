@@ -73,6 +73,10 @@ func DestroyEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner
 // ProvisionEvent provision the infrastructure for the event
 func ProvisionEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	dm := NewDockerMachine(settings, evt.ID())
+	evtDir, err := settings.Evts(evt.ID())
+	if err != nil {
+		return
+	}
 	// init docker nodes map
 	// TODO: shouldn't this be initialized already during evt struct creation?
 	evt.State = make(map[string]*model.Machine)
@@ -84,6 +88,7 @@ func ProvisionEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunn
 		// create the parameters
 		mc, err2 := dm.ProvisionMachine(machineName, evt.Provider, cmdRunner)
 		if err2 != nil {
+			os.RemoveAll(evtDir)
 			return err2
 		}
 		evt.State[v.Name] = mc
