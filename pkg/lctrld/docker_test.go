@@ -17,10 +17,10 @@ func (m *mockDockerMachineConfig) HomeDir(machineN string) string {
 	return path.Join(n...)
 }
 
-func (m *mockDockerMachineConfig) ReadConfig(machineN string) (mc *model.MachineConfig, err error) {
+func (m *mockDockerMachineConfig) ReadConfig(machineN string) (mc *model.Machine, err error) {
 	if m.WantError {
 		return nil, errors.New("Here is your new error")
 	}
 
-	return new(model.MachineConfig), nil
+	return new(model.Machine), nil
 }

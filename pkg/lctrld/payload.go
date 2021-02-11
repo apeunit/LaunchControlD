@@ -7,51 +7,26 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
+	"github.com/apeunit/LaunchControlD/pkg/utils"
 
 	"github.com/melbahja/got"
 	"github.com/pelletier/go-toml"
 	log "github.com/sirupsen/logrus"
 )
 
-// getConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfigs
-func getConfigDir(settings config.Schema, eventID string) (finalPath string, err error) {
-	p, err := evts(settings, eventID)
-	if err != nil {
-		return
-	}
-	return path.Join(p, "nodeconfig"), nil
-}
-
-// getNodeConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/0
-func getNodeConfigDir(settings config.Schema, eventID, nodeID string) (configDir string, err error) {
-	basePath, err := getConfigDir(settings, eventID)
-	if err != nil {
-		return
-	}
-	nodeIDsplit := strings.Split(nodeID, "-")
-	return path.Join(basePath, nodeIDsplit[len(nodeIDsplit)-1]), nil
-}
-
-// getExtraAccountConfigDir returns /tmp/workspace/evts/drop-28b10d4eff415a7b0b2c/nodeconfig/extra_accounts
-func getExtraAccountConfigDir(settings config.Schema, eventID, name string) (finalPath string, err error) {
-	p, err := getConfigDir(settings, eventID)
-	if err != nil {
-		return
-	}
-	return path.Join(p, "extra_accounts", name), nil
-}
-
 // DownloadPayloadBinary downloads a copy of the payload binaries to the host
 // running lctrld to generate the config files for the provisioned machines
-func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func DownloadPayloadBinary(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	_, cliExistsErr := os.Stat(evt.Payload.CLIPath)
 	_, daemonExistsErr := os.Stat(evt.Payload.DaemonPath)
 	if os.IsNotExist(cliExistsErr) || os.IsNotExist(daemonExistsErr) {
-		binFile := bin(settings, "payloadBinaries.zip")
+		binFile := settings.Bin("payloadBinaries.zip")
 		log.Infof("downloading payload binaries from %s to %s", evt.Payload.BinaryURL, binFile)
 		g := got.New()
 		err = g.Download(evt.Payload.BinaryURL, binFile)
@@ -59,7 +34,7 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 			return
 		}
 
-		_, err = runCommand([]string{"unzip", "-d", bin(settings, ""), "-o", binFile}, []string{})
+		_, err = runCommand([]string{"unzip", "-d", settings.Bin(""), "-o", binFile}, []string{})
 		if err != nil {
 			return
 		}
@@ -75,27 +50,24 @@ func DownloadPayloadBinary(settings config.Schema, evt *model.Event, runCommand 
 // InitDaemon runs gaiad init burnerchain --home
 // state.DaemonConfigDir
 // and gaiad tendermint show-node-id
-func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunner) (*model.Event, error) {
+func InitDaemon(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (*model.Event, error) {
 	log.Infoln("Initializing daemon configs for each node")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return nil, err
-	}
+	envVars := utils.BuildEnvVars(settings)
 
 	_, accounts := evt.Validators()
 	for _, acc := range accounts {
 		// Make the config directory for the node CLI
 		machineConfig := evt.State[acc.Name]
 		if acc.Validator {
-			nodeConfigDir, err := getNodeConfigDir(settings, evt.ID(), machineConfig.N)
+			nodeConfigDir, err := settings.NodeConfigDir(evt.ID(), machineConfig.N)
 			if err != nil {
 				break
 			}
 			acc.ConfigLocation.DaemonConfigDir = path.Join(nodeConfigDir, "daemon")
 			acc.ConfigLocation.CLIConfigDir = path.Join(nodeConfigDir, "cli")
 		} else {
-			extraAccDir, err := getExtraAccountConfigDir(settings, evt.ID(), acc.Name)
+			extraAccDir, err := settings.ExtraAccountConfigDir(evt.ID(), acc.Name)
 			if err != nil {
 				break
 			}
@@ -124,13 +96,10 @@ func InitDaemon(settings config.Schema, evt *model.Event, runCommand CommandRunn
 // GenerateKeys generates keys for each genesis account (this includes validator
 // accounts). The specific command is gaiacli keys add validatoremail/some other name -o json
 // --keyring-backend test --home.... for each node.
-func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRunner) (*model.Event, error) {
+func GenerateKeys(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (*model.Event, error) {
 	log.Infoln("Generating keys for validator accounts")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return nil, err
-	}
+	envVars := utils.BuildEnvVars(settings)
 
 	_, validatorAccounts := evt.Validators()
 	for _, account := range validatorAccounts {
@@ -152,7 +121,7 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 
 	log.Infoln("Generating keys for non-validator accounts")
 	for _, acc := range evt.ExtraAccounts() {
-		extraAccDir, err2 := getExtraAccountConfigDir(settings, evt.ID(), acc.Name)
+		extraAccDir, err2 := settings.ExtraAccountConfigDir(evt.ID(), acc.Name)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -178,13 +147,10 @@ func GenerateKeys(settings config.Schema, evt *model.Event, runCommand CommandRu
 
 // AddGenesisAccounts runs gaiad add-genesis-account with the created addresses
 // and default initial balances
-func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func AddGenesisAccounts(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Adding accounts to the genesis.json files")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return
-	}
+	envVars := utils.BuildEnvVars(settings)
 
 	for name := range evt.State {
 		for _, account := range evt.Accounts {
@@ -202,14 +168,14 @@ func AddGenesisAccounts(settings config.Schema, evt *model.Event, runCommand Com
 
 // GenesisTxs runs gentx to turn accounts into validator accounts and outputs
 // the genesis transactions into a single folder.
-func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func GenesisTxs(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Creating genesis transactions to turn accounts into validators")
 
-	envVars, err := dockerMachineEnv(settings, evt)
+	envVars := utils.BuildEnvVars(settings)
+	basePath, err := settings.ConfigDir(evt.ID())
 	if err != nil {
 		return
 	}
-	basePath, err := getConfigDir(settings, evt.ID())
 
 	// Ensure that the genesis txs destination directory exists
 	outputGenesisTxDir := path.Join(basePath, "genesis_txs")
@@ -237,14 +203,11 @@ func GenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunn
 // CollectGenesisTxs is run on every node's config directory from the single
 // directory where the genesis transactions were placed before. In the end, only
 // the first node's genesis.json will be used.
-func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func CollectGenesisTxs(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Collecting genesis transactions and writing final genesis.json")
 
-	envVars, err := dockerMachineEnv(settings, evt)
-	if err != nil {
-		return
-	}
-	basePath, err := getConfigDir(settings, evt.ID())
+	envVars := utils.BuildEnvVars(settings)
+	basePath, err := settings.ConfigDir(evt.ID())
 	if err != nil {
 		return
 	}
@@ -263,7 +226,7 @@ func CollectGenesisTxs(settings config.Schema, evt *model.Event, runCommand Comm
 }
 
 // EditConfigs edits the config.toml of every node to have the same persistent_peers.
-func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func EditConfigs(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Copying node 0's genesis.json to others and setting up p2p.persistent_peers")
 
 	// Although we just generated the genesis.json for every node (makes it
@@ -334,7 +297,7 @@ func EditConfigs(settings config.Schema, evt *model.Event, runCommand CommandRun
 }
 
 // GenerateFaucetConfig generates a configuration for the faucet given what it knows about the event
-func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand CommandRunner) (err error) {
+func GenerateFaucetConfig(settings *config.Schema, evt *model.Event, runCommand cmdrunner.CommandRunner) (err error) {
 	log.Infoln("Generating faucet configuration")
 
 	// Use the first ExtraAccount as a faucet account
@@ -351,15 +314,15 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand C
 	}
 	log.Debugln(out)
 
-	evtsDir, err := evts(settings, evt.ID())
+	evtsDir, err := settings.Evts(evt.ID())
 	if err != nil {
 		return
 	}
 
 	// docker image permissions problems again - faucet cannot write to mounted volume
-	os.Chmod(_path(evtsDir, "nodeconfig"), 0777)
+	os.Chmod(filepath.Join(evtsDir, "nodeconfig"), 0777)
 
-	command := []string{"docker", "run", "-v", fmt.Sprintf("%s:/payload/config", _path(evtsDir, "nodeconfig")), evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
+	command := []string{"docker", "run", "-v", fmt.Sprintf("%s:/payload/config", filepath.Join(evtsDir, "nodeconfig")), evt.Payload.DockerImage, "/payload/configurefaucet.sh", evt.ID(), faucetAccount.Address, evt.TokenSymbol, nodeIP}
 	out, err = runCommand(command, []string{})
 	log.Debugln(out)
 	return
@@ -367,7 +330,7 @@ func GenerateFaucetConfig(settings config.Schema, evt *model.Event, runCommand C
 
 // ConfigurePayload is a wrapper function that runs all the needed steps to
 // generate a payload's configuration and fills out the evt object with said information.
-func ConfigurePayload(settings config.Schema, evt *model.Event, cmdRunner CommandRunner) (err error) {
+func ConfigurePayload(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	err = DownloadPayloadBinary(settings, evt, cmdRunner)
 	if err != nil {
 		return

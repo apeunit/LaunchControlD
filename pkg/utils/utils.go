@@ -15,9 +15,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/apeunit/LaunchControlD/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/blake2b"
 )
+
+// BuildEnvVars generates a sane base for environment variables to run shell
+// commands with. It just includes $PATH
+func BuildEnvVars(settings *config.Schema) []string {
+	path := append([]string{}, settings.Bin(""), os.Getenv("PATH"))
+	envPath := fmt.Sprintf("PATH=%s", strings.Join(path, ":"))
+	return []string{envPath}
+}
 
 // DownloadFile will download a url to a local file. It's efficient because it will
 // write as it downloads and not load the whole file into memory.

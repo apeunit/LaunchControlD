@@ -97,14 +97,6 @@ docker_machine:
       env:
       - "DIGITALOCEAN_ACCESS_TOKEN=123"
 
-default_payload_location:
-  docker_image: "apeunit/launchpayload:v1.0.0"
-  binary_url: https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip
-  binary_path: "/tmp/workspace/bin"
-  daemon_path: "/tmp/workspace/bin/launchpayloadd"
-  cli_path: "/tmp/workspace/bin/launchpayloadcli"
-
-
 ```
 
 If you will be deploying nodes often using Virtualbox, it is useful to download your own copy of [boot2docker.iso](https://github.com/boot2docker/boot2docker/releases/tag/v19.03.12) so that you won't have to download it every time. Specify the path with `VIRTUALBOX_BOOT2DOCKER_URL`.
@@ -138,7 +130,7 @@ To manage the events lifecycle use the command
 > lctrld events
 ```
 
-## Example  
+## Example
 
 The following example will create a new event composed by two validator nodes and a faucet running on 3 virtual machine on a local virtualbox installation. It is assumed that `lctrld` is already installed.
 
@@ -158,9 +150,9 @@ Then download the latest version of the `boot2docker` iso image
 curl -LO https://github.com/boot2docker/boot2docker/releases/download/v19.03.12/boot2docker.iso
 ```
 
-And finally download the event specification 
+And finally download the event specification
 
-```sh 
+```sh
 curl -LO https://raw.githubusercontent.com/apeunit/LaunchControlD/master/examples/simple_event_w_faucet.yml
 ```
 
@@ -180,9 +172,9 @@ Setup completed in  1m1.007284248s
 
 ```
 
-and the content of the current directory should be 
+and the content of the current directory should be
 
-```sh 
+```sh
 ls --tree
 .
 ├── boot2docker.iso
@@ -217,9 +209,9 @@ dropgiver: &{Name:dropgiver Address: Mnemonic: GenesisBalance:10000000000drop,10
 Finally will be deploying 2 servers+nodes (1 for each validators) on virtualbox
 Shall we proceed? [Y/n]:Y
 Here we go!!
-INFO[0001] alice@apeunit.com's node ID is drop-c34efbd55083665002d2-0 
-INFO[0062] bob@apeunit.com's node ID is drop-c34efbd55083665002d2-1 
-INFO[0117] Your event ID is drop-c34efbd55083665002d2   
+INFO[0001] alice@apeunit.com's node ID is drop-c34efbd55083665002d2-0
+INFO[0062] bob@apeunit.com's node ID is drop-c34efbd55083665002d2-1
+INFO[0117] Your event ID is drop-c34efbd55083665002d2
 Operation completed in 1m57.477250453s
 
 ```
@@ -244,7 +236,7 @@ drop-c34efbd55083665002d2-1 IP: 192.168.99.109
 Operation completed in 1.457770547s
 ```
 
-At this point we have installed and setup `lctrld`, prepared the configuration files and provisioned the infrastructure for our event network to run on. 
+At this point we have installed and setup `lctrld`, prepared the configuration files and provisioned the infrastructure for our event network to run on.
 
 What is left to do is to actually deploy the nodes (Cosmos-SDK based) on the network, or as we will refer to it later, to deploy the `payload`.
 
@@ -257,20 +249,20 @@ What is left to do is to actually deploy the nodes (Cosmos-SDK based) on the net
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
 └─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-3-ga756f1b
 Using config file: config_virtualbox.yml
-INFO[0000] Initializing daemon configs for each node    
-INFO[0000] Generating keys for validator accounts       
-INFO[0000] alice@apeunit.com -> cosmos16vj34rzjwlqnuudh0yagsf42xk9c4jxhfzqsh3 
-INFO[0000] bob@apeunit.com -> cosmos1kgpxkmu8uk7kgj7cka59zsl0wzlyxacqnuv9w4 
-INFO[0000] Generating keys for non-validator accounts   
-INFO[0000] dropgiver -> cosmos16kau2asdta7un6cyr08czgunxxzexl56zy0qcd 
-INFO[0000] Adding accounts to the genesis.json files    
-INFO[0000] Creating genesis transactions to turn accounts into validators 
-INFO[0000] Collecting genesis transactions and writing final genesis.json 
-INFO[0000] Copying node 0's genesis.json to others and setting up p2p.persistent_peers 
-INFO[0000] otherGenesis: /lctrld/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/1/daemon/config/genesis.json 
-alice@apeunit.com's node is 9ca0730f9ed0435cde89aaa21233cc202a4b6886@192.168.99.108:26656 
-bob@apeunit.com's node is f9c467f5d247f4aec2f18936a3ef078f1ab60c9c@192.168.99.109:26656 
-INFO[0000] Generating faucet configuration 
+INFO[0000] Initializing daemon configs for each node
+INFO[0000] Generating keys for validator accounts
+INFO[0000] alice@apeunit.com -> cosmos16vj34rzjwlqnuudh0yagsf42xk9c4jxhfzqsh3
+INFO[0000] bob@apeunit.com -> cosmos1kgpxkmu8uk7kgj7cka59zsl0wzlyxacqnuv9w4
+INFO[0000] Generating keys for non-validator accounts
+INFO[0000] dropgiver -> cosmos16kau2asdta7un6cyr08czgunxxzexl56zy0qcd
+INFO[0000] Adding accounts to the genesis.json files
+INFO[0000] Creating genesis transactions to turn accounts into validators
+INFO[0000] Collecting genesis transactions and writing final genesis.json
+INFO[0000] Copying node 0's genesis.json to others and setting up p2p.persistent_peers
+INFO[0000] otherGenesis: /lctrld/workspace/evts/drop-c34efbd55083665002d2/nodeconfig/1/daemon/config/genesis.json
+alice@apeunit.com's node is 9ca0730f9ed0435cde89aaa21233cc202a4b6886@192.168.99.108:26656
+bob@apeunit.com's node is f9c467f5d247f4aec2f18936a3ef078f1ab60c9c@192.168.99.109:26656
+INFO[0000] Generating faucet configuration
 
 ```
 
@@ -283,15 +275,15 @@ Tell the provisioned machines to run the docker images using the configuration f
 ├┤ └┐┌┘ │ └┐┌┘┌─┘ ║║
 └─┘ └┘  ┴  └┘ └─┘═╩╝ v1.0.0-3-ga756f1b
 Using config file: config_virtualbox.yml
-INFO[0000] Copying node configs to each provisioned machine 
-INFO[0000] Running docker pull apeunit/launchpayload:v1.0.0 on each provisioned machine 
-INFO[0060] Running the dockerized Cosmos daemons on the provisioned machines 
-INFO[0061] Running the CLI to provide the Light Client Daemon 
-INFO[0061] Copying the faucet account and configuration to the first validator machine 
-INFO[0061] Starting the faucet   
+INFO[0000] Copying node configs to each provisioned machine
+INFO[0000] Running docker pull apeunit/launchpayload:v1.0.0 on each provisioned machine
+INFO[0060] Running the dockerized Cosmos daemons on the provisioned machines
+INFO[0061] Running the CLI to provide the Light Client Daemon
+INFO[0061] Copying the faucet account and configuration to the first validator machine
+INFO[0061] Starting the faucet
 ```
 
-And it's done! 🎉 
+And it's done! 🎉
 
 You can see it working by pointing your browser to one of the nodes faucet:
 
@@ -352,13 +344,13 @@ To stop and remove all the machines and their associated configuration, run
 Using config file: config_virtualbox.yml
 Teardown Event
 Event ID is drop-c34efbd55083665002d2
-INFO[0000] alice@apeunit.com's node ID is drop-c34efbd55083665002d2-0 
+INFO[0000] alice@apeunit.com's node ID is drop-c34efbd55083665002d2-0
 drop-c34efbd55083665002d2-0 stop: Stopping "drop-c34efbd55083665002d2-0"...
 Machine "drop-c34efbd55083665002d2-0" was stopped.
 drop-c34efbd55083665002d2-0 rm: About to remove drop-c34efbd55083665002d2-0
 WARNING: This action will delete both local reference and remote instance.
 Are you sure? (y/n):
-INFO[0005] bob@apeunit.com's node ID is drop-c34efbd55083665002d2-1 
+INFO[0005] bob@apeunit.com's node ID is drop-c34efbd55083665002d2-1
 drop-c34efbd55083665002d2-1 stop: Stopping "drop-c34efbd55083665002d2-1"...
 Machine "drop-c34efbd55083665002d2-1" was stopped.
 drop-c34efbd55083665002d2-1 rm: About to remove drop-c34efbd55083665002d2-1

@@ -2,80 +2,62 @@ package lctrld
 
 import (
 	"fmt"
-	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/apeunit/LaunchControlD/pkg/cmdrunner"
 	"github.com/apeunit/LaunchControlD/pkg/config"
 	"github.com/apeunit/LaunchControlD/pkg/model"
 	"github.com/apeunit/LaunchControlD/pkg/utils"
+	log "github.com/sirupsen/logrus"
 )
 
-// dockerMachineEnv ensures we are talking to the correct docker-machine binary, and that the context is the eventivize workspace directory
-func dockerMachineEnv(settings config.Schema, evt *model.Event) (env []string, err error) {
-	// add extra PATHs to find other docker-machine binaries
-	p := append([]string{}, bin(settings, ""), os.Getenv("PATH"))
-	envPath := fmt.Sprintf("PATH=%s", strings.Join(p, ":"))
+// DockerHome pretends that /tmp/workspace/evts/<EVTDIR> is the $HOME, so under that would be .docker
+const DockerHome = ".docker"
+
+// DockerMachine implements docker-machine functionality for lctrld
+type DockerMachine struct {
+	EventID  string
+	EnvVars  []string
+	Settings *config.Schema
+}
+
+// NewDockerMachine ensures that all fields of a DockerMachineConfig are filled out
+func NewDockerMachine(settings *config.Schema, eventID string) *DockerMachine {
+	envVars := utils.BuildEnvVars(settings)
 
 	// set MACHINE_STORAGE_PATH
-	home, err := evts(settings, evt.ID()) // this gives you the relative path to the event home
+	home, err := settings.Evts(eventID) // this gives you the relative path to the event home
 	if err != nil {
-		return
+		return nil
 	}
-	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", _path(home, ".docker", "machine"))
+	envMachineStoragePath := fmt.Sprintf("MACHINE_STORAGE_PATH=%s", filepath.Join(home, ".docker", "machine"))
+	envVars = append(envVars, envMachineStoragePath)
 
-	// add docker-machine driver env vars
-	env = settings.DockerMachine.Drivers[evt.Provider].Env
-
-	env = append(env, envMachineStoragePath, envPath)
-	env = append(env, settings.DockerMachine.Env...)
-	return
-}
-
-// dockerMachineNodeEnv recreates the output of docker-machine env <MACHINE NAME>, to run a command inside the docker-machine provisioned node.
-func dockerMachineNodeEnv(envVars []string, eventID, machineHomeDir string, state *model.MachineConfig) []string {
-	envVars = append(
-		envVars,
-		"DOCKER_TLS_VERIFY=1",
-		fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", state.Instance.IPAddress),
-		fmt.Sprintf("DOCKER_CERT_PATH=%s", machineHomeDir),
-		fmt.Sprintf("DOCKER_MACHINE_NAME=%s", state.ID()),
-	)
-	return envVars
-}
-
-// DockerMachineInterface is a mocking interface for functions that need to
-// read docker-machine config files
-type DockerMachineInterface interface {
-	HomeDir(string) string
-	ReadConfig(string) (*model.MachineConfig, error)
-}
-
-// DockerMachineConfig holds information that lets lctrld read the state of a
-// docker-machine provisioning
-type DockerMachineConfig struct {
-	EventID  string
-	Settings config.Schema
-}
-
-// NewDockerMachineConfig ensures that all fields of a DockerMachineConfig are filled out
-func NewDockerMachineConfig(settings config.Schema, eventID string) *DockerMachineConfig {
-	return &DockerMachineConfig{
+	// include extra environment variables from the lctrld settings
+	envVars = append(envVars, settings.DockerMachine.Env...)
+	return &DockerMachine{
 		EventID:  eventID,
+		EnvVars:  envVars,
 		Settings: settings,
 	}
 }
 
 // HomeDir returns the path of a docker-machine instance home, e.g.
 // /tmp/workspace/evts/drop-xxx/.docker/machine/machines/drop-xxx-0/
-func (dmc *DockerMachineConfig) HomeDir(machineN string) string {
-	return _path(dmc.Settings.Workspace, evtsDir, dmc.EventID, ".docker", "machine", "machines", fmt.Sprintf("%s-%s", dmc.EventID, machineN))
+func (dm *DockerMachine) HomeDir(machineName string) string {
+	evtDir, err := dm.Settings.Evts(dm.EventID)
+	if err != nil {
+		log.Warn("Swallowing error while finding absolute path", err)
+	}
+	return filepath.Join(evtDir, DockerHome, "machine", "machines", machineName)
 }
 
 // ReadConfig return configuration of a docker machine
-func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.MachineConfig, err error) {
-	mc = new(model.MachineConfig)
+func (dm *DockerMachine) ReadConfig(machineName string) (mc *model.Machine, err error) {
+	mc = new(model.Machine)
 	dmcf := new(DockerMachineConfigFormat)
-	err = utils.LoadJSON(_path(dmc.HomeDir(machineN), "config.json"), &dmcf)
+	err = utils.LoadJSON(filepath.Join(dm.HomeDir(machineName), "config.json"), &dmcf)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +68,93 @@ func (dmc *DockerMachineConfig) ReadConfig(machineN string) (mc *model.MachineCo
 	mc.Instance.SSHKeyPath = dmcf.Driver.SSHKeyPath
 	mc.Instance.StorePath = dmcf.Driver.StorePath
 	mc.N = strings.Split(dmcf.Name, "-")[2]
-	mc.EventID = dmc.EventID
+	mc.EventID = dm.EventID
+	return
+}
+
+// ProvisionMachine runs docker-machine create MACHINE_NAME
+func (dm *DockerMachine) ProvisionMachine(machineName, provider string, cmdRunner cmdrunner.CommandRunner) (mc *model.Machine, err error) {
+	driver := dm.Settings.DockerMachine.Drivers[provider]
+
+	p := []string{dm.Settings.DmBin(), "--debug", "create", "--driver", provider, "--engine-install-url", "https://releases.rancher.com/install-docker/19.03.9.sh"}
+	p = append(p, driver.Params...)
+	p = append(p, machineName)
+
+	_, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+
+	return dm.ReadConfig(machineName)
+}
+
+// StopMachine runs docker-machine stop MACHINE_NAME && docker-machine rm -y MACHINE_NAME
+func (dm *DockerMachine) StopMachine(machineName string, cmdRunner cmdrunner.CommandRunner) (err error) {
+	p := []string{dm.Settings.DmBin(), "stop", machineName}
+	_, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+
+	p = []string{dm.Settings.DmBin(), "rm", "-y", machineName}
+	_, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// Status runs docker-machine ip MACHINE_NAME and docker-machine status machine_NAME
+func (dm *DockerMachine) Status(machineName string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
+	var out1, out2 string
+	p := []string{dm.Settings.DmBin(), "status", machineName}
+	out1, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+	p = []string{dm.Settings.DmBin(), "ip", machineName}
+	out2, err = cmdRunner(p, dm.EnvVars)
+	if err != nil {
+		return
+	}
+	out = strings.Join([]string{out1, out2}, "\n")
+	return
+}
+
+// RunDocker tells this computer's docker binary to talk with the remote
+// machine's docker installation and run a commnad for safety, this command
+// prepends "docker" to any command you send it. Therefore, to run "docker pull
+// <IMAGE>" on the remote machine, pass in []string{"pull", IMAGENAME}
+func (dm *DockerMachine) RunDocker(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
+	ip, err := cmdRunner([]string{dm.Settings.DmBin(), "ip", machineName}, dm.EnvVars)
+	if err != nil {
+		return
+	}
+
+	envVars := append(dm.EnvVars,
+		"DOCKER_TLS_VERIFY=1",
+		fmt.Sprintf("DOCKER_HOST=tcp://%s:2376", ip),
+		fmt.Sprintf("DOCKER_CERT_PATH=%s", dm.HomeDir(machineName)),
+		fmt.Sprintf("DOCKER_MACHINE_NAME=%s", machineName),
+	)
+	finalCmd := []string{"docker"}
+	finalCmd = append(finalCmd, cmd...)
+	out, err = cmdRunner(finalCmd, envVars)
+	return
+}
+
+// Run uses docker-machine ssh to run a command on the remote machine.
+func (dm *DockerMachine) Run(machineName string, cmd []string, cmdRunner cmdrunner.CommandRunner) (out string, err error) {
+	finalCmd := []string{dm.Settings.DmBin(), "ssh", machineName}
+	finalCmd = append(finalCmd, cmd...)
+	out, err = cmdRunner(finalCmd, dm.EnvVars)
+	return
+}
+
+// Copy recursively copies a path from the local machine to the provisioned Machine
+func (dm *DockerMachine) Copy(machineName, sourcePath, destPath string, cmdRunner cmdrunner.CommandRunner) (err error) {
+	p := []string{dm.Settings.DmBin(), "scp", "-r", sourcePath, fmt.Sprintf("%s:%s", machineName, destPath)}
+	_, err = cmdRunner(p, dm.EnvVars)
 	return
 }
 
