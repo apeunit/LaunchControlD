@@ -63,7 +63,7 @@ func DestroyEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner
 		log.Infof("%s's node ID is %s", v.Name, machineName)
 		err = dm.StopMachine(machineName, cmdRunner)
 		if err != nil {
-			return
+			log.Warnf("error stopping machine %s: %v", machineName, err)
 		}
 	}
 	err = os.RemoveAll(path)
