@@ -35,8 +35,10 @@ func Execute(version string) {
 	}
 }
 
-var debug bool
-var settings *config.Schema
+var (
+	debug    = false
+	settings = new(config.Schema)
+)
 
 func init() {
 	cobra.OnInitialize(initConfig)
