@@ -73,7 +73,6 @@ func DestroyEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner
 // ProvisionEvent provision the infrastructure for the event
 func ProvisionEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunner.CommandRunner) (err error) {
 	dm := NewDockerMachine(settings, evt.ID())
-	evtDir, err := settings.Evts(evt.ID())
 	if err != nil {
 		return
 	}
@@ -92,8 +91,6 @@ func ProvisionEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunn
 				continue
 			}
 		}
-		// TODO: does it also remove the event itself
-		os.RemoveAll(evtDir)
 	}
 	// run the provisioning
 	for i, v := range validatorAccounts {
