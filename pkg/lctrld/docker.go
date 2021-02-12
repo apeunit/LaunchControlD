@@ -81,18 +81,35 @@ func ProvisionEvent(settings *config.Schema, evt *model.Event, cmdRunner cmdrunn
 	// TODO: shouldn't this be initialized already during evt struct creation?
 	evt.State = make(map[string]*model.Machine)
 	_, validatorAccounts := evt.Validators()
+	// track the creation of all the elements,
+	// if just one machine fails, rollback the whole provisioning
+	rollback := func() {
+		log.Infof("rolling back provisioning for event %s", evt.TokenSymbol)
+		for _, v := range evt.State {
+			err = dm.StopMachine(v.Instance.MachineName, cmdRunner)
+			if err != nil {
+				log.Warn("failed to rollback machine provisioning for %s", v.Instance.MachineName)
+				continue
+			}
+		}
+		// TODO: does it also remove the event itself
+		os.RemoveAll(evtDir)
+	}
+	// run the provisioning
 	for i, v := range validatorAccounts {
 		machineName := evt.NodeID(i)
 
 		log.Infof("%s's node ID is %s", v.Name, machineName)
-		// create the parameters
-		mc, err2 := dm.ProvisionMachine(machineName, evt.Provider, cmdRunner)
-		if err2 != nil {
-			os.RemoveAll(evtDir)
-			return err2
+
+		mc, pErr := dm.ProvisionMachine(machineName, evt.Provider, cmdRunner)
+		if pErr != nil {
+			rollback()
+			log.Error(err)
+			return fmt.Errorf("failed to provision nodes for the event")
 		}
 		evt.State[v.Name] = mc
 	}
+
 	log.Infof("Your event ID is %s", evt.ID())
 	return
 }
