@@ -48,7 +48,7 @@ func ServeHTTP(settings *config.Schema) (err error) {
 		return
 	}
 	// setup the web framework
-	app := fiber.New()
+	app := fiber.New(fiber.Config{DisableStartupMessage: true})
 	// enable cors
 	app.Use(cors.New())
 	// use logrus for logging
