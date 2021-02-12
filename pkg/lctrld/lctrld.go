@@ -114,7 +114,7 @@ func InstallDockerMachine(settings *config.Schema) (err error) {
 	}
 	for dName, driver := range settings.DockerMachine.Drivers {
 		log.Debugln("InstallDockerMachine: processing driver", dName)
-		if len(driver.BinaryURL) == 0 {
+		if driver.BinaryURL == "" {
 			log.Debugln("InstallDockerMachine: driver", dName, "does not require installation (download url not provided)")
 			continue
 		}
