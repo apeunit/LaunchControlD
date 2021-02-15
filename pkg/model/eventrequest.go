@@ -3,6 +3,7 @@ package model
 import (
 	"io/ioutil"
 
+	"github.com/apeunit/LaunchControlD/pkg/config"
 	"gopkg.in/yaml.v2"
 )
 
@@ -47,12 +48,12 @@ func LoadEventRequestFromFile(path string) (eq *EventRequest, err error) {
 }
 
 // NewDefaultPayloadLocation is a placeholder to help code refactoring and reduce import cycles
-func NewDefaultPayloadLocation() PayloadLocation {
+func NewDefaultPayloadLocation(settings *config.Schema) PayloadLocation {
 	return PayloadLocation{
 		DockerImage: "apeunit/launchpayload:v1.0.0",
 		BinaryURL:   "https://github.com/apeunit/LaunchPayload/releases/download/v0.0.0/launchpayload-v0.0.0.zip",
-		BinaryPath:  "/tmp/workspace/bin",
-		DaemonPath:  "/tmp/workspace/bin/launchpayloadd",
-		CLIPath:     "/tmp/workspace/bin/launchpayloadcli",
+		BinaryPath:  settings.Workspace,
+		DaemonPath:  settings.Bin("launchpayloadd"),
+		CLIPath:     settings.Bin("launchpayloadcli"),
 	}
 }
